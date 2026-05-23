@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { callTextAI } from '@/lib/aiStructuredOutput';
 import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 import { securityEvents } from '@/lib/securityMonitor';
 
@@ -68,7 +68,8 @@ Provide a comprehensive mystical reading that includes:
 
 For comprehensive interpretations, provide detailed analysis covering all life areas. For specific questions, keep responses focused and practical. Write in a wise, compassionate tone that offers hope and guidance.`
 
-    const result = await createAICompletion({
+    const result = await callTextAI({
+      label: 'openai-legacy-route',
       model: "gpt-4",
       messages: [
         {
@@ -81,8 +82,9 @@ For comprehensive interpretations, provide detailed analysis covering all life a
           content: prompt,
         },
       ],
-      maxTokens: 2000, // Increased for comprehensive interpretations
+      maxTokens: 2000,
       temperature: 0.7,
+      maxAttempts: 2,
     })
 
     const prediction =

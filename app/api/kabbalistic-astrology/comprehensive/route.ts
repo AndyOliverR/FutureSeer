@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
+import {
+  readAdminComprehensiveCache,
+  writeAdminComprehensiveCache,
+} from '@/lib/adminComprehensiveCache';
+import type { GroqStructuredParseInput } from '@/lib/groqStructuredParse';
+import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import {
   buildKabbalisticAstrologyReportSystemPrompt,
   type KabbalisticPrecomputedContext,
@@ -23,7 +30,6 @@ import {
 } from '@/lib/kabbalisticAstrologyOntology';
 import { getHebrewBirthday } from '@/lib/hebrewBirthday';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
-import { adminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -224,17 +230,10 @@ function formatChartContext(planets: any[], houses: any[], aspects: any[]): stri
   return `PLANETS:\n${planetsText || 'None'}\n\nHOUSES:\n${housesText || 'None'}\n\nASPECTS:\n${aspectsText || 'None'}`;
 }
 
-function parseKabbalisticResponse(response: string): Record<string, unknown> {
-  const trimmed = response.trim();
-  let jsonStr = trimmed;
-  const codeBlock = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-  if (codeBlock?.[1]) jsonStr = codeBlock[1];
-  else {
-    const match = trimmed.match(/\{[\s\S]*\}/);
-    if (match?.[0]) jsonStr = match[0];
-  }
-  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(jsonStr) as Record<string, unknown>;
+function parseKabbalisticResponse(response: GroqStructuredParseInput): Record<string, unknown> {
+  const parsed = parseLlmJsonRecord(response);
+  if (!parsed) throw new Error('Kabbalistic report JSON parse failed');
+  return parsed;
 }
 
 function str(v: unknown): string {
@@ -273,6 +272,41 @@ function normalizeAnalysis(parsed: Record<string, unknown>): Record<string, unkn
   };
 }
 
+function buildKabbalisticDeterministic(planets: any[]): Record<string, unknown> {
+  const sunPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'sun');
+  const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
+  const hebrewMonth = sunSign ? getHebrewMonthForSign(sunSign) : 'Unknown';
+  return {
+    executive_summary: 'Chart analysis unavailable; using Sun sign only.',
+    natal_overview: '',
+    hebrew_sign: sunSign ? `${sunSign} (${hebrewMonth})` : 'Unknown',
+    hebrew_birthday: '',
+    name_72: '',
+    letter_of_sign: '',
+    letter_of_planet: '',
+    sun_through_tree_of_life: '',
+    moon_emotional_root: '',
+    ascendant_path: '',
+    sefirotic_mapping: '',
+    tikkun_theme: 'Transforming inner patterns into constructive expression.',
+    tikkun_axis: '',
+    past_life_residue: 'Generalizing cautiously—full chart analysis unavailable.',
+    core_correction: 'Balance and alignment with higher intention.',
+    recommended_spiritual_discipline: '',
+    elemental_modal_balance: '',
+    challenging_aspects: '',
+    angelic_correspondence: '',
+    lunar_influence: '',
+    spiritual_strength: 'Resilience and depth of soul.',
+    growth_path: 'Discipline and emotional refinement.',
+    integration_guidance: 'Respond with awareness rather than reaction.',
+    career_malkuth: '',
+    relationship_emotional_correction: '',
+    long_term_rectification_cycles: '',
+    current_spiritual_test: '',
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: KabbalisticAstrologyComprehensiveRequest = await request.json();
@@ -280,6 +314,21 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
+    }
+
+    const freshCached = await readAdminComprehensiveCache(
+      userId,
+      'kabbalisticAstrologyReports',
+      'comprehensive',
+      {
+        extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+      },
+    );
+    if (freshCached) {
+      return NextResponse.json({
+        success: true,
+        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+      });
     }
 
     let planets: any[] = [];
@@ -358,79 +407,56 @@ export async function POST(request: NextRequest) {
       precomputedContext,
     });
 
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert in Kabbalistic Astrology. Respond only with a single valid JSON object, no other text.',
-        },
-        { role: 'user', content: systemPrompt },
-      ],
-      temperature: 0.6,
-      maxTokens: 2500,
-      responseFormat: { type: 'json_object' },
+    const resolved = await resolveAiReportWithFallback({
+      label: 'kabbalistic-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'kabbalistic-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert in Kabbalistic Astrology. Respond only with a single valid JSON object, no other text.',
+            },
+            { role: 'user', content: systemPrompt },
+          ],
+          temperature: 0.6,
+          maxTokens: 2500,
+          maxAttempts: 3,
+        });
+        return mapStructuredReportRun(aiRun, normalizeAnalysis);
+      },
+      readFirestoreCache: () =>
+        readAdminComprehensiveCache(userId, 'kabbalisticAstrologyReports', 'comprehensive', {
+          allowStale: true,
+          extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+        }),
+      buildDeterministic: () => buildKabbalisticDeterministic(planets),
     });
 
-    const content = result.content || '';
-    let comprehensiveAnalysis: Record<string, unknown>;
+    const comprehensiveAnalysis = resolved.data;
 
-    try {
-      const parsed = parseKabbalisticResponse(content);
-      comprehensiveAnalysis = normalizeAnalysis(parsed);
-    } catch {
-      const sunPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'sun');
-      const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
-      const hebrewMonth = sunSign ? getHebrewMonthForSign(sunSign) : 'Unknown';
-      comprehensiveAnalysis = {
-        executive_summary: 'Chart analysis unavailable; using Sun sign only.',
-        natal_overview: '',
-        hebrew_sign: sunSign ? `${sunSign} (${hebrewMonth})` : 'Unknown',
-        hebrew_birthday: '',
-        name_72: '',
-        letter_of_sign: '',
-        letter_of_planet: '',
-        sun_through_tree_of_life: '',
-        moon_emotional_root: '',
-        ascendant_path: '',
-        sefirotic_mapping: '',
-        tikkun_theme: 'Transforming inner patterns into constructive expression.',
-        tikkun_axis: '',
-        past_life_residue: 'Generalizing cautiously—full chart analysis unavailable.',
-        core_correction: 'Balance and alignment with higher intention.',
-        recommended_spiritual_discipline: '',
-        elemental_modal_balance: '',
-        challenging_aspects: '',
-        angelic_correspondence: '',
-        lunar_influence: '',
-        spiritual_strength: 'Resilience and depth of soul.',
-        growth_path: 'Discipline and emotional refinement.',
-        integration_guidance: 'Respond with awareness rather than reaction.',
-        career_malkuth: '',
-        relationship_emotional_correction: '',
-        long_term_rectification_cycles: '',
-        current_spiritual_test: '',
-      };
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based fallback',
+        },
+      });
     }
 
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('users')
-          .doc(userId)
-          .collection('kabbalisticAstrologyReports')
-          .doc('comprehensive')
-          .set(
-            {
-              comprehensiveAnalysis,
-              timestamp: Date.now(),
-            },
-            { merge: true }
-          );
-      } catch (e) {
-        devLog.warn('Kabbalistic Astrology report cache write failed:', e, 'route');
-      }
-    }
+    await writeAdminComprehensiveCache(userId, 'kabbalisticAstrologyReports', 'comprehensive', {
+      comprehensiveAnalysis,
+    });
 
     return NextResponse.json({
       success: true,
@@ -438,7 +464,6 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
-      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Kabbalistic Astrology comprehensive API error:', err, 'route');

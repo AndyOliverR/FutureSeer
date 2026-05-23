@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { callTextAI } from '@/lib/aiStructuredOutput';
 import { withRateLimit, rateLimiters, getClientIdentifier } from '@/lib/rateLimit';
 import { getUserProfile, type UserProfile } from "@/lib/firebase";
 import { fetchTopHeadlines, newsCountryFromProfile } from "@/lib/server/newsHeadlines";
@@ -12,6 +12,8 @@ import {
 import { getSeerChatModel, getSeerMaxTokens } from '@/lib/seerModel';
 import { isPaidPlan } from '@/lib/profileEditQuota';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
+import { blockSeerQuestionIfNeeded } from '@/lib/seerGateResponses';
+import { buildSeerMessages, type PromptSlot } from '@/lib/aiPromptBuilder';
 
 function getAddressName(profile: UserProfile | null | undefined): string | null {
   if (!profile) return null;
@@ -123,19 +125,22 @@ async function handleSeerChatRequest(req: NextRequest) {
     if (!message) {
       return NextResponse.json({ error: "message is required." }, { status: 400 });
     }
-    if (message.length > 4000) {
-      return NextResponse.json({ error: "message too long." }, { status: 400 });
-    }
     if (!userId) {
       return NextResponse.json({ error: "userId must match authenticated user." }, { status: 403 });
     }
+
+    const trimmedMessage = message.trim();
+    const inputBlocked = blockSeerQuestionIfNeeded(trimmedMessage, 'seer-chat', {
+      blockedResponseFormat: 'seer_chat',
+      userId,
+    });
+    if (inputBlocked) return inputBlocked;
 
     const profile = userId ? await getUserProfile(userId) : null;
     const birthProfile =
       clientBirthProfile ??
       (profile ? { birthDate: profile.birthDate, birthTime: profile.birthTime, birthPlace: profile.birthPlace } : null);
 
-    const trimmedThread = thread.slice(-6);
     const tone: ToneMode =
       toneMode === "subtle" || toneMode === "elevated" || toneMode === "oracle" ? toneMode : getToneMode();
     const style: ResponseStyle =
@@ -152,19 +157,20 @@ Do not repeat it more than once per response.
 Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name, put it on its own line followed by a blank line, then the rest of your answer." : ""}`
       : "";
 
-    const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "system", content: TONE_BLOCK(tone) },
-      { role: "system", content: RESPONSE_STYLE_BLOCKS[style] },
-      { role: "system", content: PRESENCE_BLOCK },
+    const promptSlots: PromptSlot[] = [
+      { kind: "system", content: SYSTEM_PROMPT, id: "seer-core" },
+      { kind: "system", content: TONE_BLOCK(tone), id: "seer-tone" },
+      { kind: "system", content: RESPONSE_STYLE_BLOCKS[style], id: "seer-style" },
+      { kind: "system", content: PRESENCE_BLOCK, id: "seer-presence" },
     ];
     if (personalizationContext) {
-      messages.push({ role: "system", content: personalizationContext });
+      promptSlots.push({ kind: "context", content: personalizationContext, id: "seer-name" });
     }
     if (birthProfile && (birthProfile.birthDate || birthProfile.birthPlace || birthProfile.birthTime)) {
-      messages.push({
-        role: "system",
+      promptSlots.push({
+        kind: "chart",
         content: `User Birth Data:\n${JSON.stringify(birthProfile)}`,
+        id: "seer-birth",
       });
     }
 
@@ -175,9 +181,10 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
           pageSize: 5,
         });
         if (headlines.length > 0) {
-          messages.push({
-            role: "system",
+          promptSlots.push({
+            kind: "context",
             content: `Optional same-day headlines (not predictions; use only if relevant to collective mood or timing):\n${headlines.map((h) => `- ${h.title}`).join("\n")}`,
+            id: "seer-headlines",
           });
         }
       } catch {
@@ -185,15 +192,25 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
       }
     }
 
-    for (const m of trimmedThread) {
-      if (!m || typeof m !== 'object') continue;
-      const item = m as Record<string, unknown>;
-      const role = item.role === "seer" ? "assistant" : item.role === "user" ? "user" : null;
-      const content = typeof item.content === 'string' ? item.content : '';
-      if (role && content) messages.push({ role, content: content.slice(0, 2000) });
-    }
+    const history = thread
+      .slice(-12)
+      .map((m) => {
+        if (!m || typeof m !== "object") return null;
+        const item = m as Record<string, unknown>;
+        const role = item.role === "seer" ? "assistant" : item.role === "user" ? "user" : null;
+        const content = typeof item.content === "string" ? item.content.trim() : "";
+        if (!role || !content) return null;
+        return { role, content };
+      })
+      .filter((h): h is { role: "user" | "assistant"; content: string } => h !== null);
 
-    messages.push({ role: "user", content: message.trim() });
+    const { messages } = buildSeerMessages({
+      slots: promptSlots,
+      userMessage: trimmedMessage,
+      history,
+      maxHistoryTurns: 6,
+      maxInputTokens: 8000,
+    });
 
     if (!process.env.GROQ_API_KEY?.trim() && !process.env.AI_GATEWAY_API_KEY) {
       devLog.warn("[Seer] Missing AI keys. Set GROQ_API_KEY and/or AI_GATEWAY_API_KEY.", undefined, 'route');
@@ -219,14 +236,17 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 
     let reply: string;
     try {
-      const data = await createAICompletion({
+      const data = await callTextAI({
+        label: 'seer-chat',
         model: seerModel,
         messages,
+        userId: userId ?? undefined,
         temperature: 0.7,
         topP: 0.9,
         maxTokens,
         frequencyPenalty: 0.3,
         presencePenalty: 0.1,
+        maxAttempts: 2,
       });
       if (data.usage) {
         try {
@@ -267,6 +287,7 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
       );
     }
 
+    const trimmedThread = Array.isArray(thread) ? thread.slice(-11) : [];
     const updatedThread = [
       ...trimmedThread,
       { role: "user", content: message.trim() },

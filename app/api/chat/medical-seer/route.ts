@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway'
+import { callTextAI } from '@/lib/aiStructuredOutput'
 import {
   buildMedicalAstrologyState,
   classifyMedicalAstrologyQuestion,
@@ -16,7 +16,9 @@ const REFUSAL_PHRASE = 'This question requires professional medical evaluation.'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const __toolSeerGate = await enforceToolSeerGate(request, body, 'medical_astrology_seer')
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'medical_astrology_seer', {
+      blockedResponseFormat: 'json',
+    })
     if (__toolSeerGate) return __toolSeerGate
     const { question, analysis, chartData, comprehensiveProfile, userProfile } = body
 
@@ -100,7 +102,8 @@ export async function POST(request: NextRequest) {
       displayName: displayName || undefined,
     })
 
-    const result = await createAICompletion({
+    const result = await callTextAI({
+      label: 'medical-seer-chat',
       messages: [
         {
           role: 'system',
@@ -114,6 +117,7 @@ export async function POST(request: NextRequest) {
       model: 'llama-3.3-70b-versatile',
       temperature: 0.6,
       maxTokens: 800,
+      maxAttempts: 2,
     })
 
     let response = result.content || 'I apologize, I could not generate a response at this time.'

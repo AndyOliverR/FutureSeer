@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
+import { enforceToolSeerGate, resolveToolSeerUserId } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-bibliomancy-seer';
@@ -90,6 +92,11 @@ export async function POST(request: NextRequest) {
     const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_bibliomancy_seer')
     if (__toolSeerGate) return __toolSeerGate
 
+    const userId = await resolveToolSeerUserId(request, body, 'ask_bibliomancy_seer')
+    if (!userId) {
+      return jsonWithRobots({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { question } = body;
     let bibliomancyReport = body.bibliomancyReport ?? body.bibliomancy;
     if (!bibliomancyReport && body.comprehensiveProfile) {
@@ -115,12 +122,15 @@ ${context}
 
 Answer the user's question in 2–4 short paragraphs, referencing the report where relevant. Keep a calm, reflective tone.`;
 
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: question.trim() },
-      ],
+    const { messages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: question.trim(),
+    });
+
+    const { stream } = await callTextStream({ label: 'ask-bibliomancy-seer', model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+      messages,
       temperature: 0.6,
       maxTokens: 800,
     });
@@ -129,9 +139,16 @@ Answer the user's question in 2–4 short paragraphs, referencing the report whe
       new ReadableStream({
         async start(controller) {
           try {
+            let fullResponse = '';
             for await (const chunk of stream) {
               const content = chunk.choices?.[0]?.delta?.content ?? '';
-              if (content) controller.enqueue(new TextEncoder().encode(content));
+              if (content) {
+                fullResponse += content;
+                controller.enqueue(new TextEncoder().encode(content));
+              }
+            }
+            if (fullResponse.trim()) {
+              await cacheToolSeerAnswer('ask-bibliomancy-seer', userId, question, fullResponse);
             }
           } catch (error) {
             devLog.error('Error during Bibliomancy seer streaming:', error, 'route');

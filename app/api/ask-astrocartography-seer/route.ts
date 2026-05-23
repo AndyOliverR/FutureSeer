@@ -4,7 +4,9 @@ import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { buildAstrocartographySeerSystemPrompt } from '@/lib/astrocartographySeerPrompts';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
@@ -142,20 +144,18 @@ export async function POST(request: NextRequest) {
 
     const conversationHistory = await getConversationHistory(userId, sessionId);
 
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...conversationHistory.flatMap((h) =>
-          h?.question && h?.answer
-            ? [
-                { role: 'user' as const, content: h.question },
-                { role: 'assistant' as const, content: h.answer },
-              ]
-            : []
-        ),
-        { role: 'user', content: question.trim() },
-      ],
+    const { messages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: question.trim(),
+      history: conversationHistory.filter(
+        (h): h is { question: string; answer: string } => Boolean(h?.question && h?.answer),
+      ),
+    });
+
+    const { stream } = await callTextStream({ label: 'ask-astrocartography-seer', model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+      messages,
       temperature: 0.6,
       maxTokens: 900,
     });
@@ -173,6 +173,7 @@ export async function POST(request: NextRequest) {
               }
             }
             await storeConversation(userId, sessionId, question.trim(), fullResponse);
+          await cacheToolSeerAnswer('ask-astrocartography-seer', userId, question, fullResponse);
           } catch (e) {
             devLog.error('Astrocartography Seer stream error:', e, 'route');
             controller.enqueue(new TextEncoder().encode(stampText('I encountered an error. Please try again.')));

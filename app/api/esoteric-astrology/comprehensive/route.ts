@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
+import {
+  readAdminComprehensiveCache,
+  writeAdminComprehensiveCache,
+} from '@/lib/adminComprehensiveCache';
+import type { GroqStructuredParseInput } from '@/lib/groqStructuredParse';
+import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import { buildEsotericReportSystemPrompt, type EsotericPrecomputedContext } from '@/lib/esotericSeerPrompts';
 import {
   getEsotericRuler,
@@ -22,7 +29,6 @@ import {
   type PlanetPosition,
 } from '@/lib/esotericEngines';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
-import { adminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -174,17 +180,10 @@ function formatChartContext(planets: any[], houses: any[], aspects: any[]): stri
   return `PLANETS:\n${planetsText || 'None'}\n\nHOUSES:\n${housesText || 'None'}\n\nASPECTS:\n${aspectsText || 'None'}`;
 }
 
-function parseEsotericResponse(response: string): Record<string, unknown> {
-  const trimmed = response.trim();
-  let jsonStr = trimmed;
-  const codeBlock = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-  if (codeBlock?.[1]) jsonStr = codeBlock[1];
-  else {
-    const match = trimmed.match(/\{[\s\S]*\}/);
-    if (match?.[0]) jsonStr = match[0];
-  }
-  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(jsonStr) as Record<string, unknown>;
+function parseEsotericResponse(response: GroqStructuredParseInput): Record<string, unknown> {
+  const parsed = parseLlmJsonRecord(response);
+  if (!parsed) throw new Error('Esoteric report JSON parse failed');
+  return parsed;
 }
 
 function str(v: unknown): string {
@@ -260,6 +259,73 @@ function normalizeAnalysis(
   };
 }
 
+function buildEsotericDeterministic(
+  planets: any[],
+  precomputed: EsotericPrecomputedContext,
+): Record<string, unknown> {
+  const sunSign = getSign(planets.find((p: any) => p.name?.toLowerCase() === 'sun') || {}) || 'Unknown';
+  const lifeDir = precomputed.life_direction_cross
+    ? getLifeDirection(precomputed.life_direction_cross as 'Cardinal' | 'Fixed' | 'Mutable')
+    : null;
+  return {
+    soul_ruler: precomputed.esoteric_ruler ?? 'Unknown',
+    personality_ruler: 'Unknown',
+    dominant_ray: precomputed.ray_dominant ?? 'Unknown',
+    evolutionary_theme: `Soul growth and integration (Sun in ${sunSign})`,
+    spiritual_challenges: ['Generalizing cautiously—full chart analysis unavailable'],
+    soul_growth_focus: 'Align action with higher intention and service.',
+    integration_guidance: 'Seek alignment between personality and soul purpose.',
+    esoteric_ruler: precomputed.esoteric_ruler ?? '',
+    key_mantra: precomputed.key_mantra ?? '',
+    life_direction_cross: precomputed.life_direction_cross ?? '',
+    life_direction_sentence: lifeDir
+      ? `Your life is currently focused on ${lifeDir.focus}, meaning your challenges will primarily test your ${lifeDir.tests}.`
+      : '',
+    soul_purpose_interpretation: '',
+    instrument_paragraph: '',
+    moon_warning: '',
+    moon_esoteric_task: '',
+    south_node_theme: '',
+    north_node_theme: '',
+    karmic_axis_actions: [],
+    major_energy_circuit: '',
+    growth_strengths: [],
+    growth_patterns_to_transcend: [],
+    growth_habits: [],
+    growth_mindset_shifts: [],
+    core_soul_theme: '',
+    primary_karmic_lesson: '',
+    key_life_arena: '',
+    growth_strategy: '',
+    executive_soul_profile: '',
+    cross_of_evolution_assessment: precomputed.cross_dominant
+      ? `Dominant cross: ${precomputed.cross_dominant}; evolutionary stage: ${precomputed.evolutionary_stage ?? '—'}.`
+      : '',
+    ray_dominance_matrix:
+      [precomputed.ray_soul, precomputed.ray_personality, precomputed.ray_dominant]
+        .filter(Boolean)
+        .join(' | ') || '',
+    esoteric_rulership_analysis: '',
+    personality_vs_soul_conflict_zones: '',
+    spiritual_service_orientation: '',
+    group_karma_indicators: '',
+    current_evolutionary_phase: precomputed.evolutionary_stage ?? '',
+    ray_soul: precomputed.ray_soul,
+    ray_personality: precomputed.ray_personality,
+    cross_dominant: precomputed.cross_dominant,
+    cross_planet_counts: precomputed.cross_planet_counts,
+    evolutionary_stage: precomputed.evolutionary_stage,
+    veiled_by_sun: precomputed.veiled_by_sun,
+    veiled_by_moon: precomputed.veiled_by_moon,
+    triangle_emphasis: precomputed.triangle_emphasis,
+    sun_esoteric_ruler: precomputed.sun_esoteric_ruler,
+    sun_orthodox_ruler: precomputed.sun_orthodox_ruler,
+    ascendant_orthodox_ruler: precomputed.ascendant_orthodox_ruler,
+    esoteric_ruler_sign: precomputed.esoteric_ruler_sign,
+    esoteric_ruler_house: precomputed.esoteric_ruler_house,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: EsotericComprehensiveRequest = await request.json();
@@ -267,6 +333,16 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
+    }
+
+    const freshCached = await readAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
+      extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+    });
+    if (freshCached) {
+      return NextResponse.json({
+        success: true,
+        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+      });
     }
 
     let planets: any[] = [];
@@ -324,104 +400,56 @@ export async function POST(request: NextRequest) {
     const chartContext = formatChartContext(planets, houses, aspects);
     const systemPrompt = buildEsotericReportSystemPrompt(chartContext, precomputed);
 
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: 'You are an expert in Esoteric Astrology. Respond only with a single valid JSON object, no other text.' },
-        { role: 'user', content: systemPrompt },
-      ],
-      temperature: 0.6,
-      maxTokens: 2400,
-      responseFormat: { type: 'json_object' },
+    const resolved = await resolveAiReportWithFallback({
+      label: 'esoteric-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'esoteric-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert in Esoteric Astrology. Respond only with a single valid JSON object, no other text.',
+            },
+            { role: 'user', content: systemPrompt },
+          ],
+          temperature: 0.6,
+          maxTokens: 2400,
+          maxAttempts: 3,
+        });
+        return mapStructuredReportRun(aiRun, (parsed) => normalizeAnalysis(parsed, precomputed));
+      },
+      readFirestoreCache: () =>
+        readAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
+          allowStale: true,
+          extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+        }),
+      buildDeterministic: () => buildEsotericDeterministic(planets, precomputed),
     });
 
-    const content = result.content || '';
-    let comprehensiveAnalysis: Record<string, unknown>;
+    const comprehensiveAnalysis = resolved.data;
 
-    try {
-      const parsed = parseEsotericResponse(content);
-      comprehensiveAnalysis = normalizeAnalysis(parsed, precomputed);
-    } catch {
-      const sunSign = getSign(planets.find((p: any) => p.name?.toLowerCase() === 'sun') || {}) || 'Unknown';
-      const lifeDir = precomputed.life_direction_cross
-        ? getLifeDirection(precomputed.life_direction_cross as 'Cardinal' | 'Fixed' | 'Mutable')
-        : null;
-      comprehensiveAnalysis = {
-        soul_ruler: precomputed.esoteric_ruler ?? 'Unknown',
-        personality_ruler: 'Unknown',
-        dominant_ray: precomputed.ray_dominant ?? 'Unknown',
-        evolutionary_theme: `Soul growth and integration (Sun in ${sunSign})`,
-        spiritual_challenges: ['Generalizing cautiously—full chart analysis unavailable'],
-        soul_growth_focus: 'Align action with higher intention and service.',
-        integration_guidance: 'Seek alignment between personality and soul purpose.',
-        esoteric_ruler: precomputed.esoteric_ruler ?? '',
-        key_mantra: precomputed.key_mantra ?? '',
-        life_direction_cross: precomputed.life_direction_cross ?? '',
-        life_direction_sentence: lifeDir
-          ? `Your life is currently focused on ${lifeDir.focus}, meaning your challenges will primarily test your ${lifeDir.tests}.`
-          : '',
-        soul_purpose_interpretation: '',
-        instrument_paragraph: '',
-        moon_warning: '',
-        moon_esoteric_task: '',
-        south_node_theme: '',
-        north_node_theme: '',
-        karmic_axis_actions: [],
-        major_energy_circuit: '',
-        growth_strengths: [],
-        growth_patterns_to_transcend: [],
-        growth_habits: [],
-        growth_mindset_shifts: [],
-        core_soul_theme: '',
-        primary_karmic_lesson: '',
-        key_life_arena: '',
-        growth_strategy: '',
-        executive_soul_profile: '',
-        cross_of_evolution_assessment: precomputed.cross_dominant
-          ? `Dominant cross: ${precomputed.cross_dominant}; evolutionary stage: ${precomputed.evolutionary_stage ?? '—'}.`
-          : '',
-        ray_dominance_matrix: [precomputed.ray_soul, precomputed.ray_personality, precomputed.ray_dominant]
-          .filter(Boolean)
-          .join(' | ') || '',
-        esoteric_rulership_analysis: '',
-        personality_vs_soul_conflict_zones: '',
-        spiritual_service_orientation: '',
-        group_karma_indicators: '',
-        current_evolutionary_phase: precomputed.evolutionary_stage ?? '',
-        ray_soul: precomputed.ray_soul,
-        ray_personality: precomputed.ray_personality,
-        cross_dominant: precomputed.cross_dominant,
-        cross_planet_counts: precomputed.cross_planet_counts,
-        evolutionary_stage: precomputed.evolutionary_stage,
-        veiled_by_sun: precomputed.veiled_by_sun,
-        veiled_by_moon: precomputed.veiled_by_moon,
-        triangle_emphasis: precomputed.triangle_emphasis,
-        sun_esoteric_ruler: precomputed.sun_esoteric_ruler,
-        sun_orthodox_ruler: precomputed.sun_orthodox_ruler,
-        ascendant_orthodox_ruler: precomputed.ascendant_orthodox_ruler,
-        esoteric_ruler_sign: precomputed.esoteric_ruler_sign,
-        esoteric_ruler_house: precomputed.esoteric_ruler_house,
-      };
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based fallback',
+        },
+      });
     }
 
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('users')
-          .doc(userId)
-          .collection('esotericAstrologyReports')
-          .doc('comprehensive')
-          .set(
-            {
-              comprehensiveAnalysis,
-              timestamp: Date.now(),
-            },
-            { merge: true }
-          );
-      } catch (e) {
-        devLog.warn('Esoteric report cache write failed:', e, 'route');
-      }
-    }
+    await writeAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
+      comprehensiveAnalysis,
+    });
 
     return NextResponse.json({
       success: true,
@@ -429,7 +457,6 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
-      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Esoteric comprehensive API error:', err, 'route');

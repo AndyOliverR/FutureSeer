@@ -96,6 +96,12 @@ export const ANALYTICS_EVENTS = {
   TRIAL_START: 'trial_start',
   AUTH_ATTEMPT: 'auth_attempt',
   AUTH_OUTCOME: 'auth_outcome',
+
+  // Mystical profile viral share card
+  MYSTICAL_SHARE_CARD_VIEW: 'mystical_share_card_view',
+  MYSTICAL_SHARE_CARD_DOWNLOAD: 'mystical_share_card_download',
+  MYSTICAL_SHARE_CARD_NATIVE_SHARE: 'mystical_share_card_native_share',
+  MYSTICAL_SHARE_CARD_COPY_LINK: 'mystical_share_card_copy_link',
 } as const
 
 // Analytics Properties
@@ -508,6 +514,23 @@ export class AnalyticsService {
       outcome,
       ...properties,
     })
+  }
+
+  trackMysticalShareCard(
+    action: 'view' | 'download' | 'native_share' | 'copy_link',
+    properties?: Record<string, unknown>,
+  ) {
+    const eventMap = {
+      view: ANALYTICS_EVENTS.MYSTICAL_SHARE_CARD_VIEW,
+      download: ANALYTICS_EVENTS.MYSTICAL_SHARE_CARD_DOWNLOAD,
+      native_share: ANALYTICS_EVENTS.MYSTICAL_SHARE_CARD_NATIVE_SHARE,
+      copy_link: ANALYTICS_EVENTS.MYSTICAL_SHARE_CARD_COPY_LINK,
+    } as const;
+    this.trackEvent(eventMap[action], {
+      surface: 'mystical_profile',
+      action,
+      ...properties,
+    });
   }
 
   // Utility methods

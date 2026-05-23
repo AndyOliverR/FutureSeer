@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
+import { cacheSeerQuestionAnswer } from '@/lib/seerQuestionCache';
+import { SEER_CACHE_KEYWORDS } from '@/lib/seerQuestionSimilarity';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import {
@@ -180,27 +184,6 @@ export async function POST(request: NextRequest) {
 
     devLog.info('💎 Navaratna Seer API: Processing question for user:', userId, 'ask-navaratna-seer');
 
-    const cachedResponse = await checkCachedQuestions(userId, question);
-    if (cachedResponse) {
-      devLog.info('🎯 Returning cached response for similar question', undefined, 'ask-navaratna-seer');
-      return withRobotsResponse(
-        new ReadableStream({
-          start(controller) {
-            controller.enqueue(new TextEncoder().encode(cachedResponse.answer));
-            appendAttributionTail(controller);
-            controller.close();
-          }
-        }),
-        {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
-          }
-        }
-      );
-    }
-
     const memory = new ConversationalMemory(userId);
     await memory.initializeAllMemory(true);
     const workingMemory = memory.getWorkingMemory();
@@ -222,22 +205,25 @@ export async function POST(request: NextRequest) {
     const chartSlice = getNavaratnaSliceForQuestionType(questionType, state, navaratnaAnalysis);
     const systemPrompt = buildNavaratnaSeerSystemPrompt(chartSlice, questionType);
 
+    const { messages: seerMessages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: question,
+      history: conversationHistory,
+      truncateHistoryAnswers: 500,
+    });
+
     return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
-            const stream = await createAIStream({
+            const { stream } = await callTextStream({
+              label: 'ask-navaratna-seer',
               model: 'llama-3.3-70b-versatile',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                ...conversationHistory.filter((item): item is NonNullable<typeof item> => item != null).flatMap(item => [
-                  { role: 'user' as const, content: item.question },
-                  { role: 'assistant' as const, content: item.answer.substring(0, 500) + '...' }
-                ]),
-                { role: 'user', content: question }
-              ],
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+              messages: seerMessages,
               temperature: 0.7,
-              maxTokens: 2000
+              maxTokens: 2000,
             });
 
             let fullResponse = '';
@@ -286,7 +272,7 @@ export async function POST(request: NextRequest) {
             memory.addRecentQuestion(question);
             await memory.saveAllMemory();
             await storeConversation(userId, sessionId, question, responseData);
-            await cacheQuestionAnswer(userId, question, fullResponse);
+            await cacheToolSeerAnswer('ask-navaratna-seer', userId, question, fullResponse);
           } catch (error) {
             devLog.error('Error during streaming:', error);
             controller.enqueue(new TextEncoder().encode(stampText('I apologize, but I encountered an error. Please try again.')));
@@ -371,69 +357,5 @@ async function storeConversation(userId: string, sessionId: string | undefined, 
     devLog.info('✅ Navaratna conversation stored successfully', undefined, 'ask-navaratna-seer');
   } catch (error) {
     devLog.error('Error storing conversation:', error);
-  }
-}
-
-function calculateSimilarity(question1: string, question2: string): number {
-  const q1Lower = question1.toLowerCase();
-  const q2Lower = question2.toLowerCase();
-  
-  const keywords = ['gemstone', 'stone', 'lagnesh', 'life stone', 'dasha', 'planet', 'wear', 'mantra', 'benefit', 'avoid'];
-  
-  let matches = 0;
-  keywords.forEach(kw => {
-    if (q1Lower.includes(kw) && q2Lower.includes(kw)) matches += 2;
-  });
-  
-  return matches;
-}
-
-async function checkCachedQuestions(userId: string, question: string): Promise<{ answer: string; question?: string } | null> {
-  try {
-    const db = getFirebaseDB();
-    const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
-    
-    const cacheRef = collection(db, 'navaratnaSeerCache', userId, 'questions');
-    const q = query(cacheRef, orderBy('timestamp', 'desc'), limit(20));
-    const snapshot = await getDocs(q);
-    
-    for (const doc of snapshot.docs) {
-      const cachedQA = doc.data() as { answer?: unknown; question?: unknown };
-      if (typeof cachedQA.question !== 'string' || typeof cachedQA.answer !== 'string') {
-        continue;
-      }
-      const similarity = calculateSimilarity(question, cachedQA.question);
-      
-      if (similarity >= 5) {
-        devLog.debug(`🎯 Found similar Navaratna question with similarity score: ${similarity}`, undefined, 'ask-navaratna-seer');
-        return { answer: cachedQA.answer, question: cachedQA.question };
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    devLog.error('Error checking cached questions:', error);
-    return null;
-  }
-}
-
-async function cacheQuestionAnswer(userId: string, question: string, answer: string): Promise<void> {
-  try {
-    const db = getFirebaseDB();
-    const { doc, setDoc } = await import('firebase/firestore');
-    
-    const cacheId = `qa_${Date.now()}`;
-    const cacheRef = doc(db, 'navaratnaSeerCache', userId, 'questions', cacheId);
-    
-    await setDoc(cacheRef, {
-      question,
-      answer,
-      timestamp: Date.now(),
-      ttl: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days TTL
-    });
-    
-    devLog.info('✅ Navaratna question cached for future similar questions', undefined, 'ask-navaratna-seer');
-  } catch (error) {
-    devLog.error('Error caching question:', error);
   }
 }

@@ -14,11 +14,9 @@ For recurring operations, route-level examples, and incident workflow, see the [
 | `pnpm run audit:fix` | Runs `pnpm audit --fix` to apply automatic fixes where possible. |
 | `pnpm run lint` | Runs ESLint including security rules (risky patterns like `eval`, unsafe regex, child_process, etc.). |
 
-### Temporary advisory exception (`uuid` / GHSA-w5hq-g745-h8pq)
+### Dependency overrides (moderate advisories)
 
-- Current baseline may report one moderate advisory for `uuid` (`GHSA-w5hq-g745-h8pq`) through the Firebase Admin / Google SDK transitive chain.
-- This is temporarily accepted because forcing `uuid@14` in this repo's dependency tree has caused production runtime failures on Vercel (`ERR_REQUIRE_ESM` from the `gaxios` path), which broke critical APIs such as photo upload and account deletion.
-- Until upstream packages provide a safe path that removes the vulnerable transitive `uuid` without reintroducing runtime breakage, keep the working production-safe pin and treat this advisory as an explicit temporary exception.
+`package.json` `pnpm.overrides` pins patched transitive versions (`protobufjs`, `uuid@11`, `ws`, `brace-expansion`, `ip-address`, etc.). After changing overrides, run `pnpm install` and `pnpm audit`. If `uuid@11` regresses Firebase Admin on Vercel, do not jump to `uuid@14` without testing upload/delete flows — see git history for the prior ESM breakage note.
 
 ## What’s included
 

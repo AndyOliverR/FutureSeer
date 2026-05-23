@@ -8,9 +8,11 @@ import {
   type VedicQuestionContext,
 } from '@/lib/vedicSeerPrompts';
 import { PredictiveSystem } from '@/lib/predictiveAlgorithms';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
 import { devLog } from '@/lib/devLogger';
 import { searchKnowledge, formatKnowledgeForPrompt, extractKeyTopics } from '@/lib/knowledgeLoader';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import {
   buildVedicState,
@@ -200,22 +202,19 @@ export async function POST(request: NextRequest) {
       knowledgeContext = formatKnowledgeForPrompt(kbResults);
     } catch { /* KB is optional; do not fail the request */ }
 
-    const stream = await createAIStream({
+    const { messages } = buildToolSeerMessages({
+      systemContent: buildVedicSeerSystemPrompt(chartSlice, questionType, predictiveHint, knowledgeContext),
+      userMessage: question,
+      history: conversationHistory,
+      maxHistoryTurns: 5,
+    });
+
+    const { stream } = await callTextStream({
+      label: 'ask-vedic-seer',
       model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: buildVedicSeerSystemPrompt(chartSlice, questionType, predictiveHint, knowledgeContext),
-        },
-        ...conversationHistory.flatMap((h) => [
-          { role: 'user' as const, content: h.question },
-          { role: 'assistant' as const, content: h.answer },
-        ]),
-        {
-          role: 'user',
-          content: question,
-        },
-      ],
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+      messages,
       temperature: 0.7,
       maxTokens: 1000,
     });
@@ -280,7 +279,7 @@ export async function POST(request: NextRequest) {
               ),
             });
 
-            await cacheQuestionAnswer(userId, question, fullResponse);
+            await cacheToolSeerAnswer('ask-vedic-seer', userId, question, fullResponse);
           } catch (error) {
             devLog.error('Error during streaming:', error);
             controller.enqueue(
@@ -460,26 +459,5 @@ async function storeConversation(
     devLog.info('✅ Conversation stored successfully', undefined, 'vedic-seer');
   } catch (error) {
     devLog.error('Error storing conversation:', error);
-  }
-}
-
-async function cacheQuestionAnswer(userId: string, question: string, answer: string): Promise<void> {
-  try {
-    const db = getFirebaseDB();
-    const { doc, setDoc } = await import('firebase/firestore');
-
-    const cacheId = `qa_${Date.now()}`;
-    const cacheRef = doc(db, 'vedicSeerCache', userId, 'questions', cacheId);
-
-    await setDoc(cacheRef, {
-      question,
-      answer,
-      timestamp: Date.now(),
-      ttl: Date.now() + 30 * 24 * 60 * 60 * 1000,
-    });
-
-    devLog.info('✅ Question cached for future similar questions', undefined, 'vedic-seer');
-  } catch (error) {
-    devLog.error('Error caching question:', error);
   }
 }

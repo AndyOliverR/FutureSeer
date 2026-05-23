@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAICompletion } from '@/lib/aiGateway';
+import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
+import { callStructuredAI } from '@/lib/aiStructuredOutput';
+import type { StructuredFailureMode } from '@/lib/aiStructuredOutputParse';
+import { parseStructuredJsonFromResponse } from '@/lib/aiStructuredOutputParse';
+import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { computeChaldeanProfile } from '@/lib/numerology/chaldean';
 import { calcPersonalYear } from '@/lib/numerology/personalYear';
@@ -134,6 +138,55 @@ interface ComprehensiveNumerologyResponse {
   error?: string;
 }
 
+type ComprehensiveAnalysis = NonNullable<
+  ComprehensiveNumerologyResponse['data']
+>['comprehensiveAnalysis'];
+
+function extractNumerologyAnalysisFromCache(
+  cachedData: Record<string, unknown>,
+): ComprehensiveAnalysis | null {
+  const actualData = (cachedData.data as Record<string, unknown> | undefined) || cachedData;
+  const comprehensiveAnalysis =
+    (actualData.comprehensiveAnalysis as ComprehensiveAnalysis | undefined) ||
+    (actualData as ComprehensiveAnalysis | undefined);
+  if (!comprehensiveAnalysis?.profileOverview) return null;
+  return comprehensiveAnalysis;
+}
+
+async function readNumerologyComprehensiveCache(
+  userId: string,
+  options?: { allowStale?: boolean },
+): Promise<ComprehensiveAnalysis | null> {
+  try {
+    const docSnap = await getCachedDoc(['users', userId, 'numerologyReports'], 'comprehensive');
+    if (!docSnap?.exists()) return null;
+    const cachedData = docSnap.data() as Record<string, unknown>;
+    const lastUpdated = cachedData?.timestamp as number | undefined;
+    if (!lastUpdated) return null;
+
+    if (!options?.allowStale) {
+      const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
+      if (hoursSinceUpdate >= 24) return null;
+    }
+
+    const schemaVersion =
+      (cachedData.schemaVersion as string | undefined) ||
+      ((cachedData.data as Record<string, unknown> | undefined)?.schemaVersion as
+        | string
+        | undefined);
+    if (
+      !options?.allowStale &&
+      (!schemaVersion || schemaVersion !== COMPREHENSIVE_REPORT_SCHEMA_VERSION)
+    ) {
+      return null;
+    }
+
+    return extractNumerologyAnalysisFromCache(cachedData);
+  } catch {
+    return null;
+  }
+}
+
 // Build comprehensive Groq prompt for numerology
 function buildGroqPrompt(numerologyData: ComprehensiveNumerologyRequest['numerologyData'], userProfile?: any): string {
   const today = new Date();
@@ -241,79 +294,79 @@ Generate a comprehensive Chaldean Numerology analysis covering all life areas. F
 Make each section comprehensive yet concise. Focus on practical guidance, self-awareness, and empowering insights. Write in a warm, insightful tone.`;
 }
 
-// Parse Groq response and extract structured data
-type ComprehensiveAnalysis = NonNullable<ComprehensiveNumerologyResponse['data']>['comprehensiveAnalysis'];
-function parseGroqResponse(response: string, numerologyData: ComprehensiveNumerologyRequest['numerologyData']): ComprehensiveAnalysis {
+function mapNumerologyParsed(
+  parsed: Record<string, unknown>,
+  numerologyData: ComprehensiveNumerologyRequest['numerologyData'],
+): ComprehensiveAnalysis {
+  const lifePath = numerologyData.lifePathNumber || 0;
+  const expression = numerologyData.expressionNumber || numerologyData.destinyNumber || 0;
+  const soulUrge = numerologyData.soulUrgeNumber || 0;
+  const personality = numerologyData.personalityNumber || 0;
+  const destiny = numerologyData.destinyNumber || 0;
+
+  return {
+    profileOverview:
+      String(parsed.profileOverview ?? '') ||
+      `Your numerology profile reveals a Life Path ${lifePath}, Expression ${expression}, and Soul Urge ${soulUrge}, creating a unique numerological signature.`,
+    coreNumbersAnalysis: (parsed.coreNumbersAnalysis as ComprehensiveAnalysis['coreNumbersAnalysis']) || [
+      { number: 'Life Path', value: lifePath, analysis: `Life Path ${lifePath} reveals your life's purpose and lessons.` },
+      { number: 'Expression', value: expression, analysis: `Expression ${expression} shows your natural talents and abilities.` },
+      { number: 'Soul Urge', value: soulUrge, analysis: `Soul Urge ${soulUrge} reveals your inner desires and motivations.` },
+      { number: 'Personality', value: personality, analysis: `Personality ${personality} shows how others perceive you.` },
+      { number: 'Destiny', value: destiny, analysis: `Destiny ${destiny} indicates your ultimate life purpose.` },
+    ],
+    lifePathAnalysis:
+      String(parsed.lifePathAnalysis ?? '') || `Life Path ${lifePath} guides your life's journey and purpose.`,
+    expressionAnalysis:
+      String(parsed.expressionAnalysis ?? '') ||
+      `Expression ${expression} reveals your natural talents and how you express yourself.`,
+    soulUrgeAnalysis:
+      String(parsed.soulUrgeAnalysis ?? '') || `Soul Urge ${soulUrge} shows what truly motivates you from within.`,
+    personalityAnalysis:
+      String(parsed.personalityAnalysis ?? '') ||
+      `Personality ${personality} influences how others see and interact with you.`,
+    destinyAnalysis:
+      String(parsed.destinyAnalysis ?? '') || `Destiny ${destiny} points toward your ultimate life purpose.`,
+    personalYearAnalysis:
+      String(parsed.personalYearAnalysis ?? '') ||
+      'Your current Personal Year brings specific themes and opportunities.',
+    challengesAndOpportunities: (parsed.challengesAndOpportunities as ComprehensiveAnalysis['challengesAndOpportunities']) || {
+      challenges: [],
+      opportunities: [],
+    },
+    predictiveInsights: (parsed.predictiveInsights as ComprehensiveAnalysis['predictiveInsights']) || {
+      todaysQuickWin: 'Focus on aligning with your numerology profile today.',
+      currentWeek: 'This week brings opportunities related to your core numbers.',
+      currentMonth: 'This month aligns with your numerology cycles.',
+      currentYear: 'This year offers growth aligned with your numerology profile.',
+      nextYearSneakPeek: 'Next year will bring new cycles and opportunities.',
+      longerTermCycles: 'Your numerology profile reveals longer-term patterns and cycles.',
+    },
+  };
+}
+
+function parseGroqResponse(
+  response: GroqStructuredParseInput,
+  numerologyData: ComprehensiveNumerologyRequest['numerologyData'],
+): ComprehensiveAnalysis {
   devLog.debug('🔍 Parsing Groq response for numerology', undefined, 'numerology');
-  
-  if (!response || response.length === 0) {
-    throw new Error('Empty response from Groq');
+
+  if (isGroqParsedRecord(response)) {
+    return mapNumerologyParsed(response, numerologyData);
   }
 
-  const hasJsonStructure = /\{[\s\S]*\}/.test(response);
-  if (!hasJsonStructure) {
-    throw new Error('Response does not contain valid JSON structure');
+  const trimmed = response.trim();
+  if (!trimmed) {
+    return mapNumerologyParsed({}, numerologyData);
   }
 
-  try {
-    let jsonMatch = response.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch || jsonMatch[0].length < 100) {
-      const codeBlockMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-      if (codeBlockMatch && codeBlockMatch[1]) {
-        jsonMatch = [codeBlockMatch[1]];
-      }
-    }
-
-    if (jsonMatch && jsonMatch[0]) {
-      let jsonString = jsonMatch[0];
-      jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
-      jsonString = jsonString.replace(/[\x00-\x1F\x7F]/g, '');
-      
-      const parsed = JSON.parse(jsonString);
-      
-      // Ensure all required fields exist
-      const lifePath = numerologyData.lifePathNumber || 0;
-      const expression = numerologyData.expressionNumber || numerologyData.destinyNumber || 0;
-      const soulUrge = numerologyData.soulUrgeNumber || 0;
-      const personality = numerologyData.personalityNumber || 0;
-      const destiny = numerologyData.destinyNumber || 0;
-      
-      return {
-        profileOverview: parsed.profileOverview || `Your numerology profile reveals a Life Path ${lifePath}, Expression ${expression}, and Soul Urge ${soulUrge}, creating a unique numerological signature.`,
-        coreNumbersAnalysis: parsed.coreNumbersAnalysis || [
-          { number: 'Life Path', value: lifePath, analysis: `Life Path ${lifePath} reveals your life's purpose and lessons.` },
-          { number: 'Expression', value: expression, analysis: `Expression ${expression} shows your natural talents and abilities.` },
-          { number: 'Soul Urge', value: soulUrge, analysis: `Soul Urge ${soulUrge} reveals your inner desires and motivations.` },
-          { number: 'Personality', value: personality, analysis: `Personality ${personality} shows how others perceive you.` },
-          { number: 'Destiny', value: destiny, analysis: `Destiny ${destiny} indicates your ultimate life purpose.` }
-        ],
-        lifePathAnalysis: parsed.lifePathAnalysis || `Life Path ${lifePath} guides your life's journey and purpose.`,
-        expressionAnalysis: parsed.expressionAnalysis || `Expression ${expression} reveals your natural talents and how you express yourself.`,
-        soulUrgeAnalysis: parsed.soulUrgeAnalysis || `Soul Urge ${soulUrge} shows what truly motivates you from within.`,
-        personalityAnalysis: parsed.personalityAnalysis || `Personality ${personality} influences how others see and interact with you.`,
-        destinyAnalysis: parsed.destinyAnalysis || `Destiny ${destiny} points toward your ultimate life purpose.`,
-        personalYearAnalysis: parsed.personalYearAnalysis || `Your current Personal Year brings specific themes and opportunities.`,
-        challengesAndOpportunities: parsed.challengesAndOpportunities || {
-          challenges: [],
-          opportunities: []
-        },
-        predictiveInsights: parsed.predictiveInsights || {
-          todaysQuickWin: 'Focus on aligning with your numerology profile today.',
-          currentWeek: 'This week brings opportunities related to your core numbers.',
-          currentMonth: 'This month aligns with your numerology cycles.',
-          currentYear: 'This year offers growth aligned with your numerology profile.',
-          nextYearSneakPeek: 'Next year will bring new cycles and opportunities.',
-          longerTermCycles: 'Your numerology profile reveals longer-term patterns and cycles.'
-        }
-      };
-    }
-    
-    throw new Error('No JSON structure found in response');
-  } catch (error: any) {
-    devWarn('Error parsing Groq response:', error, 'numerology');
-    throw error;
+  const structured = parseStructuredJsonFromResponse(trimmed);
+  if (structured.ok && structured.data) {
+    return mapNumerologyParsed(structured.data, numerologyData);
   }
+
+  devWarn('Error parsing Groq response, using numerology fallback', structured.failureMode, 'numerology');
+  return mapNumerologyParsed({}, numerologyData);
 }
 
 export async function POST(request: NextRequest) {
@@ -329,29 +382,17 @@ export async function POST(request: NextRequest) {
 
     devLog.info('🔮 Comprehensive Numerology API: Generating report for user:', userId, 'numerology');
 
-    // Check Firebase cache
     try {
-      const docSnap = await getCachedDoc(['users', userId, 'numerologyReports'], 'comprehensive');
-      
-      if (docSnap && docSnap.exists()) {
-        const cachedData = docSnap.data();
-        const lastUpdated = cachedData?.timestamp;
-        
-        if (lastUpdated) {
-          const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
-          
-          if (hoursSinceUpdate < 24) {
-            const actualData = cachedData.data || cachedData;
-            devLog.info('✅ Returning cached comprehensive Numerology report for user:', userId, 'numerology');
-            return NextResponse.json({
-              success: true,
-              data: actualData
-            });
-          }
-        }
+      const cached = await readNumerologyComprehensiveCache(userId);
+      if (cached) {
+        devLog.info('✅ Returning cached comprehensive Numerology report for user:', userId, 'numerology');
+        return NextResponse.json({
+          success: true,
+          data: { comprehensiveAnalysis: cached, timestamp: Date.now() },
+        });
       }
-    } catch (cacheError: any) {
-      devWarn('⚠️ Error checking cache, proceeding with generation:', cacheError?.message || cacheError, 'numerology');
+    } catch (cacheError: unknown) {
+      devWarn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'numerology');
     }
 
     // Check if Groq API key is available
@@ -371,58 +412,106 @@ export async function POST(request: NextRequest) {
     // Build comprehensive prompt
     const prompt = buildGroqPrompt(numerologyData, userProfile);
 
-    // Call AI Gateway or direct Groq API
-    devLog.info('🤖 Calling AI Gateway/Groq API for comprehensive Numerology analysis...', undefined, 'numerology');
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert Chaldean Numerologist specializing in the ancient Babylonian number system. Provide comprehensive, insightful, and practical guidance. Always respond with valid JSON when requested.'
-        },
-        {
-          role: 'user',
-          content: prompt
+    devLog.info('🤖 Calling AI for comprehensive Numerology analysis...', undefined, 'numerology');
+
+    const resolved = await resolveAiReportWithFallback({
+      label: 'numerology-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const structured = await callStructuredAI({
+          label: 'numerology-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          userId,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert Chaldean Numerologist specializing in the ancient Babylonian number system. Provide comprehensive, insightful, and practical guidance. Always respond with valid JSON when requested.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.75,
+          maxTokens: 3500,
+          responseFormat: { type: 'json_object' },
+          maxAttempts: 3,
+        });
+
+        if (!structured.ok && structured.failureMode !== 'none') {
+          devWarn(
+            `numerology-comprehensive structured AI: ${structured.failureMode} after ${structured.attempts} attempt(s)`,
+            undefined,
+            'numerology',
+          );
         }
-      ],
-      temperature: 0.75,
-      maxTokens: 3500
+
+        if (structured.ok && structured.raw) {
+          return {
+            data: mapNumerologyParsed(structured.raw, numerologyData),
+            attempts: structured.attempts,
+            failureMode: 'none',
+          };
+        }
+        const recovered = structured.lastRaw
+          ? parseStructuredJsonFromResponse(structured.lastRaw)
+          : null;
+        if (recovered?.ok && recovered.data) {
+          return {
+            data: mapNumerologyParsed(recovered.data, numerologyData),
+            attempts: structured.attempts,
+            failureMode: structured.failureMode,
+          };
+        }
+        return {
+          data: null,
+          attempts: structured.attempts,
+          failureMode: structured.failureMode,
+          parsingFailed: true,
+        };
+      },
+      readFirestoreCache: () => readNumerologyComprehensiveCache(userId, { allowStale: true }),
+      buildDeterministic: () => parseGroqResponse('', numerologyData),
     });
 
-    const aiResponse = result.content || '';
-    devLog.info('✅ Groq API response received', undefined, 'numerology');
+    const comprehensiveAnalysis = resolved.data;
 
-    // Parse the response
-    let comprehensiveAnalysis;
-    try {
-      comprehensiveAnalysis = parseGroqResponse(aiResponse, numerologyData);
-    } catch (parseError: any) {
-      devWarn('⚠️ Parsing failed, using fallback', parseError, 'numerology');
-      comprehensiveAnalysis = parseGroqResponse('', numerologyData);
+    if (resolved.degraded && resolved.source !== 'llm') {
+      devWarn(
+        `⚠️ Numerology comprehensive degraded (${resolved.source}) — not caching fresh LLM output`,
+      );
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using numerology defaults',
+        },
+      });
     }
 
-    // Prepare response data
     const responseData: ComprehensiveNumerologyResponse['data'] = {
       comprehensiveAnalysis,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
-    // Cache in Firebase
     try {
       await setCachedDoc(['users', userId, 'numerologyReports'], 'comprehensive', {
         data: responseData,
         timestamp: Date.now(),
-        schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION
+        schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION,
       });
       devLog.info('✅ Cached comprehensive Numerology report in Firebase', undefined, 'numerology');
-    } catch (cacheError: any) {
-      devWarn('⚠️ Error caching report:', cacheError?.message || cacheError, 'numerology');
+    } catch (cacheError: unknown) {
+      devWarn('⚠️ Error caching report:', cacheError, 'numerology');
     }
 
     return NextResponse.json({
       success: true,
       data: responseData,
-      _usage: result.usage,
     });
 
   } catch (error: any) {

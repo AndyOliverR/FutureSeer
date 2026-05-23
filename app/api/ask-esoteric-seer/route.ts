@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { chartSignLabel } from '@/lib/chartSignLabel';
 import { buildEsotericSeerSystemPrompt } from '@/lib/esotericSeerPrompts';
 
@@ -112,12 +114,15 @@ export async function POST(request: NextRequest) {
     const chartSummary = formatChartSummary(westernChartData);
     const systemPrompt = buildEsotericSeerSystemPrompt(reportContext, chartSummary);
 
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: question.trim() },
-      ],
+    const { messages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: question.trim(),
+    });
+
+    const { stream } = await callTextStream({ label: 'ask-esoteric-seer', model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+      messages,
       temperature: 0.6,
       maxTokens: 800,
     });
@@ -126,11 +131,16 @@ export async function POST(request: NextRequest) {
       new ReadableStream({
         async start(controller) {
           try {
+            let fullResponse = '';
             for await (const chunk of stream) {
               const content = chunk.choices?.[0]?.delta?.content ?? '';
               if (content) {
+                fullResponse += content;
                 controller.enqueue(new TextEncoder().encode(content));
               }
+            }
+            if (fullResponse.trim()) {
+              await cacheToolSeerAnswer('ask-esoteric-seer', userId, question, fullResponse);
             }
           } catch (error) {
             devLog.error('Esoteric Seer stream error:', error, 'route');

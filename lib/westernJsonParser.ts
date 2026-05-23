@@ -1,3 +1,7 @@
+/**
+ * Low-level JSON extraction/repair. Prefer `parseStructuredJsonFromResponse` /
+ * `callStructuredAI` from `@/lib/aiStructuredOutput` for LLM comprehensive reports.
+ */
 export function stripMarkdownCodeFences(input: string): string {
   return input.replace(/```(?:json)?/gi, '').replace(/```/g, '');
 }

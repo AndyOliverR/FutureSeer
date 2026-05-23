@@ -1,5 +1,5 @@
 /* eslint-disable security/detect-non-literal-regexp, security/detect-unsafe-regex */
-import { createAICompletion } from './aiGateway';
+import { callTextAI } from './aiStructuredOutput';
 import { devLog } from '@/lib/devLogger';
 import {
   userSubcollectionListDocuments,
@@ -348,14 +348,16 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         devLog.debug(`🔄 Calling AI Gateway/Groq API (attempt ${attempt}/${maxRetries})...`);
-        const result = await createAICompletion({
+        const result = await callTextAI({
+          label: 'vedic-interpretation-enhancer',
           model: 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.8,
           maxTokens: 1000,
+          maxAttempts: 1,
         });
 
-        const text = result.content || '';
+        const text = result.content;
         devLog.debug(`✅ AI Gateway/Groq response received: ${text.substring(0, 100)}...`);
         
         // Validate response

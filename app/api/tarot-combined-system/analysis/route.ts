@@ -1,7 +1,8 @@
 /* eslint-disable security/detect-non-literal-regexp */
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
 import { tarotIntelligence } from '@/lib/tarotIntelligence';
 import { calculateLifePathNumber, calculateDestinyNumber, calculateSoulNumber, calculatePersonalityNumber, calculatePersonalYearNumber } from '@/lib/numerologyCalculations';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
@@ -85,6 +86,73 @@ async function setCachedDoc(collectionPath: string[], docId: string, data: any):
 
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const CACHE_VERSION = '1.2'; // Increment to invalidate old caches (v1.2: second-person perspective fix)
+
+type HolisticAnalysis = {
+  overview: string;
+  integration: string;
+  timing: string;
+  guidance: string;
+};
+
+function convertToSecondPerson(text: string): string {
+  return text
+    .replace(/\bthis individual\b/gi, 'you')
+    .replace(/\bthis person\b/gi, 'you')
+    .replace(/\btheir\b/gi, 'your')
+    .replace(/\bthey\b/gi, 'you')
+    .replace(/\bthem\b/gi, 'you')
+    .replace(/\bthemselves\b/gi, 'yourself')
+    .replace(/\bTheir\b/g, 'Your')
+    .replace(/\bThey\b/g, 'You')
+    .replace(/\bThis individual\b/g, 'You')
+    .replace(/\bThis person\b/g, 'You');
+}
+
+function mapHolisticFromParsed(parsed: Record<string, unknown>, personalYearNumber: number): HolisticAnalysis {
+  return {
+    overview: convertToSecondPerson(
+      (parsed.overview as string) || 'Your combined divination profile reveals a unique spiritual path.',
+    ),
+    integration: convertToSecondPerson(
+      (parsed.integration as string) || 'These systems work together to provide multi-layered insights.',
+    ),
+    timing: convertToSecondPerson(
+      (parsed.timing as string) ||
+        `Your Personal Year ${personalYearNumber} brings specific themes and opportunities.`,
+    ),
+    guidance: convertToSecondPerson(
+      (parsed.guidance as string) ||
+        'Use these insights to navigate life with greater awareness and purpose.',
+    ),
+  };
+}
+
+function buildHolisticDeterministic(personalYearNumber: number): HolisticAnalysis {
+  return mapHolisticFromParsed({}, personalYearNumber);
+}
+
+function extractHolisticFromRaw(raw: string, personalYearNumber: number): HolisticAnalysis {
+  const extractField = (fieldName: string): string => {
+    const regex = new RegExp(`"${fieldName}":\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's');
+    const match = raw.match(regex);
+    if (match && match[1]) {
+      return match[1]
+        .replace(/\\n/g, ' ')
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\');
+    }
+    return '';
+  };
+  return mapHolisticFromParsed(
+    {
+      overview: extractField('overview'),
+      integration: extractField('integration'),
+      timing: extractField('timing'),
+      guidance: extractField('guidance'),
+    },
+    personalYearNumber,
+  );
+}
 
 interface CombinedSystemRequest {
   userId: string;
@@ -300,94 +368,53 @@ Provide:
 
 Format as JSON with keys: overview, integration, timing, guidance`;
 
-    const aiAnalysisResult = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: analysisPrompt }],
-      maxTokens: 800,
-      temperature: 0.7
+    const holisticResolved = await resolveAiReportWithFallback({
+      label: 'tarot-combined-analysis',
+      userId,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'tarot-combined-analysis',
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: analysisPrompt }],
+          maxTokens: 800,
+          temperature: 0.7,
+          maxAttempts: 3,
+        });
+        const mapped = mapStructuredReportRun(aiRun, (parsed) =>
+          mapHolisticFromParsed(parsed, personalYearNumber),
+        );
+        if (mapped.data) {
+          devLog.debug('✅ Successfully parsed holistic analysis', undefined, 'tarot-combined-system');
+          return mapped;
+        }
+        if (aiRun.lastRaw) {
+          return {
+            data: extractHolisticFromRaw(aiRun.lastRaw, personalYearNumber),
+            attempts: aiRun.attempts,
+            failureMode: aiRun.failureMode,
+          };
+        }
+        return mapped;
+      },
+      readFirestoreCache: async () => {
+        const cacheDoc = await getCachedDoc(['users', userId, 'combinedSystemReports'], 'current');
+        if (!cacheDoc?.exists()) return null;
+        const cachedData = cacheDoc.data();
+        const holistic = cachedData?.data?.holisticAnalysis as HolisticAnalysis | undefined;
+        if (
+          holistic?.overview &&
+          typeof holistic.overview === 'string' &&
+          !holistic.overview.includes('```json') &&
+          !holistic.overview.includes('```')
+        ) {
+          return holistic;
+        }
+        return null;
+      },
+      buildDeterministic: () => buildHolisticDeterministic(personalYearNumber),
     });
 
-    const aiAnalysis = aiAnalysisResult.content || '';
-
-    let holisticAnalysis: { overview: string; integration: string; timing: string; guidance: string };
-    try {
-      // Extract JSON from markdown code blocks if present
-      let jsonString = aiAnalysis.trim();
-      
-      // Remove markdown code block markers - handle both ```json and ``` formats
-      // Pattern: ```json ... ``` or ``` ... ```
-      if (jsonString.includes('```json')) {
-        // Extract content between ```json and ```
-        const start = jsonString.indexOf('```json') + 7;
-        const end = jsonString.lastIndexOf('```');
-        if (end > start) {
-          jsonString = jsonString.substring(start, end).trim();
-        }
-      } else if (jsonString.includes('```')) {
-        // Extract content between first ``` and last ```
-        const start = jsonString.indexOf('```') + 3;
-        const end = jsonString.lastIndexOf('```');
-        if (end > start) {
-          jsonString = jsonString.substring(start, end).trim();
-        }
-      }
-      
-      // Try to find JSON object in the string (in case extraction above didn't work)
-      const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonString = jsonMatch[0];
-      }
-      
-      // Parse the JSON
-      const parsed = JSON.parse(jsonString);
-      
-      // Convert third person to second person as a safety net
-      const convertToSecondPerson = (text: string): string => {
-        return text
-          .replace(/\bthis individual\b/gi, 'you')
-          .replace(/\bthis person\b/gi, 'you')
-          .replace(/\btheir\b/gi, 'your')
-          .replace(/\bthey\b/gi, 'you')
-          .replace(/\bthem\b/gi, 'you')
-          .replace(/\bthemselves\b/gi, 'yourself')
-          .replace(/\bTheir\b/g, 'Your')
-          .replace(/\bThey\b/g, 'You')
-          .replace(/\bThis individual\b/g, 'You')
-          .replace(/\bThis person\b/g, 'You');
-      };
-      
-      holisticAnalysis = {
-        overview: convertToSecondPerson(parsed.overview || 'Your combined divination profile reveals a unique spiritual path.'),
-        integration: convertToSecondPerson(parsed.integration || 'These systems work together to provide multi-layered insights.'),
-        timing: convertToSecondPerson(parsed.timing || `Your Personal Year ${personalYearNumber} brings specific themes and opportunities.`),
-        guidance: convertToSecondPerson(parsed.guidance || 'Use these insights to navigate life with greater awareness and purpose.')
-      };
-      
-      devLog.debug('✅ Successfully parsed holistic analysis', undefined, 'tarot-combined-system');
-    } catch (error) {
-      devLog.warn('⚠️ Failed to parse AI analysis as JSON, using fallback:', error, 'tarot-combined-system');
-      // Fallback: extract content using regex patterns that handle escaped quotes
-      const extractField = (fieldName: string): string => {
-        // Pattern to match "fieldName": "value" (handles escaped quotes and newlines)
-        const regex = new RegExp(`"${fieldName}":\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's');
-        const match = aiAnalysis.match(regex);
-        if (match && match[1]) {
-          // Unescape the string
-          return match[1]
-            .replace(/\\n/g, ' ')
-            .replace(/\\"/g, '"')
-            .replace(/\\\\/g, '\\');
-        }
-        return '';
-      };
-      
-      holisticAnalysis = {
-        overview: extractField('overview') || 'Your combined divination profile reveals a unique spiritual path.',
-        integration: extractField('integration') || 'These systems work together to provide multi-layered insights.',
-        timing: extractField('timing') || `Your Personal Year ${personalYearNumber} brings specific themes and opportunities.`,
-        guidance: extractField('guidance') || 'Use these insights to navigate life with greater awareness and purpose.'
-      };
-    }
+    const holisticAnalysis = holisticResolved.data;
 
     // Generate timing insights
     const timingInsights = `Your Personal Year ${personalYearNumber} aligns with your ${tarotProfile.lifePathCard?.name || 'Life Path Card'}, indicating this is a time of ${personalYearNumber === 1 ? 'new beginnings' : personalYearNumber === 2 ? 'partnership and cooperation' : personalYearNumber === 3 ? 'creativity and expression' : personalYearNumber === 4 ? 'stability and building' : personalYearNumber === 5 ? 'change and freedom' : personalYearNumber === 6 ? 'responsibility and service' : personalYearNumber === 7 ? 'introspection and learning' : personalYearNumber === 8 ? 'power and achievement' : 'completion and wisdom'}.`;
@@ -419,21 +446,38 @@ Format as JSON with keys: overview, integration, timing, guidance`;
       recommendations
     };
 
-    // Cache the result
+    if (holisticResolved.degraded && holisticResolved.source !== 'llm') {
+      devLog.warn(
+        `⚠️ Tarot combined degraded (${holisticResolved.source}) — not caching fresh LLM output`,
+        undefined,
+        'tarot-combined-system',
+      );
+      return NextResponse.json({
+        success: true,
+        data: result,
+        parsingFailed: holisticResolved.parsingFailed ?? true,
+        fallbackSource: holisticResolved.source,
+        error:
+          holisticResolved.source === 'firestore_cache'
+            ? 'Using last saved report; AI narrative refresh failed'
+            : 'Failed to parse AI response, using combined-system defaults',
+      });
+    }
+
     await setCachedDoc(['users', userId, 'combinedSystemReports'], 'current', {
       data: result,
       lastUpdated: new Date().toISOString(),
       version: CACHE_VERSION,
       userId,
       birthDate,
-      fullName
+      fullName,
     });
 
     devLog.info('✅ Combined System analysis generated and cached for user:', userId, 'tarot-combined-system');
 
     return NextResponse.json({
       success: true,
-      data: result
+      data: result,
     });
 
   } catch (error: any) {

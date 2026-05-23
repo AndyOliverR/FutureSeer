@@ -9,7 +9,7 @@ import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore'
 import { UserProfile } from './firebase'
-import { createAICompletion } from './aiGateway'
+import { callTextAI } from './aiStructuredOutput'
 import { getAllDivinationData } from './universalDataAggregator'
 
 
@@ -691,7 +691,8 @@ IMPORTANT: Format your response EXACTLY as follows. Use clear section headers. D
 
 Remember: Use plain text only. No markdown formatting. Be specific and personal. Address ${displayName} directly using "you" and "your".`
 
-      const result = await createAICompletion({
+      const result = await callTextAI({
+        label: 'sortilege-comprehensive',
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
@@ -701,10 +702,11 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         maxTokens: 3000,
         topP: 0.9,
         frequencyPenalty: 0.3,
-        presencePenalty: 0.3
+        presencePenalty: 0.3,
+        maxAttempts: 2,
       })
 
-      const aiResponse = result.content || ''
+      const aiResponse = result.content
       return this.parseAIResponse(aiResponse, displayName)
 
     } catch (error) {

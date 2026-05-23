@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
+import { cacheSeerQuestionAnswer } from '@/lib/seerQuestionCache';
+import { SEER_CACHE_KEYWORDS } from '@/lib/seerQuestionSimilarity';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import { SortilegeReading } from '@/lib/sortilegeIntelligence';
@@ -164,28 +168,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check cache only after validity and refusal (prefer refusal over cached answer)
-    const cachedResponse = await checkCachedQuestions(userId, question);
-    if (cachedResponse) {
-      devLog.info('🎯 Returning cached response for similar question', undefined, 'ask-sortilege-seer');
-      return withRobotsResponse(
-        new ReadableStream({
-          start(controller) {
-            controller.enqueue(new TextEncoder().encode(cachedResponse.answer));
-            appendAttributionTail(controller);
-            controller.close();
-          }
-        }),
-        {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
-          }
-        }
-      );
-    }
-
     const slice = getSortilegeSliceForQuestionType(questionType, state);
     const systemPrompt = buildSortilegeSeerSystemPrompt(slice, questionType);
 
@@ -198,15 +180,20 @@ export async function POST(request: NextRequest) {
       new ReadableStream({
         async start(controller) {
           try {
-            const stream = await createAIStream({
-              model: 'llama-3.3-70b-versatile',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: question }
-              ],
-              temperature: 0.6,
-              maxTokens: 800
-            });
+            const { messages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: question,
+    });
+
+    const { stream } = await callTextStream({
+      label: 'ask-sortilege-seer',
+      model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+      messages,
+      temperature: 0.6,
+      maxTokens: 800,
+    });
 
             let fullResponse = '';
             for await (const chunk of stream) {
@@ -260,7 +247,7 @@ export async function POST(request: NextRequest) {
             await storeConversation(userId, sessionId, question, responseData);
 
             // Cache the Q&A for future similar questions
-            await cacheQuestionAnswer(userId, question, fullResponse);
+            await cacheToolSeerAnswer('ask-sortilege-seer', userId, question, fullResponse);
 
           } catch (error) {
             devLog.error('Error during streaming:', error);
@@ -332,69 +319,5 @@ async function storeConversation(userId: string, sessionId: string | undefined, 
     devLog.info('✅ Sortilege conversation stored successfully', undefined, 'ask-sortilege-seer');
   } catch (error) {
     devLog.error('Error storing conversation:', error);
-  }
-}
-
-function calculateSimilarity(question1: string, question2: string): number {
-  const q1Lower = question1.toLowerCase();
-  const q2Lower = question2.toLowerCase();
-  
-  const keywords = ['cast', 'dice', 'stone', 'card', 'coin', 'stick', 'symbol', 'interpretation', 'guidance', 'sortilege'];
-  
-  let matches = 0;
-  keywords.forEach(kw => {
-    if (q1Lower.includes(kw) && q2Lower.includes(kw)) matches += 2;
-  });
-  
-  return matches;
-}
-
-async function checkCachedQuestions(userId: string, question: string): Promise<{ answer: string; question?: string } | null> {
-  try {
-    const db = getFirebaseDB();
-    const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
-    
-    const cacheRef = collection(db, 'sortilegeSeerCache', userId, 'questions');
-    const q = query(cacheRef, orderBy('timestamp', 'desc'), limit(20));
-    const snapshot = await getDocs(q);
-    
-    for (const doc of snapshot.docs) {
-      const cachedQA = doc.data() as { answer?: unknown; question?: unknown };
-      if (typeof cachedQA.question !== 'string' || typeof cachedQA.answer !== 'string') {
-        continue;
-      }
-      const similarity = calculateSimilarity(question, cachedQA.question);
-      
-      if (similarity >= 5) {
-        devLog.debug(`🎯 Found similar sortilege question with similarity score: ${similarity}`, undefined, 'ask-sortilege-seer');
-        return { answer: cachedQA.answer, question: cachedQA.question };
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    devLog.error('Error checking cached questions:', error);
-    return null;
-  }
-}
-
-async function cacheQuestionAnswer(userId: string, question: string, answer: string): Promise<void> {
-  try {
-    const db = getFirebaseDB();
-    const { doc, setDoc } = await import('firebase/firestore');
-    
-    const cacheId = `qa_${Date.now()}`;
-    const cacheRef = doc(db, 'sortilegeSeerCache', userId, 'questions', cacheId);
-    
-    await setDoc(cacheRef, {
-      question,
-      answer,
-      timestamp: Date.now(),
-      ttl: Date.now() + (30 * 24 * 60 * 60 * 1000)
-    });
-    
-    devLog.info('✅ Sortilege question cached for future similar questions', undefined, 'ask-sortilege-seer');
-  } catch (error) {
-    devLog.error('Error caching question:', error);
   }
 }

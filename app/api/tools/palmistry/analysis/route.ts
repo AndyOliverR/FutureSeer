@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
+import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import { devLog } from '@/lib/devLogger';
 
 interface PalmAnalysisRequest {
@@ -178,6 +180,134 @@ interface PalmAnalysisResponse {
     };
   };
   error?: string;
+  parsingFailed?: boolean;
+  fallbackSource?: string;
+  retryable?: boolean;
+  technical?: string;
+}
+
+type PalmVisionValidatedData = NonNullable<PalmAnalysisResponse['data']>;
+
+/** Normalize vision model JSON into the stable palm analysis response shape. */
+function validatePalmVisionData(palmData: Record<string, unknown>): PalmVisionValidatedData {
+  const linesRaw = palmData.lines as Record<string, unknown> | undefined;
+  const mountsRaw = palmData.mounts as Record<string, unknown> | undefined;
+  const fingersRaw = palmData.fingers as Record<string, unknown> | undefined;
+
+  if (!linesRaw || !mountsRaw || !palmData.handShape || !fingersRaw) {
+    devLog.warn('⚠️ Vision AI returned incomplete data structure. Missing:', {
+      lines: !linesRaw,
+      mounts: !mountsRaw,
+      handShape: !palmData.handShape,
+      fingers: !fingersRaw,
+    }, 'palmistry');
+  }
+
+  return {
+    lines: {
+      ...(linesRaw as PalmVisionValidatedData['lines']),
+      lifeLine: (linesRaw?.lifeLine as PalmVisionValidatedData['lines']['lifeLine']) || {
+        length: 'medium',
+        depth: 'clear',
+        quality: 'straight',
+        breaks: [],
+        interpretation: 'Life line analysis pending - please retry analysis',
+      },
+      heartLine: (linesRaw?.heartLine as PalmVisionValidatedData['lines']['heartLine']) || {
+        length: 'medium',
+        depth: 'clear',
+        quality: 'straight',
+        breaks: [],
+        interpretation: 'Heart line analysis pending - please retry analysis',
+      },
+      headLine: (linesRaw?.headLine as PalmVisionValidatedData['lines']['headLine']) || {
+        length: 'medium',
+        depth: 'clear',
+        quality: 'straight',
+        breaks: [],
+        interpretation: 'Head line analysis pending - please retry analysis',
+      },
+      fateLine: (linesRaw?.fateLine as PalmVisionValidatedData['lines']['fateLine']) || {
+        presence: false,
+        interpretation: 'Fate line analysis pending - please retry analysis',
+      },
+    },
+    mounts: {
+      ...(mountsRaw as PalmVisionValidatedData['mounts']),
+      jupiter: (mountsRaw?.jupiter as PalmVisionValidatedData['mounts']['jupiter']) || {
+        prominence: 'normal',
+        interpretation: 'Mount analysis pending - please retry',
+      },
+      saturn: (mountsRaw?.saturn as PalmVisionValidatedData['mounts']['saturn']) || {
+        prominence: 'normal',
+        interpretation: 'Mount analysis pending - please retry',
+      },
+      apollo: (mountsRaw?.apollo as PalmVisionValidatedData['mounts']['apollo']) || {
+        prominence: 'normal',
+        interpretation: 'Mount analysis pending - please retry',
+      },
+      mercury: (mountsRaw?.mercury as PalmVisionValidatedData['mounts']['mercury']) || {
+        prominence: 'normal',
+        interpretation: 'Mount analysis pending - please retry',
+      },
+      mars: (mountsRaw?.mars as PalmVisionValidatedData['mounts']['mars']) || {
+        prominence: 'normal',
+        interpretation: 'Mount analysis pending - please retry',
+      },
+      venus: (mountsRaw?.venus as PalmVisionValidatedData['mounts']['venus']) || {
+        prominence: 'normal',
+        interpretation: 'Mount analysis pending - please retry',
+      },
+      moon: (mountsRaw?.moon as PalmVisionValidatedData['mounts']['moon']) || {
+        prominence: 'normal',
+        interpretation: 'Mount analysis pending - please retry',
+      },
+    },
+    handShape: (palmData.handShape as PalmVisionValidatedData['handShape']) || {
+      type: 'mixed',
+      characteristics: ['Analysis incomplete'],
+      interpretation: 'Hand shape analysis pending - please retry analysis',
+    },
+    fingers: {
+      ...(fingersRaw as PalmVisionValidatedData['fingers']),
+      thumb: (fingersRaw?.thumb as PalmVisionValidatedData['fingers']['thumb']) || {
+        length: 'medium',
+        thickness: 'medium',
+        flexibility: 'normal',
+        shape: 'square',
+        interpretation: 'Finger analysis pending - please retry',
+      },
+      index: (fingersRaw?.index as PalmVisionValidatedData['fingers']['index']) || {
+        length: 'medium',
+        thickness: 'medium',
+        flexibility: 'normal',
+        shape: 'square',
+        interpretation: 'Finger analysis pending - please retry',
+      },
+      middle: (fingersRaw?.middle as PalmVisionValidatedData['fingers']['middle']) || {
+        length: 'medium',
+        thickness: 'medium',
+        flexibility: 'normal',
+        shape: 'square',
+        interpretation: 'Finger analysis pending - please retry',
+      },
+      ring: (fingersRaw?.ring as PalmVisionValidatedData['fingers']['ring']) || {
+        length: 'medium',
+        thickness: 'medium',
+        flexibility: 'normal',
+        shape: 'square',
+        interpretation: 'Finger analysis pending - please retry',
+      },
+      pinky: (fingersRaw?.pinky as PalmVisionValidatedData['fingers']['pinky']) || {
+        length: 'medium',
+        thickness: 'medium',
+        flexibility: 'normal',
+        shape: 'square',
+        interpretation: 'Finger analysis pending - please retry',
+      },
+    },
+    markings: (palmData.markings as PalmVisionValidatedData['markings']) || {},
+  };
 }
 
 /**
@@ -292,177 +422,70 @@ REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not ev
 
     devLog.info('🤲 Analyzing palm image with vision-capable AI...', undefined, 'palmistry');
 
-    const result = await createAICompletion({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [
-        {
-          role: 'user',
-          content: [
+    const resolved = await resolveAiReportWithFallback({
+      label: 'palmistry-vision-analysis',
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'palmistry-vision-analysis',
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          messages: [
             {
-              type: 'text',
-              text: analysisPrompt
+              role: 'user',
+              content: [
+                { type: 'text', text: analysisPrompt },
+                { type: 'image_url', image_url: { url: imageUrl } },
+              ],
             },
-            {
-              type: 'image_url',
-              image_url: {
-                url: imageUrl
-              }
-            }
-          ]
+          ],
+          temperature: 0.5,
+          maxTokens: 3000,
+          maxAttempts: 3,
+        });
+
+        const palmData =
+          (aiRun.raw as Record<string, unknown> | null) ??
+          parseLlmJsonRecord(aiRun.lastRaw ?? '');
+        if (!palmData) {
+          return {
+            data: null,
+            attempts: aiRun.attempts,
+            failureMode: aiRun.failureMode,
+            parsingFailed: true,
+          };
         }
-      ],
-      temperature: 0.5,  // Slightly higher for more varied, creative analysis
-      maxTokens: 3000,   // More tokens for detailed analysis from Maverick
-      response_format: { type: 'json_object' }
+
+        return {
+          data: validatePalmVisionData(palmData),
+          attempts: aiRun.attempts,
+          failureMode: 'none' as const,
+        };
+      },
+      buildDeterministic: () => validatePalmVisionData({}),
     });
 
-    const analysisText = result.content || '';
-    
-    if (!analysisText) {
-      throw new Error('Empty response from Groq API');
-    }
-
-    // Parse JSON response
-    let palmData: any;
-    try {
-      palmData = JSON.parse(analysisText);
-    } catch (parseError) {
-      devLog.error('Failed to parse Groq response:', parseError, 'route');
-      devLog.debug('Raw response:', analysisText, 'palmistry');
-      // Try to extract JSON from markdown code blocks if present
-      const jsonMatch = analysisText.match(/```json\s*([\s\S]*?)\s*```/) || analysisText.match(/```\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        palmData = JSON.parse(jsonMatch[1]);
-      } else {
-        throw new Error('Invalid JSON response from Groq API');
-      }
-    }
-
-    // Log if AI returned incomplete data (vision model should provide complete analysis)
-    if (!palmData.lines || !palmData.mounts || !palmData.handShape || !palmData.fingers) {
-      devLog.warn('⚠️ Vision AI returned incomplete data structure. Missing:', {
-        lines: !palmData.lines,
-        mounts: !palmData.mounts,
-        handShape: !palmData.handShape,
-        fingers: !palmData.fingers
-      }, 'palmistry');
-    }
-
-    // Validate and ensure all required fields exist
-    // Minimal defaults only - vision model should provide actual analysis
-    const validatedData = {
-      lines: {
-        lifeLine: palmData.lines?.lifeLine || {
-          length: 'medium',
-          depth: 'clear',
-          quality: 'straight',
-          breaks: [],
-          interpretation: 'Life line analysis pending - please retry analysis'
-        },
-        heartLine: palmData.lines?.heartLine || {
-          length: 'medium',
-          depth: 'clear',
-          quality: 'straight',
-          breaks: [],
-          interpretation: 'Heart line analysis pending - please retry analysis'
-        },
-        headLine: palmData.lines?.headLine || {
-          length: 'medium',
-          depth: 'clear',
-          quality: 'straight',
-          breaks: [],
-          interpretation: 'Head line analysis pending - please retry analysis'
-        },
-        fateLine: palmData.lines?.fateLine || {
-          presence: false,
-          interpretation: 'Fate line analysis pending - please retry analysis'
-        },
-        ...palmData.lines
-      },
-      mounts: {
-        jupiter: palmData.mounts?.jupiter || {
-          prominence: 'normal',
-          interpretation: 'Mount analysis pending - please retry'
-        },
-        saturn: palmData.mounts?.saturn || {
-          prominence: 'normal',
-          interpretation: 'Mount analysis pending - please retry'
-        },
-        apollo: palmData.mounts?.apollo || {
-          prominence: 'normal',
-          interpretation: 'Mount analysis pending - please retry'
-        },
-        mercury: palmData.mounts?.mercury || {
-          prominence: 'normal',
-          interpretation: 'Mount analysis pending - please retry'
-        },
-        mars: palmData.mounts?.mars || {
-          prominence: 'normal',
-          interpretation: 'Mount analysis pending - please retry'
-        },
-        venus: palmData.mounts?.venus || {
-          prominence: 'normal',
-          interpretation: 'Mount analysis pending - please retry'
-        },
-        moon: palmData.mounts?.moon || {
-          prominence: 'normal',
-          interpretation: 'Mount analysis pending - please retry'
-        },
-        ...palmData.mounts
-      },
-      handShape: palmData.handShape || {
-        type: 'mixed',
-        characteristics: ['Analysis incomplete'],
-        interpretation: 'Hand shape analysis pending - please retry analysis'
-      },
-      fingers: {
-        thumb: palmData.fingers?.thumb || {
-          length: 'medium',
-          thickness: 'medium',
-          flexibility: 'normal',
-          shape: 'square',
-          interpretation: 'Finger analysis pending - please retry'
-        },
-        index: palmData.fingers?.index || {
-          length: 'medium',
-          thickness: 'medium',
-          flexibility: 'normal',
-          shape: 'square',
-          interpretation: 'Finger analysis pending - please retry'
-        },
-        middle: palmData.fingers?.middle || {
-          length: 'medium',
-          thickness: 'medium',
-          flexibility: 'normal',
-          shape: 'square',
-          interpretation: 'Finger analysis pending - please retry'
-        },
-        ring: palmData.fingers?.ring || {
-          length: 'medium',
-          thickness: 'medium',
-          flexibility: 'normal',
-          shape: 'square',
-          interpretation: 'Finger analysis pending - please retry'
-        },
-        pinky: palmData.fingers?.pinky || {
-          length: 'medium',
-          thickness: 'medium',
-          flexibility: 'normal',
-          shape: 'square',
-          interpretation: 'Finger analysis pending - please retry'
-        },
-        ...palmData.fingers
-      },
-      markings: palmData.markings || {}
-    };
+    const validatedData = resolved.data;
 
     devLog.info('✅ Palm analysis completed successfully', undefined, 'palmistry');
+
+    if (resolved.degraded && resolved.source !== 'llm') {
+      devLog.warn(
+        `⚠️ Palm vision analysis degraded (${resolved.source}) — returning validated defaults`,
+        undefined,
+        'palmistry',
+      );
+      return NextResponse.json({
+        success: true,
+        data: validatedData,
+        parsingFailed: resolved.parsingFailed ?? true,
+        fallbackSource: resolved.source,
+        error: 'Failed to parse vision AI response, using palmistry field defaults',
+      } satisfies PalmAnalysisResponse);
+    }
 
     return NextResponse.json({
       success: true,
       data: validatedData,
-      _usage: result.usage,
-    } as PalmAnalysisResponse & { _usage?: typeof result.usage });
+    } satisfies PalmAnalysisResponse);
 
   } catch (error: any) {
     // Detailed error handling with user-friendly messages

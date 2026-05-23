@@ -4,10 +4,10 @@
 
 import { generateHumanDesignReport } from '@/lib/humanDesign/humanDesignReportGenerator';
 
-const mockCreateAICompletion = jest.fn();
+const mockCallTextAI = jest.fn();
 
-jest.mock('@/lib/aiGateway', () => ({
-  createAICompletion: (...args: unknown[]) => mockCreateAICompletion(...args),
+jest.mock('@/lib/aiStructuredOutput', () => ({
+  callTextAI: (...args: unknown[]) => mockCallTextAI(...args),
 }));
 
 describe('Human Design report generator provider path', () => {
@@ -41,12 +41,14 @@ describe('Human Design report generator provider path', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('uses aiGateway completion and does not call /api/openai fetch', async () => {
+  it('uses structured text AI and does not call /api/openai fetch', async () => {
     const fetchSpy = jest.spyOn(global, 'fetch' as never).mockImplementation((() => {
       throw new Error('fetch should not be called');
     }) as never);
-    mockCreateAICompletion.mockResolvedValue({
+    mockCallTextAI.mockResolvedValue({
       content: 'overview: You are aligned.\nkey insights: Trust your strategy',
+      attempts: 1,
+      failureMode: 'none',
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
     });
 
@@ -55,13 +57,13 @@ describe('Human Design report generator provider path', () => {
       fullName: 'Test User',
     } as any);
 
-    expect(mockCreateAICompletion).toHaveBeenCalled();
+    expect(mockCallTextAI).toHaveBeenCalled();
     expect(report.overview.summary.length).toBeGreaterThan(0);
     fetchSpy.mockRestore();
   });
 
   it('returns fallback structured report when provider call fails', async () => {
-    mockCreateAICompletion.mockRejectedValue(new Error('provider down'));
+    mockCallTextAI.mockRejectedValue(new Error('provider down'));
     const report = await generateHumanDesignReport(chart, { uid: 'u2' } as any);
     expect(report.type.strategy).toBe('Inform');
     expect(report.overview.keyInsights.length).toBeGreaterThan(0);

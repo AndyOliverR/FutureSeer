@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAICompletion } from '@/lib/aiGateway';
+import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
+import { callStructuredAI } from '@/lib/aiStructuredOutput';
+import type { StructuredFailureMode } from '@/lib/aiStructuredOutputParse';
+import { parseStructuredJsonFromResponse } from '@/lib/aiStructuredOutputParse';
+import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { type VedicNumerologyProfile } from '@/lib/vedicNumerologyCalculations';
 import { devLog } from '@/lib/devLogger';
 
@@ -190,32 +194,82 @@ Format your response as a JSON object with the following structure:
 Write in the voice of a Vedic seer addressing the person directly (use "you" not "he/she" or third person). Be warm, spiritual, and deeply insightful. Reference Vedic concepts naturally.`;
 }
 
-// Parse Groq response and extract structured data
-type VedicComprehensiveAnalysis = NonNullable<VedicAstroNumerologyResponse['data']>['comprehensiveAnalysis'];
-function parseGroqResponse(response: string): VedicComprehensiveAnalysis {
+type VedicComprehensiveAnalysis = NonNullable<
+  VedicAstroNumerologyResponse['data']
+>['comprehensiveAnalysis'];
+
+function extractVedicAstroNumerologyAnalysisFromCache(
+  cachedData: Record<string, unknown>,
+): VedicComprehensiveAnalysis | null {
+  const data =
+    (cachedData.data as VedicAstroNumerologyResponse['data'] | undefined) ||
+    (cachedData as VedicAstroNumerologyResponse['data']);
+  const analysis = data?.comprehensiveAnalysis;
+  if (!analysis?.personalitySynthesis?.trim()) return null;
+  return analysis;
+}
+
+async function readVedicAstroNumerologyCache(
+  userId: string,
+  birthDataKey: string,
+  options?: { allowStale?: boolean },
+): Promise<VedicComprehensiveAnalysis | null> {
   try {
-    // Try to extract JSON from the response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return {
-        personalitySynthesis: parsed.personalitySynthesis || '',
-        karmicInsights: parsed.karmicInsights || '',
-        remedies: parsed.remedies || '',
-        careerGuidance: parsed.careerGuidance || '',
-        relationshipInsights: parsed.relationshipInsights || '',
-        lifePurpose: parsed.lifePurpose || '',
-        personalGrowth: parsed.personalGrowth || '',
-        challenges: Array.isArray(parsed.challenges) ? parsed.challenges : [],
-        opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : [],
-        yearlyForecast: parsed.yearlyForecast || ''
-      };
+    const docSnap = await getCachedDoc(['users', userId, 'vedicAstroNumerologyReports'], 'current');
+    if (!docSnap?.exists()) return null;
+    const cachedData = docSnap.data() as Record<string, unknown>;
+    if ((cachedData.birthDataKey as string | undefined) !== birthDataKey) return null;
+    const lastUpdated = cachedData.timestamp as number | undefined;
+    if (!lastUpdated) return null;
+    if (!options?.allowStale) {
+      const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
+      if (hoursSinceUpdate >= 24) return null;
     }
-  } catch (error) {
-    devLog.warn('Failed to parse JSON from Groq response, using fallback', undefined, 'vedic-astro-numerology');
+    return extractVedicAstroNumerologyAnalysisFromCache(cachedData);
+  } catch {
+    return null;
   }
-  
-  // Fallback: Split response into sections if JSON parsing fails
+}
+
+function buildDeterministicVedicAstroNumerology(
+  moonSign: string,
+  lagnaSign: string,
+  numerologyProfile: VedicNumerologyProfile,
+): VedicComprehensiveAnalysis {
+  return {
+    personalitySynthesis: `Your ${moonSign} Moon sign (most important in Vedic astrology) combines with Life Path ${numerologyProfile.lifePathNumber} (ruled by ${numerologyProfile.planetaryInfluences['Life Path']?.planet}) and Lagna ${lagnaSign} to create a unique Vedic personality profile.`,
+    karmicInsights:
+      'Your karmic lessons are revealed through the planetary number associations in your numerology profile.',
+    remedies: `Recommended gemstones: ${numerologyProfile.planetaryInfluences['Life Path']?.gemstone || 'Ruby'} for Life Path, ${numerologyProfile.planetaryInfluences['Destiny']?.gemstone || 'Pearl'} for Destiny.`,
+    careerGuidance: `Career paths aligned with your ${moonSign} Moon sign and numerology numbers would be most fulfilling.`,
+    relationshipInsights: `Your relationship style is influenced by your ${moonSign} Moon sign and numerological patterns.`,
+    lifePurpose:
+      'Your life purpose (dharma) is revealed through the combination of Vedic astrological and numerological influences.',
+    personalGrowth:
+      'Focus on developing spiritual awareness and balancing planetary influences for optimal growth.',
+    challenges: ['Balancing different planetary influences', 'Integrating karmic lessons'],
+    opportunities: ['Leveraging favorable planetary combinations', 'Aligning with dharma'],
+    yearlyForecast:
+      'This year brings opportunities to integrate your Vedic astrological and numerological influences.',
+  };
+}
+
+function mapVedicAstroNumerologyParsed(parsed: Record<string, unknown>): VedicComprehensiveAnalysis {
+  return {
+    personalitySynthesis: String(parsed.personalitySynthesis ?? ''),
+    karmicInsights: String(parsed.karmicInsights ?? ''),
+    remedies: String(parsed.remedies ?? ''),
+    careerGuidance: String(parsed.careerGuidance ?? ''),
+    relationshipInsights: String(parsed.relationshipInsights ?? ''),
+    lifePurpose: String(parsed.lifePurpose ?? ''),
+    personalGrowth: String(parsed.personalGrowth ?? ''),
+    challenges: Array.isArray(parsed.challenges) ? parsed.challenges.map(String) : [],
+    opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities.map(String) : [],
+    yearlyForecast: String(parsed.yearlyForecast ?? ''),
+  };
+}
+
+function textFallbackVedicAstroNumerology(response: string): VedicComprehensiveAnalysis {
   const sections = response.split(/\n\n+/);
   return {
     personalitySynthesis: sections[0] || response.substring(0, 300),
@@ -225,10 +279,38 @@ function parseGroqResponse(response: string): VedicComprehensiveAnalysis {
     relationshipInsights: sections[4] || 'Relationship insights from your Vedic Astro-Numerology combination.',
     lifePurpose: sections[5] || 'Life purpose (dharma) revealed through Vedic Astro-Numerology analysis.',
     personalGrowth: sections[6] || 'Personal growth recommendations for your Vedic journey.',
-    challenges: ['Balancing different planetary influences', 'Integrating karmic lessons', 'Developing spiritual awareness'],
-    opportunities: ['Harnessing favorable planetary combinations', 'Aligning with dharma', 'Connecting with spiritual practices'],
-    yearlyForecast: sections[7] || `Your ${new Date().getFullYear()} forecast based on Vedic Astro-Numerology profile.`
+    challenges: [
+      'Balancing different planetary influences',
+      'Integrating karmic lessons',
+      'Developing spiritual awareness',
+    ],
+    opportunities: [
+      'Harnessing favorable planetary combinations',
+      'Aligning with dharma',
+      'Connecting with spiritual practices',
+    ],
+    yearlyForecast:
+      sections[7] || `Your ${new Date().getFullYear()} forecast based on Vedic Astro-Numerology profile.`,
   };
+}
+
+function parseGroqResponse(response: GroqStructuredParseInput): VedicComprehensiveAnalysis {
+  if (isGroqParsedRecord(response)) {
+    return mapVedicAstroNumerologyParsed(response);
+  }
+
+  const trimmed = response.trim();
+  if (!trimmed) {
+    return textFallbackVedicAstroNumerology('');
+  }
+
+  const structured = parseStructuredJsonFromResponse(trimmed);
+  if (structured.ok && structured.data) {
+    return mapVedicAstroNumerologyParsed(structured.data);
+  }
+
+  devLog.warn('Failed to parse JSON from Groq response, using fallback', undefined, 'vedic-astro-numerology');
+  return textFallbackVedicAstroNumerology(trimmed);
 }
 
 export async function POST(request: NextRequest) {
@@ -252,51 +334,31 @@ export async function POST(request: NextRequest) {
 
     devLog.info('🔮 Vedic Astro-Numerology API: Generating comprehensive report for user:', userId, 'vedic-astro-numerology');
 
-    // Check Firebase cache
+    const birthDataKey = `${birthDate}_${fullName}_${moonSign}_${lagnaSign}`;
+
     try {
-      const docSnap = await getCachedDoc(['users', userId, 'vedicAstroNumerologyReports'], 'current');
-      
-      if (docSnap && docSnap.exists()) {
-        const cachedData = docSnap.data();
-        // Check if cache is valid (same data and < 24 hours old)
-        const birthDataKey = `${birthDate}_${fullName}_${moonSign}_${lagnaSign}`;
-        const cachedBirthKey = cachedData?.birthDataKey;
-        const lastUpdated = cachedData?.timestamp;
-        
-        if (cachedBirthKey === birthDataKey && lastUpdated) {
-          const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
-          if (hoursSinceUpdate < 24) {
-            devLog.info('✅ Returning cached Vedic Astro-Numerology report for user:', userId, 'vedic-astro-numerology');
-            return NextResponse.json({
-              success: true,
-              data: cachedData.data || cachedData
-            });
-          }
-        }
+      const cached = await readVedicAstroNumerologyCache(userId, birthDataKey);
+      if (cached) {
+        devLog.info('✅ Returning cached Vedic Astro-Numerology report for user:', userId, 'vedic-astro-numerology');
+        return NextResponse.json({
+          success: true,
+          data: {
+            moonSign,
+            lagnaSign,
+            sunSign,
+            lifePathNumber: numerologyProfile.lifePathNumber,
+            rulingPlanet: numerologyProfile.planetaryInfluences['Life Path']?.planet || 'Sun',
+            comprehensiveAnalysis: cached,
+            timestamp: Date.now(),
+          },
+        });
       }
-    } catch (cacheError: any) {
-      if (process.env.NODE_ENV === 'development') {
-        devLog.warn('⚠️ Error checking cache, proceeding with generation:', cacheError?.message || cacheError, 'vedic-astro-numerology');
-      }
+    } catch (cacheError: unknown) {
+      devLog.warn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'vedic-astro-numerology');
     }
 
-    // Check if Groq API key is available
     if (!process.env.GROQ_API_KEY) {
       devLog.error('❌ GROQ_API_KEY is not configured', undefined, 'route');
-      // Return fallback response with basic analysis
-      const fallbackAnalysis = {
-        personalitySynthesis: `Your ${moonSign} Moon sign (most important in Vedic astrology) combines with Life Path ${numerologyProfile.lifePathNumber} (ruled by ${numerologyProfile.planetaryInfluences['Life Path']?.planet}) and Lagna ${lagnaSign} to create a unique Vedic personality profile.`,
-        karmicInsights: `Your karmic lessons are revealed through the planetary number associations in your numerology profile.`,
-        remedies: `Recommended gemstones: ${numerologyProfile.planetaryInfluences['Life Path']?.gemstone || 'Ruby'} for Life Path, ${numerologyProfile.planetaryInfluences['Destiny']?.gemstone || 'Pearl'} for Destiny.`,
-        careerGuidance: `Career paths aligned with your ${moonSign} Moon sign and numerology numbers would be most fulfilling.`,
-        relationshipInsights: `Your relationship style is influenced by your ${moonSign} Moon sign and numerological patterns.`,
-        lifePurpose: `Your life purpose (dharma) is revealed through the combination of Vedic astrological and numerological influences.`,
-        personalGrowth: `Focus on developing spiritual awareness and balancing planetary influences for optimal growth.`,
-        challenges: ['Balancing different planetary influences', 'Integrating karmic lessons'],
-        opportunities: ['Leveraging favorable planetary combinations', 'Aligning with dharma'],
-        yearlyForecast: `This year brings opportunities to integrate your Vedic astrological and numerological influences.`
-      };
-
       return NextResponse.json({
         success: true,
         data: {
@@ -305,69 +367,126 @@ export async function POST(request: NextRequest) {
           sunSign,
           lifePathNumber: numerologyProfile.lifePathNumber,
           rulingPlanet: numerologyProfile.planetaryInfluences['Life Path']?.planet || 'Sun',
-          comprehensiveAnalysis: fallbackAnalysis,
-          timestamp: Date.now()
-        }
+          comprehensiveAnalysis: buildDeterministicVedicAstroNumerology(
+            moonSign,
+            lagnaSign,
+            numerologyProfile,
+          ),
+          timestamp: Date.now(),
+        },
       });
     }
 
-    // Build comprehensive prompt
-    const prompt = buildVedicGroqPrompt(moonSign, lagnaSign, sunSign, numerologyProfile, birthDate, fullName);
+    const prompt = buildVedicGroqPrompt(
+      moonSign,
+      lagnaSign,
+      sunSign,
+      numerologyProfile,
+      birthDate,
+      fullName,
+    );
 
-    // Call AI Gateway or direct Groq API
-    devLog.info('🤖 Calling AI Gateway/Groq API for comprehensive Vedic Astro-Numerology analysis...', undefined, 'vedic-astro-numerology');
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert Vedic astro-numerologist with deep knowledge of Jyotish (Vedic Astrology), Navagraha planetary number associations, karmic interpretations, Dasha system, and Vedic remedies. You speak in the voice of a seer addressing the person directly. Always respond with valid JSON when requested.'
-        },
-        {
-          role: 'user',
-          content: prompt
+    devLog.info('🤖 Calling AI for comprehensive Vedic Astro-Numerology analysis...', undefined, 'vedic-astro-numerology');
+
+    const resolved = await resolveAiReportWithFallback({
+      label: 'vedic-astro-numerology-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const structured = await callStructuredAI({
+          label: 'vedic-astro-numerology-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          userId,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert Vedic astro-numerologist with deep knowledge of Jyotish (Vedic Astrology), Navagraha planetary number associations, karmic interpretations, Dasha system, and Vedic remedies. You speak in the voice of a seer addressing the person directly. Always respond with valid JSON when requested.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.75,
+          maxTokens: 3000,
+          responseFormat: { type: 'json_object' },
+          maxAttempts: 3,
+        });
+
+        if (!structured.ok && structured.failureMode !== 'none') {
+          devLog.warn(
+            `vedic-astro-numerology structured AI: ${structured.failureMode} after ${structured.attempts} attempt(s)`,
+            undefined,
+            'vedic-astro-numerology',
+          );
         }
-      ],
-      temperature: 0.75,
-      maxTokens: 3000
+
+        if (structured.ok && structured.raw) {
+          return {
+            data: mapVedicAstroNumerologyParsed(structured.raw),
+            attempts: structured.attempts,
+            failureMode: 'none',
+          };
+        }
+        const recovered = structured.lastRaw
+          ? parseStructuredJsonFromResponse(structured.lastRaw)
+          : null;
+        if (recovered?.ok && recovered.data) {
+          return {
+            data: mapVedicAstroNumerologyParsed(recovered.data),
+            attempts: structured.attempts,
+            failureMode: structured.failureMode,
+          };
+        }
+        return {
+          data: null,
+          attempts: structured.attempts,
+          failureMode: structured.failureMode as StructuredFailureMode,
+          parsingFailed: true,
+        };
+      },
+      readFirestoreCache: () =>
+        readVedicAstroNumerologyCache(userId, birthDataKey, { allowStale: true }),
+      buildDeterministic: () =>
+        buildDeterministicVedicAstroNumerology(moonSign, lagnaSign, numerologyProfile),
     });
 
-    const aiResponse = result.content || '';
-    devLog.info('✅ Groq API response received', undefined, 'vedic-astro-numerology');
-
-    // Parse the response
-    const comprehensiveAnalysis = parseGroqResponse(aiResponse);
-
-    // Prepare response data
     const responseData: VedicAstroNumerologyResponse['data'] = {
       moonSign,
       lagnaSign,
       sunSign,
       lifePathNumber: numerologyProfile.lifePathNumber,
       rulingPlanet: numerologyProfile.planetaryInfluences['Life Path']?.planet || 'Sun',
-      comprehensiveAnalysis,
-      timestamp: Date.now()
+      comprehensiveAnalysis: resolved.data,
+      timestamp: Date.now(),
     };
 
-    // Cache in Firebase
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          ...responseData,
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based defaults',
+        },
+      });
+    }
+
     try {
-      const birthDataKey = `${birthDate}_${fullName}_${moonSign}_${lagnaSign}`;
       await setCachedDoc(['users', userId, 'vedicAstroNumerologyReports'], 'current', {
         data: responseData,
         birthDataKey,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       devLog.info('✅ Cached Vedic Astro-Numerology report in Firebase', undefined, 'vedic-astro-numerology');
-    } catch (cacheError: any) {
-      if (process.env.NODE_ENV === 'development') {
-        devLog.warn('⚠️ Error caching report:', cacheError?.message || cacheError, 'vedic-astro-numerology');
-      }
+    } catch (cacheError: unknown) {
+      devLog.warn('⚠️ Error caching report:', cacheError, 'vedic-astro-numerology');
     }
 
     return NextResponse.json({
       success: true,
       data: responseData,
-      _usage: result.usage,
     });
 
   } catch (error: any) {

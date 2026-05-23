@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
+import {
+  readAdminComprehensiveCache,
+  writeAdminComprehensiveCache,
+} from '@/lib/adminComprehensiveCache';
 import { buildHermeticReportSystemPrompt } from '@/lib/hermeticSeerPrompts';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
-import { adminDb } from '@/lib/firebase-admin';
 import {
   determineSect,
   calculateLotOfFortune,
@@ -62,19 +66,6 @@ function formatChartContext(planets: any[], houses: any[], aspects: any[]): stri
   return `PLANETS:\n${planetsText || 'None'}\n\nHOUSES:\n${housesText || 'None'}\n\nASPECTS:\n${aspectsText || 'None'}`;
 }
 
-function parseHermeticResponse(response: string): Record<string, unknown> {
-  const trimmed = response.trim();
-  let jsonStr = trimmed;
-  const codeBlock = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-  if (codeBlock?.[1]) jsonStr = codeBlock[1];
-  else {
-    const match = trimmed.match(/\{[\s\S]*\}/);
-    if (match?.[0]) jsonStr = match[0];
-  }
-  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(jsonStr) as Record<string, unknown>;
-}
-
 function normalizePlanetaryDynamics(obj: unknown): Record<string, string> {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
   const out: Record<string, string> = {};
@@ -111,6 +102,26 @@ function normalizeAnalysis(parsed: Record<string, unknown>): Record<string, unkn
   };
 }
 
+function buildHermeticDeterministic(planets: any[]): Record<string, unknown> {
+  const sunP = planets.find((p: any) => (p.name || '').toLowerCase() === 'sun');
+  const sunSign = sunP?.sign?.signName || sunP?.sign || 'Unknown';
+  return {
+    sect_summary: '',
+    lot_of_fortune_summary: '',
+    lot_of_spirit_summary: '',
+    helmsman_summary: '',
+    life_arenas: {},
+    predominator_note: '',
+    dominant_element: 'Unknown',
+    elemental_imbalance: 'Chart data incomplete—generalized interpretation.',
+    polarity_balance: 'Balance active and receptive forces.',
+    archetypal_theme: `Inner alignment and refinement (Sun in ${sunSign})`,
+    planetary_dynamics: {},
+    alchemical_lesson: 'Cultivate awareness of elemental and polar dynamics.',
+    integration_guidance: 'Seek balance between force and receptivity.',
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: HermeticComprehensiveRequest = await request.json();
@@ -118,6 +129,16 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
+    }
+
+    const freshCached = await readAdminComprehensiveCache(userId, 'hermeticAstrologyReports', 'comprehensive', {
+      extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+    });
+    if (freshCached) {
+      return NextResponse.json({
+        success: true,
+        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+      });
     }
 
     let planets: any[] = [];
@@ -221,61 +242,56 @@ export async function POST(request: NextRequest) {
       userName,
     });
 
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: 'You are an expert in Hermetic Astrology. Respond only with a single valid JSON object, no other text.' },
-        { role: 'user', content: systemPrompt },
-      ],
-      temperature: 0.6,
-      maxTokens: 2400,
-      responseFormat: { type: 'json_object' },
+    const resolved = await resolveAiReportWithFallback({
+      label: 'hermetic-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'hermetic-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert in Hermetic Astrology. Respond only with a single valid JSON object, no other text.',
+            },
+            { role: 'user', content: systemPrompt },
+          ],
+          temperature: 0.6,
+          maxTokens: 2400,
+          maxAttempts: 3,
+        });
+        return mapStructuredReportRun(aiRun, normalizeAnalysis);
+      },
+      readFirestoreCache: () =>
+        readAdminComprehensiveCache(userId, 'hermeticAstrologyReports', 'comprehensive', {
+          allowStale: true,
+          extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+        }),
+      buildDeterministic: () => buildHermeticDeterministic(planets),
     });
 
-    const content = result.content || '';
-    let comprehensiveAnalysis: Record<string, unknown>;
+    const comprehensiveAnalysis = resolved.data;
 
-    try {
-      const parsed = parseHermeticResponse(content);
-      comprehensiveAnalysis = normalizeAnalysis(parsed);
-    } catch {
-      const sunP = planets.find((p: any) => (p.name || '').toLowerCase() === 'sun');
-      const sunSign = sunP?.sign?.signName || sunP?.sign || 'Unknown';
-      comprehensiveAnalysis = {
-        sect_summary: '',
-        lot_of_fortune_summary: '',
-        lot_of_spirit_summary: '',
-        helmsman_summary: '',
-        life_arenas: {},
-        predominator_note: '',
-        dominant_element: 'Unknown',
-        elemental_imbalance: 'Chart data incomplete—generalized interpretation.',
-        polarity_balance: 'Balance active and receptive forces.',
-        archetypal_theme: `Inner alignment and refinement (Sun in ${sunSign})`,
-        planetary_dynamics: {},
-        alchemical_lesson: 'Cultivate awareness of elemental and polar dynamics.',
-        integration_guidance: 'Seek balance between force and receptivity.',
-      };
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based fallback',
+        },
+      });
     }
 
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('users')
-          .doc(userId)
-          .collection('hermeticAstrologyReports')
-          .doc('comprehensive')
-          .set(
-            {
-              comprehensiveAnalysis,
-              timestamp: Date.now(),
-            },
-            { merge: true }
-          );
-      } catch (e) {
-        devLog.warn('Hermetic report cache write failed:', e, 'route');
-      }
-    }
+    await writeAdminComprehensiveCache(userId, 'hermeticAstrologyReports', 'comprehensive', {
+      comprehensiveAnalysis,
+    });
 
     return NextResponse.json({
       success: true,
@@ -283,7 +299,6 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
-      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Hermetic comprehensive API error:', err, 'route');

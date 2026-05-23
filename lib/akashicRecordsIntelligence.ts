@@ -9,7 +9,7 @@ import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 import { userSubdocGet, userSubdocSet, userSubcollectionQueryOrdered } from '@/lib/userSubcollectionFirestore'
 import { UserProfile } from './firebase'
-import { createAICompletion } from './aiGateway'
+import { callTextAI } from './aiStructuredOutput'
 import { REPORT_VOICE_RULE } from './reportVoiceRule'
 
 
@@ -384,7 +384,8 @@ Affirmations:
 
 Remember: Use plain text only. No markdown formatting. Be specific and personal. Address the reader as "you" and "your" only; do not use the person's name.`
 
-      const result = await createAICompletion({
+      const result = await callTextAI({
+        label: 'akashic-records-reading',
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
@@ -393,11 +394,12 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         temperature: 0.7,
         maxTokens: 4000,
         topP: 0.9,
-        frequencyPenalty: 0.3, // Reduce repetition
-        presencePenalty: 0.3 // Encourage diverse content
+        frequencyPenalty: 0.3,
+        presencePenalty: 0.3,
+        maxAttempts: 2,
       })
 
-      const aiResponse = result.content || ''
+      const aiResponse = result.content
       
       // Parse AI response into structured format
       const parsed = this.parseAIResponse(aiResponse, userId)

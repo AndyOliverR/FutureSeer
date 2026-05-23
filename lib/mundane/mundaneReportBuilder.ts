@@ -3,7 +3,8 @@
  * to generate the 8-section narrative. Compliance: risk bands, probabilistic language.
  */
 
-import { createAICompletion } from '@/lib/aiGateway';
+import { callStructuredAI } from '@/lib/aiStructuredOutput';
+import { devLog } from '@/lib/devLogger';
 import type { MundaneChart } from './mundaneChartService';
 import type { RiskScores } from './riskScoring';
 
@@ -90,19 +91,6 @@ Write the 8 sections as specified. Use risk bands and probabilistic wording. Kee
 `.trim();
 }
 
-function parseJsonResponse(response: string): Record<string, unknown> {
-  const trimmed = response.trim();
-  let jsonStr = trimmed;
-  const codeBlock = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-  if (codeBlock?.[1]) jsonStr = codeBlock[1];
-  else {
-    const match = trimmed.match(/\{[\s\S]*\}/);
-    if (match?.[0]) jsonStr = match[0];
-  }
-  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(jsonStr) as Record<string, unknown>;
-}
-
 export interface MundaneReportSections {
   executiveOverview: string;
   governmentStability: string;
@@ -133,7 +121,8 @@ export interface MundaneComprehensiveAnalysis {
 export async function buildMundaneReport(input: MundaneReportInput): Promise<MundaneComprehensiveAnalysis> {
   const userPrompt = buildUserPrompt(input);
 
-  const result = await createAICompletion({
+  const structured = await callStructuredAI({
+    label: 'mundane-comprehensive',
     model: 'llama-3.3-70b-versatile',
     messages: [
       { role: 'system', content: MUNDANE_SYSTEM_PROMPT },
@@ -142,10 +131,18 @@ export async function buildMundaneReport(input: MundaneReportInput): Promise<Mun
     temperature: 0.5,
     maxTokens: 2400,
     responseFormat: { type: 'json_object' },
+    maxAttempts: 3,
   });
 
-  const content = result.content || '';
-  const parsed = content.trim() ? parseJsonResponse(content) : {};
+  if (!structured.ok && structured.failureMode !== 'none') {
+    devLog.warn(
+      `mundane-comprehensive structured AI: ${structured.failureMode} after ${structured.attempts} attempt(s)`,
+      undefined,
+      'mundaneReportBuilder',
+    );
+  }
+
+  const parsed = structured.raw ?? {};
 
   const sections: MundaneReportSections = {
     executiveOverview: String(parsed.executiveOverview ?? 'Executive overview not generated.'),

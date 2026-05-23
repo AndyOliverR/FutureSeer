@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
+import { cacheSeerQuestionAnswer } from '@/lib/seerQuestionCache';
+import { SEER_CACHE_KEYWORDS } from '@/lib/seerQuestionSimilarity';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import { buildGeomancySeerSystemPrompt } from '@/lib/geomancySeerPrompts';
@@ -162,27 +166,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cachedResponse = await checkCachedQuestions(userId, question);
-    if (cachedResponse) {
-      devLog.info('🎯 Returning cached response for similar question', undefined, 'ask-geomancy-seer');
-      return withRobotsResponse(
-        new ReadableStream({
-          start(controller) {
-            controller.enqueue(new TextEncoder().encode(cachedResponse.answer));
-            appendAttributionTail(controller);
-            controller.close();
-          },
-        }),
-        {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-          },
-        }
-      );
-    }
-
     let state;
     try {
       state = buildGeomancyState(geomancyAnalysis, question.trim());
@@ -218,16 +201,19 @@ export async function POST(request: NextRequest) {
       new ReadableStream({
         async start(controller) {
           try {
-            const stream = await createAIStream({
+            const { messages } = buildToolSeerMessages({
+              systemContent: systemPrompt,
+              userMessage: question.trim(),
+              history: conversationHistory,
+              truncateHistoryAnswers: 500,
+            });
+
+            const { stream } = await callTextStream({
+              label: 'ask-geomancy-seer',
               model: 'llama-3.3-70b-versatile',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                ...conversationHistory.flatMap((h) => [
-                  { role: 'user' as const, content: h.question },
-                  { role: 'assistant' as const, content: h.answer.substring(0, 500) + '...' },
-                ]),
-                { role: 'user', content: question.trim() },
-              ],
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+              messages,
               temperature: 0.6,
               maxTokens: 800,
             });
@@ -315,7 +301,7 @@ export async function POST(request: NextRequest) {
             await memory.saveAllMemory();
 
             await storeConversation(userId, sessionId, question, responseData);
-            await cacheQuestionAnswer(userId, question, fullResponse);
+            await cacheToolSeerAnswer('ask-geomancy-seer', userId, question, fullResponse);
           } catch (error) {
             devLog.error('Error during Geomancy Seer streaming:', error);
             controller.enqueue(
@@ -384,55 +370,5 @@ async function storeConversation(
     devLog.info('✅ Geomancy conversation stored successfully', undefined, 'ask-geomancy-seer');
   } catch (error) {
     devLog.error('Error storing Geomancy conversation:', error);
-  }
-}
-
-function calculateSimilarity(question1: string, question2: string): number {
-  const q1 = question1.toLowerCase();
-  const q2 = question2.toLowerCase();
-  const keywords = ['figure', 'house', 'judge', 'geomantic', 'condition', 'proceed', 'obstruction', 'stable'];
-  let matches = 0;
-  for (const kw of keywords) {
-    if (q1.includes(kw) && q2.includes(kw)) matches += 2;
-  }
-  return matches;
-}
-
-async function checkCachedQuestions(userId: string, question: string): Promise<{ answer: string } | null> {
-  try {
-    const db = getFirebaseDB();
-    if (!db) return null;
-    const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
-    const cacheRef = collection(db, 'geomancySeerCache', userId, 'questions');
-    const q = query(cacheRef, orderBy('timestamp', 'desc'), limit(20));
-    const snapshot = await getDocs(q);
-    for (const d of snapshot.docs) {
-      const cached = d.data();
-      if (calculateSimilarity(question, cached.question) >= 5) {
-        return { answer: cached.answer };
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function cacheQuestionAnswer(userId: string, question: string, answer: string): Promise<void> {
-  try {
-    const db = getFirebaseDB();
-    if (!db) return;
-    const { doc, setDoc } = await import('firebase/firestore');
-    const cacheId = `qa_${Date.now()}`;
-    const cacheRef = doc(db, 'geomancySeerCache', userId, 'questions', cacheId);
-    await setDoc(cacheRef, {
-      question,
-      answer,
-      timestamp: Date.now(),
-      ttl: Date.now() + 30 * 24 * 60 * 60 * 1000,
-    });
-    devLog.info('✅ Geomancy question cached', undefined, 'ask-geomancy-seer');
-  } catch (error) {
-    devLog.error('Error caching Geomancy question:', error);
   }
 }

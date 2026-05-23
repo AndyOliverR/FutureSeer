@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server'
 import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { devLog } from '@/lib/devLogger';
 import type { DreamAnalysis, DreamData } from '@/lib/dreamSymbolsIntelligence';
 import { buildDreamSymbolsSeerSystemPrompt } from '@/lib/dreamSymbolsSeerPrompts';
@@ -204,12 +206,15 @@ export async function POST(request: NextRequest) {
 
     const userMessage = question.trim();
 
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
+    const { messages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: userMessage,
+    });
+
+    const { stream } = await callTextStream({ label: 'ask-dream-symbols-seer', model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+      messages,
       temperature: 0.7,
       maxTokens: 1000,
     });
@@ -218,11 +223,16 @@ export async function POST(request: NextRequest) {
       new ReadableStream({
         async start(controller) {
           try {
+            let fullResponse = '';
             for await (const chunk of stream) {
               const content = chunk.choices[0]?.delta?.content ?? '';
               if (content) {
+                fullResponse += content;
                 controller.enqueue(new TextEncoder().encode(content));
               }
+            }
+            if (fullResponse.trim()) {
+              await cacheToolSeerAnswer('ask-dream-symbols-seer', userId, question, fullResponse);
             }
           } catch (error) {
             devLog.error('Dream Symbols Seer stream error:', error);

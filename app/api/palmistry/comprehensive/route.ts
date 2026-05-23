@@ -1,7 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
-import { getAuth, adminDb } from '@/lib/firebase-admin';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
+import {
+  readAdminComprehensiveCache,
+  writeAdminComprehensiveCache,
+} from '@/lib/adminComprehensiveCache';
+import { getAuth } from '@/lib/firebase-admin';
+
+type PalmistryValidatedAnalysis = {
+  overallReading: string;
+  lifePath: string;
+  strengths: string[];
+  challenges: string[];
+  relationships: string;
+  career: string;
+  health: string;
+  timing: {
+    currentYear: string;
+    nextThreeYears: string;
+    opportunities: string[];
+    challenges: string[];
+  };
+  remedies: string[];
+  spiritualGuidance: string;
+  keyInsights: string[];
+};
+
+function validatePalmistryAnalysis(
+  comprehensiveAnalysis: Record<string, unknown>,
+): PalmistryValidatedAnalysis {
+  const timingRaw = comprehensiveAnalysis.timing as Record<string, unknown> | undefined;
+  return {
+    overallReading:
+      (comprehensiveAnalysis.overallReading as string) ||
+      'Your palm reveals a unique combination of traits and potential.',
+    lifePath:
+      (comprehensiveAnalysis.lifePath as string) || 'Your life path is one of growth and discovery.',
+    strengths: (comprehensiveAnalysis.strengths as string[]) || [
+      'Natural abilities',
+      'Inner strength',
+      'Adaptability',
+    ],
+    challenges: (comprehensiveAnalysis.challenges as string[]) || [
+      'Areas for growth',
+      'Learning opportunities',
+    ],
+    relationships:
+      (comprehensiveAnalysis.relationships as string) ||
+      'Your Heart Line indicates a capacity for deep connections.',
+    career:
+      (comprehensiveAnalysis.career as string) ||
+      'Your palm suggests various career paths aligned with your talents.',
+    health:
+      (comprehensiveAnalysis.health as string) || 'Your Life Line indicates vitality and energy.',
+    timing: {
+      currentYear:
+        (timingRaw?.currentYear as string) || 'Focus on personal growth this year.',
+      nextThreeYears:
+        (timingRaw?.nextThreeYears as string) ||
+        'The coming years bring opportunities for development.',
+      opportunities: (timingRaw?.opportunities as string[]) || [
+        'Personal growth',
+        'New connections',
+        'Career advancement',
+      ],
+      challenges: (timingRaw?.challenges as string[]) || [
+        'Patience required',
+        'Balance needed',
+      ],
+    },
+    remedies: (comprehensiveAnalysis.remedies as string[]) || [
+      'Practice mindfulness',
+      'Develop strengths',
+      'Address challenges',
+    ],
+    spiritualGuidance:
+      (comprehensiveAnalysis.spiritualGuidance as string) ||
+      'Trust in your unique path and inner wisdom.',
+    keyInsights: (comprehensiveAnalysis.keyInsights as string[]) || [
+      'You have unique gifts',
+      'Growth is continuous',
+      'Trust your journey',
+    ],
+  };
+}
+
+function buildPalmistryDeterministic(): PalmistryValidatedAnalysis {
+  return validatePalmistryAnalysis({});
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,37 +108,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 500 }
-      );
-    }
-
-    // Check cache first
-    try {
-      const cacheRef = adminDb
-        .collection('users')
-        .doc(userId)
-        .collection('palmistry-comprehensive')
-        .doc('latest');
-      
-      const cacheDoc = await cacheRef.get();
-      
-      if (cacheDoc.exists) {
-        const cached = cacheDoc.data();
-        // Return cached if less than 7 days old
-        if (cached && cached.timestamp && (Date.now() - cached.timestamp < 7 * 24 * 60 * 60 * 1000)) {
-          devLog.debug('✅ Returning cached comprehensive palmistry analysis');
-          return NextResponse.json({
-            success: true,
-            data: cached.analysis,
-            cached: true
-          });
-        }
-      }
-    } catch (cacheError) {
-      devLog.warn('Cache check failed, continuing with fresh analysis:', cacheError, 'route');
+    const freshCached = await readAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
+      maxAgeHours: 24 * 7,
+      extract: (d) => (d.analysis as PalmistryValidatedAnalysis) ?? null,
+    });
+    if (freshCached) {
+      devLog.debug('✅ Returning cached comprehensive palmistry analysis');
+      return NextResponse.json({
+        success: true,
+        data: freshCached,
+        cached: true,
+      });
     }
 
     devLog.debug('🔮 Generating comprehensive palmistry analysis...');
@@ -101,92 +168,66 @@ Please provide a comprehensive analysis in the following JSON structure:
 
 Provide only valid JSON in your response.`;
 
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert palmist with deep knowledge of palmistry traditions. Provide comprehensive, insightful, and practical guidance.'
-        },
-        {
-          role: 'user',
-          content: analysisPrompt
-        }
-      ],
-      temperature: 0.7,
-      maxTokens: 2000,
-      response_format: { type: 'json_object' }
+    const resolved = await resolveAiReportWithFallback({
+      label: 'palmistry-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'palmistry-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert palmist with deep knowledge of palmistry traditions. Provide comprehensive, insightful, and practical guidance. Respond only with valid JSON.',
+            },
+            { role: 'user', content: analysisPrompt },
+          ],
+          temperature: 0.7,
+          maxTokens: 2000,
+          maxAttempts: 3,
+        });
+        return mapStructuredReportRun(aiRun, validatePalmistryAnalysis);
+      },
+      readFirestoreCache: () =>
+        readAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
+          allowStale: true,
+          extract: (d) => (d.analysis as PalmistryValidatedAnalysis) ?? null,
+        }),
+      buildDeterministic: buildPalmistryDeterministic,
     });
 
-    const analysisText = result.content || '{}';
-    
-    if (!analysisText) {
-      throw new Error('Empty response from AI');
-    }
+    const validatedAnalysis = resolved.data;
 
-    // Parse JSON response
-    let comprehensiveAnalysis: any;
-    try {
-      comprehensiveAnalysis = JSON.parse(analysisText);
-    } catch (parseError) {
-      devLog.error('Failed to parse AI response:', parseError, 'route');
-      // Try to extract JSON from markdown code blocks if present
-      const jsonMatch = analysisText.match(/```json\s*([\s\S]*?)\s*```/) || analysisText.match(/```\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        comprehensiveAnalysis = JSON.parse(jsonMatch[1]);
-      } else {
-        throw new Error('Invalid JSON response from AI');
-      }
-    }
-
-    // Validate and provide defaults
-    const validatedAnalysis = {
-      overallReading: comprehensiveAnalysis.overallReading || 'Your palm reveals a unique combination of traits and potential.',
-      lifePath: comprehensiveAnalysis.lifePath || 'Your life path is one of growth and discovery.',
-      strengths: comprehensiveAnalysis.strengths || ['Natural abilities', 'Inner strength', 'Adaptability'],
-      challenges: comprehensiveAnalysis.challenges || ['Areas for growth', 'Learning opportunities'],
-      relationships: comprehensiveAnalysis.relationships || 'Your Heart Line indicates a capacity for deep connections.',
-      career: comprehensiveAnalysis.career || 'Your palm suggests various career paths aligned with your talents.',
-      health: comprehensiveAnalysis.health || 'Your Life Line indicates vitality and energy.',
-      timing: {
-        currentYear: comprehensiveAnalysis.timing?.currentYear || 'Focus on personal growth this year.',
-        nextThreeYears: comprehensiveAnalysis.timing?.nextThreeYears || 'The coming years bring opportunities for development.',
-        opportunities: comprehensiveAnalysis.timing?.opportunities || ['Personal growth', 'New connections', 'Career advancement'],
-        challenges: comprehensiveAnalysis.timing?.challenges || ['Patience required', 'Balance needed']
-      },
-      remedies: comprehensiveAnalysis.remedies || ['Practice mindfulness', 'Develop strengths', 'Address challenges'],
-      spiritualGuidance: comprehensiveAnalysis.spiritualGuidance || 'Trust in your unique path and inner wisdom.',
-      keyInsights: comprehensiveAnalysis.keyInsights || ['You have unique gifts', 'Growth is continuous', 'Trust your journey']
-    };
-
-    // Cache the result
-    try {
-      const cacheRef = adminDb
-        .collection('users')
-        .doc(userId)
-        .collection('palmistry-comprehensive')
-        .doc('latest');
-      
-      await cacheRef.set({
-        analysis: validatedAnalysis,
-        timestamp: Date.now(),
-        palmDataSnapshot: {
-          hand: palmistryData.hand,
-          palmShape: palmistryData.palmShape,
-          energyScore: palmistryData.energyScore
-        }
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: validatedAnalysis,
+        cached: resolved.source === 'firestore_cache',
+        parsingFailed: resolved.parsingFailed ?? true,
+        fallbackSource: resolved.source,
+        error:
+          resolved.source === 'firestore_cache'
+            ? 'Using last saved report; AI narrative refresh failed'
+            : 'Failed to parse AI response, using palmistry defaults',
       });
-      
-      devLog.debug('✅ Cached comprehensive palmistry analysis');
-    } catch (cacheError) {
-      devLog.warn('Failed to cache analysis:', cacheError, 'route');
     }
+
+    await writeAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
+      analysis: validatedAnalysis,
+      palmDataSnapshot: {
+        hand: palmistryData.hand,
+        palmShape: palmistryData.palmShape,
+        energyScore: palmistryData.energyScore,
+      },
+    });
+
+    devLog.debug('✅ Cached comprehensive palmistry analysis');
 
     return NextResponse.json({
       success: true,
       data: validatedAnalysis,
       cached: false,
-      _usage: result.usage,
     });
 
   } catch (error: any) {

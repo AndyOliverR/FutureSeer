@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
+import { enforceToolSeerGate, resolveToolSeerUserId } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import {
   buildEnergyState,
   classifyEnergyQuestion,
@@ -72,6 +74,11 @@ export async function POST(request: NextRequest) {
     const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_energy_healing_seer')
     if (__toolSeerGate) return __toolSeerGate
 
+    const userId = await resolveToolSeerUserId(request, body, 'ask_energy_healing_seer');
+    if (!userId) {
+      return jsonWithRobots({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const {
       question,
       analysis: bodyAnalysis,
@@ -128,17 +135,15 @@ export async function POST(request: NextRequest) {
     const slice = getEnergySliceForQuestionType(questionType, state);
     const systemPrompt = buildEnergyHealingSeerSystemPrompt(slice, questionType);
 
-    const messages = [
-      { role: 'system' as const, content: systemPrompt },
-      ...conversationHistory.flatMap((item) => [
-        { role: 'user' as const, content: item.question },
-        { role: 'assistant' as const, content: item.answer },
-      ]),
-      { role: 'user' as const, content: question.trim() },
-    ];
+    const { messages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: question.trim(),
+      history: conversationHistory,
+    });
 
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'ask-energy-healing-seer', model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,
       temperature: 0.6,
       maxTokens: 800,
@@ -148,11 +153,16 @@ export async function POST(request: NextRequest) {
       new ReadableStream({
         async start(controller) {
           try {
+            let fullResponse = '';
             for await (const chunk of stream) {
               const content = chunk.choices?.[0]?.delta?.content ?? '';
               if (content) {
+                fullResponse += content;
                 controller.enqueue(new TextEncoder().encode(content));
               }
+            }
+            if (fullResponse.trim()) {
+              await cacheToolSeerAnswer('ask-energy-healing-seer', userId, question, fullResponse);
             }
           } catch (error) {
             devLog.error('Error during energy healing seer streaming:', error, 'route');

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
+import { enforceToolSeerGate, resolveToolSeerUserId } from '@/lib/enforceToolSeerGate';
 import { devLog } from '@/lib/devLogger';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
 import {
   buildPalmState,
   classifyPalmQuestion,
@@ -18,6 +19,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const __toolSeerGate = await enforceToolSeerGate(request, body, 'palmistry_ask_seer');
     if (__toolSeerGate) return __toolSeerGate;
+
+    const userId = await resolveToolSeerUserId(request, body, 'palmistry_ask_seer');
+    if (!userId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
     const { question, palmistryContext, userProfile } = body;
 
     if (!question || !question.trim()) {
@@ -50,8 +56,9 @@ export async function POST(request: NextRequest) {
     const state = buildPalmState(palmistryContext ?? null, userProfile);
     const chartSlice = getPalmSliceForQuestionType(questionType, state);
 
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'palmistry-ask-seer', model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages: [
         { role: 'system', content: buildPalmSeerSystemPrompt(chartSlice, questionType) },
         { role: 'user', content: question.trim() },
@@ -64,11 +71,16 @@ export async function POST(request: NextRequest) {
       new ReadableStream({
         async start(controller) {
           try {
+            let fullResponse = '';
             for await (const chunk of stream) {
               const content = chunk.choices[0]?.delta?.content || '';
               if (content) {
+                fullResponse += content;
                 controller.enqueue(new TextEncoder().encode(content));
               }
+            }
+            if (fullResponse.trim()) {
+              await cacheToolSeerAnswer('palmistry-ask-seer', userId, question, fullResponse);
             }
           } catch (error) {
             devLog.error('Palmistry Seer stream error:', error, 'route');
