@@ -35,14 +35,24 @@ export default function AdminSocialPostsPage() {
   const urlChannel = parseChannelParam(searchParams.get('channel'));
   const urlTemplate = searchParams.get('template');
 
-  const [queueSelection, setQueueSelection] = useState<QueueSelection>(() => {
-    const ch = urlChannel ?? todayItem.channel;
-    const item = getQueueItemByChannel(ch) ?? todayItem;
-    const templateId = urlTemplate ?? item.defaultTemplateId;
-    return { channel: item.channel, templateId };
-  });
+  const defaultSelection = useMemo((): QueueSelection => {
+    const item = todayItem;
+    return { channel: item.channel, templateId: item.defaultTemplateId };
+  }, [todayItem]);
 
-  const [activeChannel, setActiveChannel] = useState<SocialChannel>(queueSelection.channel);
+  const urlDrivenSelection = useMemo((): QueueSelection | null => {
+    if (!urlChannel) return null;
+    const item = getQueueItemByChannel(urlChannel) ?? todayItem;
+    return {
+      channel: urlChannel,
+      templateId: urlTemplate ?? item.defaultTemplateId,
+    };
+  }, [urlChannel, urlTemplate, todayItem]);
+
+  const [manualSelection, setManualSelection] = useState<QueueSelection | null>(null);
+
+  const queueSelection = urlDrivenSelection ?? manualSelection ?? defaultSelection;
+  const activeChannel = queueSelection.channel;
 
   useEffect(() => {
     if (authLoading) return;
@@ -55,28 +65,23 @@ export default function AdminSocialPostsPage() {
     }
   }, [authLoading, user, isAdmin, isSuperadmin, router]);
 
-  useEffect(() => {
-    const ch = urlChannel;
-    if (!ch) return;
-    const item = getQueueItemByChannel(ch) ?? todayItem;
-    setQueueSelection({
-      channel: ch,
-      templateId: urlTemplate ?? item.defaultTemplateId,
-    });
-    setActiveChannel(ch);
-  }, [urlChannel, urlTemplate, todayItem]);
-
   const getIdToken = useCallback(async () => {
     if (!user) throw new Error('Not signed in');
     return user.getIdToken();
   }, [user]);
 
   const handleQueueSelect = useCallback((selection: QueueSelection) => {
-    setQueueSelection(selection);
-    setActiveChannel(selection.channel);
+    setManualSelection(selection);
     const el = document.getElementById('social-post-generator');
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
+
+  const handleChannelChange = useCallback((channel: SocialChannel) => {
+    setManualSelection((prev) => {
+      const base = prev ?? urlDrivenSelection ?? defaultSelection;
+      return { ...base, channel };
+    });
+  }, [urlDrivenSelection, defaultSelection]);
 
   if (authLoading || !user || (!isAdmin && !isSuperadmin)) {
     return (
@@ -112,10 +117,11 @@ export default function AdminSocialPostsPage() {
         <WeeklyDigestActions getIdToken={getIdToken} />
         <div id="social-post-generator">
           <SocialPostGenerator
+            key={`${queueSelection.channel}:${queueSelection.templateId}`}
             getIdToken={getIdToken}
             initialChannel={queueSelection.channel}
             initialTemplateId={queueSelection.templateId}
-            onChannelChange={setActiveChannel}
+            onChannelChange={handleChannelChange}
           />
         </div>
       </div>

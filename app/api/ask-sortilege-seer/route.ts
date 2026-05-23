@@ -5,8 +5,6 @@ import { getFirebaseDB } from '@/lib/firebase';
 import { callTextStream } from '@/lib/aiStructuredOutput';
 import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
 import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
-import { cacheSeerQuestionAnswer } from '@/lib/seerQuestionCache';
-import { SEER_CACHE_KEYWORDS } from '@/lib/seerQuestionSimilarity';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import { SortilegeReading } from '@/lib/sortilegeIntelligence';
