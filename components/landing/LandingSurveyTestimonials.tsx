@@ -133,10 +133,13 @@ export function LandingSurveyTestimonials() {
     >
       <div className="max-w-6xl mx-auto space-y-12">
         <div className="text-center max-w-2xl mx-auto">
-          <h2 id="community-voice-heading" className="text-2xl sm:text-3xl font-serif text-amber-200 mb-3">
+          <h2
+            id="community-voice-heading"
+            className="text-2xl sm:text-3xl md:text-4xl font-heading font-light uppercase tracking-[0.12em] md:tracking-[0.18em] gold-glow mb-3"
+          >
             Real voices & your take
           </h2>
-          <p className="text-sm sm:text-base text-slate-400">
+          <p className="text-sm sm:text-base text-primary/75 font-light leading-relaxed">
             Share a quick survey—we read every reply. If you&apos;ve tried FutureSeer, you can offer a quote for our
             homepage (reviewed before publish).
           </p>

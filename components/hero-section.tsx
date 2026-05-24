@@ -8,44 +8,23 @@ import { useAnalytics } from "@/lib/analytics"
 import { ANALYTICS_EVENTS } from "@/lib/analytics"
 import { heroCtaLabel } from "@/lib/heroCtaVariant"
 import { useHeroCtaVariant } from "@/hooks/useHeroCtaVariant"
-import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark"
 
 export function HeroSection() {
   const router = useRouter()
   const { trackEvent } = useAnalytics()
   const ctaVariant = useHeroCtaVariant()
-
   const ctaLabel = heroCtaLabel(ctaVariant)
 
   return (
-    <section className="flex flex-col items-center justify-center min-h-[75vh] md:min-h-[85vh] px-4 text-center pt-20 md:pt-24 pb-12 relative bg-transparent">
-      <div className="max-w-5xl mx-auto space-y-8 md:space-y-10">
-        <FutureSeerWordmark size="xl" className="mx-auto block" />
-
-        <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-heading text-primary leading-tight tracking-[0.1em] md:tracking-[0.2em] font-light uppercase">
-          Ask the Seer
+    <section className="flex flex-col items-center justify-center min-h-[70vh] md:min-h-[80vh] px-4 text-center pt-20 md:pt-24 pb-6 relative bg-transparent">
+      <div className="max-w-5xl mx-auto space-y-8 md:space-y-12">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-heading text-primary leading-tight tracking-[0.1em] md:tracking-[0.2em] font-light uppercase">
+          <span className="block">Ask</span>
+          <span className="block">the Seer</span>
         </h1>
 
-        <div className="max-w-2xl mx-auto space-y-4 text-primary/90 font-light leading-relaxed normal-case tracking-normal px-2">
-          <p className="text-base sm:text-lg md:text-xl">
-            Ask one question.{" "}
-            <FutureSeerWordmark size="sm" className="align-baseline" /> reads your birth profile across Vedic
-            astrology, Tarot, Numerology, and more to deliver one clear answer—not generic horoscope filler.
-          </p>
-          <p className="text-sm md:text-base text-primary/75">
-            Create your profile once · Ask about love, career, money, or timing · Get a unified reply
-          </p>
-          <p className="text-sm md:text-base text-primary/80">
-            One birth profile powers every tradition you choose—Vedic, Tarot, Numerology, and dozens more—so you never
-            re-enter your details or juggle conflicting apps.
-          </p>
-          <p className="text-sm text-primary/70">
-            Charts use Swiss Ephemeris precision. Answers stay grounded in traditional rules—not generic horoscopes.
-          </p>
-        </div>
-
         <div className="max-w-xl mx-auto space-y-4 opacity-90">
-          <p className="text-sm md:text-lg font-quote leading-relaxed gold-glow font-light not-italic">
+          <p className="text-base md:text-2xl font-quote leading-relaxed gold-glow font-light not-italic">
             &ldquo;Millionaires don&apos;t use astrology, billionaires do.&rdquo;
           </p>
           <p className="text-xs md:text-sm font-normal text-primary/80 uppercase tracking-[0.2em]">
@@ -81,11 +60,10 @@ export function HeroSection() {
           >
             Already have an account? Sign In
           </Link>
+          <div className="pt-2 animate-bounce opacity-30 hidden sm:block" aria-hidden="true">
+            <ChevronDown className="w-6 h-6 text-white mx-auto" />
+          </div>
         </div>
-      </div>
-
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 animate-bounce opacity-30 hidden sm:block">
-        <ChevronDown className="w-6 h-6 text-white" />
       </div>
     </section>
   )

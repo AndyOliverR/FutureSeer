@@ -21,6 +21,9 @@ interface MysticalShareCardPanelProps {
   variant: 'm3' | 'web';
 }
 
+const PREVIEW_MAX_WIDTH = 320;
+const PREVIEW_SCALE = PREVIEW_MAX_WIDTH / MYSTICAL_SHARE_CARD_EXPORT_WIDTH;
+
 async function exportCardPng(cardEl: HTMLElement): Promise<string> {
   return toPng(cardEl, {
     width: MYSTICAL_SHARE_CARD_EXPORT_WIDTH,
@@ -163,11 +166,24 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
         <div className="flex flex-col items-center gap-5">
           <div
             className={cn(
-              'rounded-2xl p-2 shadow-2xl',
+              'overflow-hidden rounded-[26px] p-2.5 shadow-2xl',
               isM3 ? 'bg-surface-container-lowest' : 'bg-slate-950/80 ring-1 ring-amber-500/20',
             )}
+            style={{
+              width: PREVIEW_MAX_WIDTH,
+              height: MYSTICAL_SHARE_CARD_EXPORT_HEIGHT * PREVIEW_SCALE,
+            }}
           >
-            <MysticalShareCardVisual ref={cardRef} payload={payload} />
+            <div
+              style={{
+                width: MYSTICAL_SHARE_CARD_EXPORT_WIDTH,
+                height: MYSTICAL_SHARE_CARD_EXPORT_HEIGHT,
+                transform: `scale(${PREVIEW_SCALE})`,
+                transformOrigin: 'top left',
+              }}
+            >
+              <MysticalShareCardVisual ref={cardRef} payload={payload} />
+            </div>
           </div>
 
           <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
