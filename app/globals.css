@@ -212,12 +212,13 @@ main {
 }
 
 /* UTILITIES */
-.gold-glow {
-  color: var(--gold-primary);
-  text-shadow: 0 0 20px var(--gold-glow);
-  background: linear-gradient(135deg, #fef08a 0%, #fbbf24 50%, #b45309 100%);
+.gold-glow,
+.shiny-gold-text {
+  text-shadow: none;
+  background: linear-gradient(180deg, #fef9c3 0%, #fde047 38%, #fbbf24 72%, #d97706 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* FutureSeer logotype — Inter + gold gradient (standard across nav, footer, landing) */

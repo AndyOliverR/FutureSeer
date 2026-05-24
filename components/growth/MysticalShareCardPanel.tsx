@@ -21,8 +21,7 @@ interface MysticalShareCardPanelProps {
   variant: 'm3' | 'web';
 }
 
-const PREVIEW_MAX_WIDTH = 320;
-const PREVIEW_SCALE = PREVIEW_MAX_WIDTH / MYSTICAL_SHARE_CARD_EXPORT_WIDTH;
+const PREVIEW_MAX_WIDTH = 400;
 
 async function exportCardPng(cardEl: HTMLElement): Promise<string> {
   return toPng(cardEl, {
@@ -35,11 +34,29 @@ async function exportCardPng(cardEl: HTMLElement): Promise<string> {
 
 export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPanelProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [busy, setBusy] = useState<'download' | 'share' | null>(null);
+  const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_WIDTH / MYSTICAL_SHARE_CARD_EXPORT_WIDTH);
   const viewedRef = useRef(false);
 
   const isM3 = variant === 'm3';
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame || typeof ResizeObserver === 'undefined') return;
+
+    const updateScale = () => {
+      const width = frame.clientWidth;
+      if (width <= 0) return;
+      setPreviewScale(width / MYSTICAL_SHARE_CARD_EXPORT_WIDTH);
+    };
+
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (viewedRef.current) return;
@@ -51,6 +68,7 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
   }, [payload.archetypeTitle, payload.highlightToolName]);
 
   const shareText = `${payload.displayName}'s cosmic profile: ${payload.archetypeTitle} — ${payload.hookLine.slice(0, 120)}…`;
+  const previewHeight = MYSTICAL_SHARE_CARD_EXPORT_HEIGHT * previewScale;
 
   const handleCopyLink = useCallback(async () => {
     const ok = await safeCopyToClipboard(payload.shareUrl);
@@ -136,14 +154,14 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
 
   const titleClass = isM3
     ? 'text-lg font-heading font-bold text-primary uppercase tracking-tight'
-    : 'text-xl font-heading font-light text-amber-400 tracking-widest uppercase';
+    : 'text-xl font-heading font-light shiny-gold-text tracking-widest uppercase';
 
   const subClass = isM3 ? 'text-sm text-surface-on-variant' : 'text-sm text-slate-400';
 
   return (
     <section className={cn('mb-8', isM3 ? 'px-0' : '')} aria-labelledby="mystical-share-heading">
       <div className={shellClass}>
-        <div className="flex items-start gap-3 mb-4">
+        <div className="mb-4 flex items-start gap-3">
           <div
             className={cn(
               'shrink-0 rounded-full p-2',
@@ -158,7 +176,7 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
             </h2>
             <p className={cn('mt-1', subClass)}>
               Download or share your highlight — friends see your archetype and find you on{' '}
-              <span className="text-amber-400/90 font-medium">futureseer.app</span>.
+              <span className="font-medium text-amber-400/90">futureseer.app</span>.
             </p>
           </div>
         </div>
@@ -166,23 +184,25 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
         <div className="flex flex-col items-center gap-5">
           <div
             className={cn(
-              'overflow-hidden rounded-[26px] p-2.5 shadow-2xl',
+              'mx-auto w-full max-w-[400px] rounded-[26px] p-2.5 shadow-2xl',
               isM3 ? 'bg-surface-container-lowest' : 'bg-slate-950/80 ring-1 ring-amber-500/20',
             )}
-            style={{
-              width: PREVIEW_MAX_WIDTH,
-              height: MYSTICAL_SHARE_CARD_EXPORT_HEIGHT * PREVIEW_SCALE,
-            }}
           >
             <div
-              style={{
-                width: MYSTICAL_SHARE_CARD_EXPORT_WIDTH,
-                height: MYSTICAL_SHARE_CARD_EXPORT_HEIGHT,
-                transform: `scale(${PREVIEW_SCALE})`,
-                transformOrigin: 'top left',
-              }}
+              ref={frameRef}
+              className="relative w-full overflow-hidden rounded-[18px]"
+              style={{ height: previewHeight }}
             >
-              <MysticalShareCardVisual ref={cardRef} payload={payload} />
+              <div
+                style={{
+                  width: MYSTICAL_SHARE_CARD_EXPORT_WIDTH,
+                  height: MYSTICAL_SHARE_CARD_EXPORT_HEIGHT,
+                  transform: `scale(${previewScale})`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <MysticalShareCardVisual ref={cardRef} payload={payload} />
+              </div>
             </div>
           </div>
 

@@ -19,14 +19,15 @@ interface MysticalShareCardVisualProps {
   payload: MysticalSharePayload;
 }
 
-const GOLD_GLOW_TEXT = {
-  color: '#fde68a',
-  textShadow:
-    '0 0 6px rgba(253, 224, 71, 0.95), 0 0 18px rgba(251, 191, 36, 0.65), 0 0 36px rgba(251, 191, 36, 0.35), 0 0 56px rgba(251, 191, 36, 0.2)',
+const SHINY_GOLD_TEXT = {
+  background: 'linear-gradient(180deg, #fef9c3 0%, #fde047 38%, #fbbf24 72%, #d97706 100%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
 } as const;
 
-const SOFT_WHITE_GLOW = {
-  textShadow: '0 0 20px rgba(255, 255, 255, 0.35), 0 0 40px rgba(251, 191, 36, 0.15)',
+const TITLE_TEXT = {
+  color: '#fafafa',
 } as const;
 
 function CornerOrnament({ className, palette }: { className: string; palette: MysticalShareCardPalette }) {
@@ -105,7 +106,7 @@ export const MysticalShareCardVisual = forwardRef<HTMLDivElement, MysticalShareC
             inset: 14,
             borderRadius: 14,
             border: palette.frameInner,
-            boxShadow: 'inset 0 0 24px rgba(251, 191, 36, 0.06)',
+            boxShadow: 'inset 0 0 12px rgba(251, 191, 36, 0.04)',
           }}
         />
 
@@ -114,45 +115,33 @@ export const MysticalShareCardVisual = forwardRef<HTMLDivElement, MysticalShareC
         <CornerOrnament className="absolute bottom-[72px] left-5" palette={palette} />
         <CornerOrnament className="absolute bottom-[72px] right-5" palette={palette} />
 
-        <div className="relative z-10 flex h-full flex-col px-9 pt-9 pb-8">
-          <p
-            className="text-lg font-light tracking-[0.08em]"
-            style={{
-              ...GOLD_GLOW_TEXT,
-              textShadow: `${GOLD_GLOW_TEXT.textShadow}, ${palette.accentGlow}`,
-            }}
-          >
+        <div className="relative z-10 flex h-full flex-col px-8 pt-9 pb-8">
+          <p className="text-xl font-light tracking-[0.08em]" style={SHINY_GOLD_TEXT}>
             {theme.topMark}
           </p>
 
           <div>
-            <p
-              className="mt-4 text-[10px] font-semibold uppercase tracking-[0.42em] text-amber-100/75"
-              style={GOLD_GLOW_TEXT}
-            >
+            <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.38em] text-amber-100/80" style={SHINY_GOLD_TEXT}>
               My mystical profile
             </p>
-            <p className="mt-5 text-base font-medium tracking-wide text-amber-50/90">{payload.displayName}</p>
+            <p className="mt-5 text-lg font-medium tracking-wide text-amber-50/95">{payload.displayName}</p>
             <h2
-              className="mt-4 px-2 text-[1.85rem] font-bold uppercase leading-[1.15] tracking-[0.06em] text-white"
-              style={SOFT_WHITE_GLOW}
+              className="mt-4 px-2 text-[2.15rem] font-bold uppercase leading-[1.12] tracking-[0.05em]"
+              style={TITLE_TEXT}
             >
               {payload.archetypeTitle}
             </h2>
-            <p
-              className="mt-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-amber-200/85"
-              style={{ textShadow: palette.accentGlow }}
-            >
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.28em] text-amber-200/90" style={SHINY_GOLD_TEXT}>
               {payload.rarityLabel}
             </p>
           </div>
 
-          <div className="flex flex-1 flex-col justify-center space-y-3 px-1 py-4">
-            <p className="text-[14px] leading-[1.65] text-slate-100/95">{payload.hookLine}</p>
+          <div className="flex flex-1 flex-col justify-center space-y-3.5 px-1 py-4">
+            <p className="text-[16px] leading-[1.6] text-slate-100">{payload.hookLine}</p>
             {payload.subLine ? (
-              <p className="text-[12px] leading-[1.6] text-slate-400/95 line-clamp-4">{payload.subLine}</p>
+              <p className="text-[14px] leading-[1.55] text-slate-300/95 line-clamp-4">{payload.subLine}</p>
             ) : null}
-            <p className="pt-1 text-[9px] uppercase tracking-[0.22em] text-slate-500/90">
+            <p className="pt-1 text-[10px] uppercase tracking-[0.2em] text-slate-400/95">
               From {payload.highlightToolName} · 50+ traditions
             </p>
           </div>
@@ -162,17 +151,18 @@ export const MysticalShareCardVisual = forwardRef<HTMLDivElement, MysticalShareC
             style={{
               background: palette.nameplateBg,
               border: palette.nameplateBorder,
-              boxShadow: '0 0 20px rgba(251, 191, 36, 0.12), inset 0 1px 0 rgba(254, 243, 199, 0.12)',
+              boxShadow: 'inset 0 1px 0 rgba(254, 243, 199, 0.12)',
             }}
           >
-            <p className="text-xl font-semibold tracking-wide" style={GOLD_GLOW_TEXT}>
+            <p className="text-2xl font-semibold tracking-wide" style={SHINY_GOLD_TEXT}>
               futureseer.app
             </p>
-            <p
-              className="mt-1.5 text-[9px] uppercase tracking-[0.28em] text-amber-100/55"
-              style={{ textShadow: '0 0 8px rgba(251, 191, 36, 0.25)' }}
-            >
-              One chart · Many paths · Ask the Seer
+            <p className="mt-2 text-[10px] uppercase tracking-[0.24em] leading-relaxed">
+              <span className="text-amber-100/70">One chart · Many paths</span>
+              <br />
+              <span style={SHINY_GOLD_TEXT}>ASK THE</span>
+              <br />
+              <span style={SHINY_GOLD_TEXT}>SEER</span>
             </p>
           </div>
         </div>
