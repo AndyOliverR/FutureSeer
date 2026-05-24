@@ -1,7 +1,6 @@
 "use client";
 
 import { Heart, MessageCircle, Sparkles } from "lucide-react";
-import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark";
 
 const features = [
   {
@@ -30,7 +29,7 @@ const features = [
  */
 export function FeatureBlocks() {
   return (
-    <section className="py-10 sm:py-12 md:py-16 bg-transparent" aria-labelledby="features-heading">
+    <section className="py-6 sm:py-8 md:py-10 bg-transparent" aria-labelledby="features-heading">
       <h2 id="features-heading" className="sr-only">
         Features
       </h2>
@@ -57,27 +56,6 @@ export function FeatureBlocks() {
               </div>
             </div>
           ))}
-        </div>
-
-        <div className="mt-16 max-w-3xl mx-auto text-center animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-both">
-          <h3 className="text-2xl mb-8 uppercase tracking-widest flex flex-wrap items-center justify-center gap-x-2">
-            <span className="font-heading text-amber-400">Why</span>
-            <FutureSeerWordmark size="md" className="inline-block normal-case tracking-normal" />
-          </h3>
-          <ul className="space-y-4 text-left">
-            {[
-              "Start with what matters: love, career, money, personality, or timing—then go deeper when you are ready.",
-              "AI connects patterns across systems, grounded in what you actually saved.",
-              "Traditional methods explained without hype or guaranteed predictions.",
-            ].map((text, i) => (
-              <li key={i} className="flex gap-3 items-start group/item">
-                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 group-hover/item:scale-125 transition-transform" />
-                <span className="text-slate-300 text-sm leading-relaxed group-hover/item:text-white transition-colors">
-                  {text}
-                </span>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </section>

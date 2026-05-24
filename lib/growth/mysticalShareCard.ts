@@ -26,6 +26,7 @@ export interface MysticalSharePayload {
   subLine: string;
   rarityLabel: string;
   highlightToolName: string;
+  highlightToolSlug: string;
   shareUrl: string;
 }
 
@@ -84,6 +85,7 @@ export function buildMysticalSharePayload(
       subLine: secondaryLine,
       rarityLabel: teaser.rarityLabel,
       highlightToolName: toolDisplayName(slug),
+      highlightToolSlug: slug,
       shareUrl: buildShareUrl({
         referralCode: options?.referralCode,
         userId: options?.userId,
