@@ -42,9 +42,9 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="/about" className="text-gray-400 hover:text-amber-400 transition-colors">
+                <Link href="/about" className="text-gray-400 hover:text-amber-400 transition-colors">
                   About
-                </a>
+                </Link>
               </li>
               <li>
                 <Link href="/tools" className="text-gray-400 hover:text-amber-400 transition-colors">
@@ -52,14 +52,14 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="/subscribe" className="text-gray-400 hover:text-amber-400 transition-colors">
+                <Link href="/pricing" className="text-gray-400 hover:text-amber-400 transition-colors">
                   Pricing
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/contact" className="text-gray-400 hover:text-amber-400 transition-colors">
+                <Link href="/contact" className="text-gray-400 hover:text-amber-400 transition-colors">
                   Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -69,19 +69,19 @@ export function Footer() {
             <h4 className="text-lg font-semibold text-amber-300 mb-4">Legal</h4>
             <ul className="space-y-2">
               <li>
-                <a href="/terms" className="text-gray-400 hover:text-amber-400 transition-colors">
+                <Link href="/terms" className="text-gray-400 hover:text-amber-400 transition-colors">
                   Terms
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/privacy" className="text-gray-400 hover:text-amber-400 transition-colors">
+                <Link href="/privacy" className="text-gray-400 hover:text-amber-400 transition-colors">
                   Privacy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/contact" className="text-gray-400 hover:text-amber-400 transition-colors">
+                <Link href="/contact" className="text-gray-400 hover:text-amber-400 transition-colors">
                   Contact Us
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -93,15 +93,15 @@ export function Footer() {
             © 2025 FutureSeer. All rights reserved.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="/terms" className="text-gray-400 hover:text-amber-400 text-sm transition-colors">
+            <Link href="/terms" className="text-gray-400 hover:text-amber-400 text-sm transition-colors">
               Terms
-            </a>
-            <a href="/privacy" className="text-gray-400 hover:text-amber-400 text-sm transition-colors">
+            </Link>
+            <Link href="/privacy" className="text-gray-400 hover:text-amber-400 text-sm transition-colors">
               Privacy
-            </a>
-            <a href="/contact" className="text-gray-400 hover:text-amber-400 text-sm transition-colors">
+            </Link>
+            <Link href="/contact" className="text-gray-400 hover:text-amber-400 text-sm transition-colors">
               Contact
-            </a>
+            </Link>
           </div>
         </div>
       </div>

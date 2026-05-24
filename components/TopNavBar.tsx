@@ -6,14 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Info, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTipJar } from "@/components/TipJarContext";
-import { useFeedback } from "@/components/FeedbackContext";
 import { useModalOpen } from "@/components/ModalOpenContext";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ShareAppModal } from "@/components/ShareAppModal";
 import { UserMenuDropdown } from "@/components/UserMenuDropdown";
 import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark";
@@ -40,7 +34,6 @@ export function TopNavBar() {
   const router = useRouter();
   const { user, userProfile, isAdmin, isSuperadmin, signOut } = useAuth();
   const { open: openTipJar } = useTipJar();
-  const { open: openFeedback } = useFeedback();
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

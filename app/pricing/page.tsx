@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { useAuth } from '@/hooks/use-auth'
 import { ContributionTiers } from '@/components/ContributionTiers'
 import { TipJarCard } from '@/components/TipJarCard'

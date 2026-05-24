@@ -4,20 +4,16 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight, ChevronDown } from "lucide-react"
-import { useEffect, useState } from "react"
 import { useAnalytics } from "@/lib/analytics"
 import { ANALYTICS_EVENTS } from "@/lib/analytics"
-import { getHeroCtaVariant, heroCtaLabel, type HeroCtaVariant } from "@/lib/heroCtaVariant"
+import { heroCtaLabel } from "@/lib/heroCtaVariant"
+import { useHeroCtaVariant } from "@/hooks/useHeroCtaVariant"
 import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark"
 
 export function HeroSection() {
   const router = useRouter()
   const { trackEvent } = useAnalytics()
-  const [ctaVariant, setCtaVariant] = useState<HeroCtaVariant>("early_access")
-
-  useEffect(() => {
-    setCtaVariant(getHeroCtaVariant())
-  }, [])
+  const ctaVariant = useHeroCtaVariant()
 
   const ctaLabel = heroCtaLabel(ctaVariant)
 
