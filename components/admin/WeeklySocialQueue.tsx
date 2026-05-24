@@ -32,8 +32,8 @@ export function WeeklySocialQueue({ onSelectDay, selectedChannel }: WeeklySocial
           This week&apos;s queue
         </CardTitle>
         <p className="text-sm text-slate-400">
-          Today: <span className="text-amber-200/90">{today.dayName}</span> — {today.channelLabel}. Generate
-          copy below, then paste in the scheduler (no auto-post).
+          Today: <span className="text-amber-200/90">{today.dayName}</span> — {today.channelLabel} at{' '}
+          {today.postTimeIst} ({today.postTimeUtc}). Generate copy below, then paste in the scheduler (no auto-post).
         </p>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -63,6 +63,10 @@ export function WeeklySocialQueue({ onSelectDay, selectedChannel }: WeeklySocial
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
                   {item.defaultTemplateLabel} — {item.calendarHint}
+                </p>
+                <p className="mt-1 text-xs text-amber-200/80">
+                  Post at {item.postTimeIst} · {item.postTimeUtc}
+                  {item.timingNote ? ` — ${item.timingNote}` : ''}
                 </p>
                 {item.postingNote ? (
                   <p className="mt-1 text-xs text-slate-500 italic">{item.postingNote}</p>

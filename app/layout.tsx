@@ -27,7 +27,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteBase),
   applicationName: "FutureSeer",
   title: "FutureSeer - AI-Powered Mystical Insights",
-  description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
+  description:
+    "Ask one question. One birth profile powers Vedic astrology, Tarot, Numerology, and more—one clear answer, not generic horoscopes.",
   keywords: [
     "AI astrology",
     "tarot reading app",
@@ -49,7 +50,8 @@ export const metadata: Metadata = {
   authors: [{ name: "FutureSeer", url: "https://futureseer.app" }],
   openGraph: {
     title: "FutureSeer - AI-Powered Mystical Insights",
-    description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
+    description:
+      "Ask one question. One birth profile powers Vedic, Tarot, Numerology, and more—one clear answer from FutureSeer.",
     url: "https://futureseer.app",
     siteName: "FutureSeer",
     type: "website",
@@ -65,7 +67,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "FutureSeer - AI-Powered Mystical Insights",
-    description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
+    description:
+      "Ask one question. One birth profile powers Vedic, Tarot, Numerology, and more—one clear answer from FutureSeer.",
     site: "@futureseerapp",
     creator: "@futureseerapp",
     images: [localizedOgImagePath("en")],

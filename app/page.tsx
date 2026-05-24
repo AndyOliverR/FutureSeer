@@ -2,6 +2,7 @@
 import { HeroSection } from "@/components/hero-section"
 import { EnhancedFooter } from "@/components/enhanced-footer"
 import { FeatureBlocks } from "@/components/feature-blocks"
+import { LandingSurveyTestimonials } from "@/components/landing/LandingSurveyTestimonials"
 import dynamic from "next/dynamic"
 
 const StickyCTA = dynamic(() => import("@/components/sticky-cta").then(mod => ({ default: mod.StickyCTA })), {
@@ -20,15 +21,17 @@ export default function HomePage() {
         <div className="px-4 w-full min-w-0 max-w-full">
           <FeatureBlocks />
           <section className="mx-auto mt-6 mb-2 max-w-6xl rounded-xl border border-amber-500/25 bg-slate-900/35 p-4 md:p-5">
-            <h2 className="text-sm md:text-base font-semibold text-amber-300">Why FutureSeer</h2>
-            <p className="mt-2 text-xs md:text-sm text-slate-200/90 leading-relaxed">
-              Most people never get a single coherent map—only scattered takes. Here you complete one ritual (your
-              profile), every major system generates to the same standard, and the main Seer is the door that turns that
-              library into one conversation: pattern, tension, and timing in plain language, grounded in what you
-              actually saved—not generic horoscope filler—at{" "}
-              <span className="font-medium text-amber-300">futureseer.app</span>.
-            </p>
+            <h2 className="text-sm md:text-base font-semibold text-amber-300">How it works</h2>
+            <ol className="mt-3 space-y-2 text-xs md:text-sm text-slate-200/90 leading-relaxed list-decimal list-inside">
+              <li>Create your birth profile once—place, date, and time.</li>
+              <li>Ask the Seer about love, career, money, personality, or timing.</li>
+              <li>
+                Get one answer that draws on Vedic astrology, Tarot, Numerology, and your saved reports—optimized for
+                mobile and desktop.
+              </li>
+            </ol>
           </section>
+          <LandingSurveyTestimonials />
         </div>
       </div>
       <EnhancedFooter />

@@ -22,6 +22,7 @@ import {
   SOCIAL_CHANNELS,
   type SocialChannel,
 } from '@/lib/growth/socialPostTemplates';
+import { formatScheduledTimeDisplay } from '@/lib/growth/socialPostSchedule';
 import { safeCopyToClipboard } from '@/lib/safeClipboard';
 import { cn } from '@/lib/utils';
 
@@ -217,12 +218,14 @@ export function SocialPostGenerator({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {SOCIAL_CHANNELS.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.label}
-                      {c.calendarDay ? ` (${c.calendarDay})` : ''}
-                    </SelectItem>
-                  ))}
+                  {SOCIAL_CHANNELS.map((c) => {
+                    const times = formatScheduledTimeDisplay(c.postTime);
+                    return (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.label} ({c.calendarDay} · {times.ist} / {times.utc})
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

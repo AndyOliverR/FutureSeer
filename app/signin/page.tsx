@@ -500,7 +500,7 @@ function SignInContent() {
             </p>
           </div>
           <div className="mt-8 text-center pt-6 border-t border-outline-variant/30">
-            <p className="text-surface-on-variant text-sm font-medium">New to FutureSeer? <Link href="/signup" className="text-amber-400 font-bold hover:underline ml-1">Join the Experiment</Link></p>
+            <p className="text-surface-on-variant text-sm font-medium">New to FutureSeer? <Link href="/signup" className="text-amber-400 font-bold hover:underline ml-1">Get Early Access</Link></p>
           </div>
         </motion.div>
       </div>

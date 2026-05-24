@@ -27,7 +27,7 @@ function renderQueueRow(item: WeeklyQueueItem, baseUrl: string): string {
     ? `<br/><span style="color:#64748b;font-size:12px;">${escapeHtml(item.postingNote)}</span>`
     : '';
   return `<tr>
-    <td style="padding:8px 12px;border-bottom:1px solid #1e293b;white-space:nowrap;"><strong>${escapeHtml(item.dayName)}</strong></td>
+    <td style="padding:8px 12px;border-bottom:1px solid #1e293b;white-space:nowrap;"><strong>${escapeHtml(item.dayName)}</strong><br/><span style="color:#94a3b8;font-size:12px;">${escapeHtml(item.postTimeIst)} · ${escapeHtml(item.postTimeUtc)}</span></td>
     <td style="padding:8px 12px;border-bottom:1px solid #1e293b;">${escapeHtml(item.channelLabel)}</td>
     <td style="padding:8px 12px;border-bottom:1px solid #1e293b;">${escapeHtml(item.defaultTemplateLabel)}</td>
     <td style="padding:8px 12px;border-bottom:1px solid #1e293b;">
@@ -57,7 +57,7 @@ export function buildWeeklySocialDigestHtml(baseUrl?: string): string {
       <table style="width:100%;border-collapse:collapse;font-size:14px;">
         <thead>
           <tr style="text-align:left;color:#94a3b8;">
-            <th style="padding:8px 12px;">Day</th>
+            <th style="padding:8px 12px;">Day · time</th>
             <th style="padding:8px 12px;">Channel</th>
             <th style="padding:8px 12px;">Template</th>
             <th style="padding:8px 12px;">Actions</th>
