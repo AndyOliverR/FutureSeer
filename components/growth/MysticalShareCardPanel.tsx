@@ -21,7 +21,8 @@ interface MysticalShareCardPanelProps {
   variant: 'm3' | 'web';
 }
 
-const PREVIEW_MAX_WIDTH = 400;
+/** On-screen preview width — larger = more readable before download. */
+const PREVIEW_MAX_WIDTH = 440;
 
 async function exportCardPng(cardEl: HTMLElement): Promise<string> {
   return toPng(cardEl, {
@@ -184,7 +185,7 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
         <div className="flex flex-col items-center gap-5">
           <div
             className={cn(
-              'mx-auto w-full max-w-[400px] rounded-[26px] p-2.5 shadow-2xl',
+              'mx-auto w-full max-w-[440px] rounded-[26px] p-2.5 shadow-2xl',
               isM3 ? 'bg-surface-container-lowest' : 'bg-slate-950/80 ring-1 ring-amber-500/20',
             )}
           >

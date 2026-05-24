@@ -28,6 +28,12 @@ const SHINY_GOLD_TEXT = {
 
 const TITLE_TEXT = {
   color: '#fafafa',
+  textShadow: '0 1px 3px rgba(0, 0, 0, 0.45)',
+} as const;
+
+const BODY_TEXT = {
+  color: '#f1f5f9',
+  textShadow: '0 1px 2px rgba(0, 0, 0, 0.35)',
 } as const;
 
 function CornerOrnament({ className, palette }: { className: string; palette: MysticalShareCardPalette }) {
@@ -115,54 +121,99 @@ export const MysticalShareCardVisual = forwardRef<HTMLDivElement, MysticalShareC
         <CornerOrnament className="absolute bottom-[72px] left-5" palette={palette} />
         <CornerOrnament className="absolute bottom-[72px] right-5" palette={palette} />
 
-        <div className="relative z-10 flex h-full flex-col px-8 pt-9 pb-8">
-          <p className="text-xl font-light tracking-[0.08em]" style={SHINY_GOLD_TEXT}>
+        <div className="relative z-10 flex h-full flex-col px-7 pt-7 pb-7">
+          <p
+            className="font-light tracking-[0.06em]"
+            style={{ ...SHINY_GOLD_TEXT, fontSize: 22, lineHeight: 1.2 }}
+          >
             {theme.topMark}
           </p>
 
           <div>
-            <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.38em] text-amber-100/80" style={SHINY_GOLD_TEXT}>
+            <p
+              className="mt-3 font-semibold uppercase text-amber-100/90"
+              style={{ ...SHINY_GOLD_TEXT, fontSize: 14, letterSpacing: '0.28em', lineHeight: 1.35 }}
+            >
               My mystical profile
             </p>
-            <p className="mt-5 text-lg font-medium tracking-wide text-amber-50/95">{payload.displayName}</p>
+            <p
+              className="mt-4 font-semibold tracking-wide text-amber-50"
+              style={{ fontSize: 22, lineHeight: 1.25, ...BODY_TEXT }}
+            >
+              {payload.displayName}
+            </p>
             <h2
-              className="mt-4 px-2 text-[2.15rem] font-bold uppercase leading-[1.12] tracking-[0.05em]"
-              style={TITLE_TEXT}
+              className="mt-3 px-1 font-bold uppercase"
+              style={{
+                ...TITLE_TEXT,
+                fontSize: 42,
+                lineHeight: 1.1,
+                letterSpacing: '0.04em',
+              }}
             >
               {payload.archetypeTitle}
             </h2>
-            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.28em] text-amber-200/90" style={SHINY_GOLD_TEXT}>
+            <p
+              className="mt-2.5 font-bold uppercase text-amber-100"
+              style={{ ...SHINY_GOLD_TEXT, fontSize: 15, letterSpacing: '0.22em', lineHeight: 1.3 }}
+            >
               {payload.rarityLabel}
             </p>
           </div>
 
-          <div className="flex flex-1 flex-col justify-center space-y-3.5 px-1 py-4">
-            <p className="text-[16px] leading-[1.6] text-slate-100">{payload.hookLine}</p>
+          <div className="flex flex-1 flex-col justify-center gap-3 px-0.5 py-3">
+            <p style={{ ...BODY_TEXT, fontSize: 20, lineHeight: 1.5, fontWeight: 500 }}>
+              {payload.hookLine}
+            </p>
             {payload.subLine ? (
-              <p className="text-[14px] leading-[1.55] text-slate-300/95 line-clamp-4">{payload.subLine}</p>
+              <p
+                className="line-clamp-4"
+                style={{ ...BODY_TEXT, fontSize: 18, lineHeight: 1.48, color: '#e2e8f0' }}
+              >
+                {payload.subLine}
+              </p>
             ) : null}
-            <p className="pt-1 text-[10px] uppercase tracking-[0.2em] text-slate-400/95">
+            <p
+              className="pt-0.5 uppercase text-slate-300/90"
+              style={{ fontSize: 13, letterSpacing: '0.14em', lineHeight: 1.35 }}
+            >
               From {payload.highlightToolName} · 50+ traditions
             </p>
           </div>
 
           <div
-            className="mx-auto w-full max-w-[340px] rounded-lg px-4 py-3"
+            className="mx-auto w-full max-w-[360px] rounded-lg px-5 py-3.5"
             style={{
               background: palette.nameplateBg,
               border: palette.nameplateBorder,
               boxShadow: 'inset 0 1px 0 rgba(254, 243, 199, 0.12)',
             }}
           >
-            <p className="text-2xl font-semibold tracking-wide" style={SHINY_GOLD_TEXT}>
+            <p
+              className="font-semibold tracking-wide"
+              style={{ ...SHINY_GOLD_TEXT, fontSize: 32, lineHeight: 1.15 }}
+            >
               futureseer.app
             </p>
-            <p className="mt-2 text-[10px] uppercase tracking-[0.24em] leading-relaxed">
-              <span className="text-amber-100/70">One chart · Many paths</span>
-              <br />
-              <span style={SHINY_GOLD_TEXT}>ASK THE</span>
-              <br />
-              <span style={SHINY_GOLD_TEXT}>SEER</span>
+            <p className="mt-2.5 leading-snug">
+              <span
+                className="block uppercase text-amber-100/80"
+                style={{ fontSize: 13, letterSpacing: '0.18em' }}
+              >
+                One chart · Many paths
+              </span>
+              <span
+                className="mt-1 block font-bold uppercase"
+                style={{ ...SHINY_GOLD_TEXT, fontSize: 15, letterSpacing: '0.2em' }}
+              >
+                ASK THE
+              </span>
+              <span
+                className="block font-bold uppercase"
+                style={{ ...SHINY_GOLD_TEXT, fontSize: 15, letterSpacing: '0.2em' }}
+              >
+                SEER
+              </span>
             </p>
           </div>
         </div>
