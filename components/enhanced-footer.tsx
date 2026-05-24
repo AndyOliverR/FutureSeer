@@ -130,8 +130,8 @@ export function EnhancedFooter() {
             Mobile apps coming soon
           </p>
           <p className="mt-1 text-xs text-surface-on-variant leading-relaxed">
-            For now, the best detailed experience is on desktop. You can still use the same web app on mobile today
-            because FutureSeer is platform-aware and adapts automatically.
+            Optimized for mobile and desktop—the same web app adapts to your screen. Native iOS and Android apps are
+            coming soon; join the waitlist below.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link

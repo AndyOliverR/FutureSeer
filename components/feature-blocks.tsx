@@ -1,24 +1,25 @@
 "use client";
 
-import { Brain, Sparkles, Zap } from "lucide-react";
+import { Heart, MessageCircle, Sparkles } from "lucide-react";
 
 const features = [
   {
-    icon: Brain,
-    title: "See Into Your Future",
+    icon: Heart,
+    title: "Love & relationships",
     description:
-      "Occult wisdom combined with AI forecasting reveals hidden patterns and genuine glimpses into what lies ahead",
+      "Ask about connection, compatibility, or timing—patterns from your chart and traditions, explained in plain language.",
   },
   {
     icon: Sparkles,
-    title: "Hidden Data Patterns",
-    description: "Predictive analytics powered by ancient divination systems and time series forecasting",
+    title: "Career, money & timing",
+    description:
+      "Direction and tension across Vedic, numerology, and more—one profile, one conversation, not five conflicting apps.",
   },
   {
-    icon: Zap,
-    title: "Innovation Experiment",
+    icon: MessageCircle,
+    title: "One clear answer",
     description:
-      "Join as a power user. Your usage improves accuracy and precision for everyone. Join the experiment today.",
+      "AI connects patterns across traditions, grounded in your saved reports—not generic horoscope filler.",
   },
 ];
 
@@ -41,12 +42,11 @@ export function FeatureBlocks() {
             FutureSeer
           </p>
           <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-primary/85 font-light leading-relaxed tracking-wide normal-case px-2">
-            One birth profile powers dozens of traditions—then the Seer reads across your saved reports so you are not
-            juggling tabs, books, and half-remembered rules alone.
+            One birth profile powers every tradition you choose—Vedic, Tarot, Numerology, and dozens more—so you never
+            re-enter your details or juggle conflicting apps.
           </p>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-primary/85 font-normal leading-relaxed tracking-normal normal-case px-2">
-            Fifty-plus divination systems in one profile—AI answers from your chart and stored reports, not generic
-            horoscopes.
+          <p className="max-w-2xl mx-auto text-sm sm:text-base text-primary/75 font-normal leading-relaxed tracking-normal normal-case px-2">
+            Charts use Swiss Ephemeris precision. Answers stay grounded in traditional rules—not generic horoscopes.
           </p>
         </div>
 
@@ -78,10 +78,10 @@ export function FeatureBlocks() {
           <h3 className="text-2xl font-heading text-amber-400 mb-8 uppercase tracking-widest">Why FutureSeer</h3>
           <ul className="space-y-4 text-left">
             {[
-              "You're facing confusion from fragmented divination tools and conflicting interpretations.",
-              "FutureSeer unifies 40+ occult systems into one structured platform.",
-              "Our synthesis engine correlates multiple outputs into a single coherent insight.",
-              "Continuous refinement ensures methodological consistency and increasing precision.",
+              "Start with what matters: love, career, money, personality, or timing—then go deeper when you are ready.",
+              "One profile, many traditions—no re-entering birth data for every tool.",
+              "AI connects patterns across systems, grounded in what you actually saved.",
+              "Traditional methods + Swiss Ephemeris charts, explained without hype or guaranteed predictions.",
             ].map((text, i) => (
               <li key={i} className="flex gap-3 items-start group/item">
                 <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 group-hover/item:scale-125 transition-transform" />

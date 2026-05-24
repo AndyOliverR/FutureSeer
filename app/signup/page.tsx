@@ -434,7 +434,7 @@ function SignUpPageContent() {
             <div className="text-5xl mb-4">✨</div>
             <h1 className="text-3xl font-heading font-bold text-amber-400 mb-2 tracking-widest uppercase">New Journey</h1>
             <p className="text-surface-on-variant text-sm font-medium opacity-70 uppercase tracking-widest leading-none">
-              {showSignupFlow ? "Securing your spot" : "Join the innovation experiment"}
+              {showSignupFlow ? "Securing your spot" : "Get early access — one profile, many traditions"}
             </p>
           </div>
 
@@ -542,7 +542,13 @@ function SignUpPageContent() {
         <div className="p-12 flex flex-col justify-center space-y-8">
           <Link href="/" className="text-amber-400 flex items-center gap-2 font-heading tracking-widest uppercase text-sm mb-4 opacity-60 hover:opacity-100"><ArrowLeft className="w-4 h-4" /> Back to Home</Link>
           {!showSignupFlow && (
-            <h1 className="text-5xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Start Your <br/>Journey.</h1>
+            <>
+              <h1 className="text-5xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Start Your <br/>Journey.</h1>
+              <p className="text-surface-on-variant text-base font-light leading-relaxed max-w-md">
+                Ask one question. Get answers grounded in your birth profile—not generic horoscopes. Start with a 30-day
+                trial; help shape what we build next.
+              </p>
+            </>
           )}
 
           {showSignupFlow ? (

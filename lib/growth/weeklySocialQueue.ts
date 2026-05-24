@@ -9,6 +9,7 @@ import {
   SOCIAL_CHANNELS,
   type SocialChannel,
 } from '@/lib/growth/socialPostTemplates';
+import { formatScheduledTimeDisplay } from '@/lib/growth/socialPostSchedule';
 import { getSchedulerLink, type SchedulerLink } from '@/lib/growth/socialSchedulerLinks';
 
 /** 0 = Sunday … 6 = Saturday (matches Date.getDay()). */
@@ -22,6 +23,9 @@ export interface WeeklyQueueItem {
   defaultTemplateId: string;
   defaultTemplateLabel: string;
   calendarHint: string;
+  postTimeIst: string;
+  postTimeUtc: string;
+  timingNote?: string;
   scheduler: SchedulerLink;
   /** Short manual note for channels without API posting */
   postingNote?: string;
@@ -39,14 +43,18 @@ function buildQueueItem(dayIndex: WeekdayIndex): WeeklyQueueItem {
   const channel = meta.id;
   const templateId = defaultTemplateIdForChannel(channel);
   const template = getSocialPostTemplate(templateId);
+  const { ist, utc } = formatScheduledTimeDisplay(meta.postTime);
   return {
     dayIndex,
-    dayName: meta.calendarDay ?? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayIndex],
+    dayName: meta.calendarDay,
     channel,
     channelLabel: channelLabel(channel),
     defaultTemplateId: templateId,
     defaultTemplateLabel: template?.label ?? 'Default',
     calendarHint: template?.description ?? meta.label,
+    postTimeIst: ist,
+    postTimeUtc: utc,
+    timingNote: meta.timingNote,
     scheduler: getSchedulerLink(channel),
     postingNote:
       channel === 'whatsapp'
