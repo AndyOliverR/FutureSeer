@@ -18,9 +18,9 @@ export function HeroSection() {
   return (
     <section className="flex flex-col items-center justify-center min-h-[70vh] md:min-h-[80vh] px-4 text-center pt-20 md:pt-24 pb-6 relative bg-transparent">
       <div className="max-w-5xl mx-auto space-y-8 md:space-y-12">
-        <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-heading text-primary leading-tight tracking-[0.1em] md:tracking-[0.2em] font-light uppercase">
-          <span className="block">Ask</span>
-          <span className="block">the Seer</span>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-heading shiny-gold-text leading-tight tracking-[0.1em] md:tracking-[0.2em] font-light uppercase">
+          <span className="block">ASK THE</span>
+          <span className="block">SEER</span>
         </h1>
 
         <div className="max-w-xl mx-auto space-y-4 opacity-90">

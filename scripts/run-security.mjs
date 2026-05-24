@@ -24,6 +24,26 @@ function runShell(command) {
   return result.status ?? 0;
 }
 
+console.log('\n=== Dependency audit (high/critical) ===\n');
 const auditExit = runShell('pnpm audit --audit-level=high');
+if (auditExit !== 0) {
+  console.error('\n[security] FAILED: dependency audit reported high/critical issues.');
+  console.error('Try: pnpm audit --audit-level=high   then: pnpm run audit:fix\n');
+} else {
+  console.log('\n[security] Dependency audit passed.\n');
+}
+
+console.log('=== Security lint (app/api, scripts, lib) ===\n');
 const lintExit = runShell('pnpm run lint:security');
-process.exit(auditExit !== 0 || lintExit !== 0 ? 1 : 0);
+if (lintExit !== 0) {
+  console.error('\n[security] FAILED: lint:security reported ESLint errors.');
+  console.error('Run: pnpm run lint:security\n');
+} else {
+  console.log('\n[security] Security lint passed.\n');
+}
+
+const failed = auditExit !== 0 || lintExit !== 0;
+if (failed) {
+  console.error('[security] One or more checks failed.');
+}
+process.exit(failed ? 1 : 0);

@@ -13,6 +13,11 @@ import {
   clearPersistentProfileCache,
   computeComprehensiveProfileVersionHash
 } from '@/lib/comprehensiveProfileCache'
+import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator'
+import {
+  isUsableStoredReport,
+  resolveToolReportFromProfile,
+} from '@/lib/mysticalProfilePositiveSnippet'
 
 export interface ComprehensiveMysticalProfile {
   vedic: {
@@ -111,6 +116,15 @@ const MysticalProfileContext = createContext<MysticalProfileContextValue | null>
 const profileCache = new Map<string, { data: ComprehensiveMysticalProfile; timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
+function profileHasUsableReports(data: ComprehensiveMysticalProfile | null | undefined): boolean {
+  if (!data) return false
+  const p = data as Record<string, unknown>
+  return ALL_TOOL_SLUGS.some((slug) => {
+    const report = resolveToolReportFromProfile(p, slug)
+    return isUsableStoredReport(report)
+  })
+}
+
 const COMPREHENSIVE_PROFILE_READ_TIMEOUT_MS = 15_000
 const WARN_THROTTLE_MS = 30_000
 
@@ -193,15 +207,17 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
             setProfile(null)
             profileCache.delete(userId)
             clearPersistentProfileCache(userId)
-          } else {
+          } else if (profileHasUsableReports(cached.data)) {
             const incomingAt = cached.data.metadata?.generatedAt
             const lastAt = lastAppliedGeneratedAtRef.current
             if (!(incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime())) {
               setProfile(cached.data)
             }
+            if (!background) setLoading(false)
+            return
+          } else {
+            profileCache.delete(userId)
           }
-          if (!background) setLoading(false)
-          return
         }
       }
 
@@ -411,7 +427,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     }
 
     const persistent = getPersistentProfile(uid)
-    const hadPersistentCache = !!(persistent?.profile)
+    const hadPersistentCache = !!(persistent?.profile && profileHasUsableReports(persistent.profile as ComprehensiveMysticalProfile))
     if (hadPersistentCache) {
       setProfile(persistent!.profile as ComprehensiveMysticalProfile)
       setLoading(false)

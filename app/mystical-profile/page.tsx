@@ -10,7 +10,10 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { ChevronRight, Loader2, RefreshCw, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
-import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
+import {
+  clearComprehensiveMysticalProfileCache,
+  useComprehensiveMysticalProfile,
+} from "@/hooks/useComprehensiveMysticalProfile"
 import { useIsPortraitNarrowLayout } from "@/hooks/useIsPortraitNarrowLayout"
 import {
   getReturningPaymentCommitDestination,
@@ -312,6 +315,7 @@ export default function MysticalProfilePage() {
   const lastSyncedProgressAtRef = useRef<number | null>(null)
   const lastProfileRefreshAtRef = useRef<number>(0)
   const snippetRefreshLockRef = useRef(false)
+  const snippetMountRecoveryRef = useRef(false)
   const [snippetManualRefreshing, setSnippetManualRefreshing] = useState(false)
   const loadingMessages = useMemo(
     () => [
@@ -801,6 +805,48 @@ export default function MysticalProfilePage() {
     return ordered
   })()
 
+  useEffect(() => {
+    if (!user?.uid || authLoading || profileLoading || generationActive) return
+    if (!userProfile?.mysticalProfileGenerated) return
+    if (hasUsableMysticalData && groupedCards.length > 0) return
+    if (snippetMountRecoveryRef.current) return
+
+    snippetMountRecoveryRef.current = true
+    clearComprehensiveMysticalProfileCache(user.uid)
+    void refreshMysticalProfile()
+  }, [
+    user?.uid,
+    authLoading,
+    profileLoading,
+    generationActive,
+    userProfile?.mysticalProfileGenerated,
+    hasUsableMysticalData,
+    groupedCards.length,
+    refreshMysticalProfile,
+  ])
+
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return
+      if (!user?.uid || generationActive || profileLoading) return
+      if (!userProfile?.mysticalProfileGenerated) return
+      if (hasUsableMysticalData && groupedCards.length > 0) return
+      clearComprehensiveMysticalProfileCache(user.uid)
+      void refreshMysticalProfile()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
+  }, [
+    user?.uid,
+    generationActive,
+    profileLoading,
+    userProfile?.mysticalProfileGenerated,
+    hasUsableMysticalData,
+    groupedCards.length,
+    refreshMysticalProfile,
+  ])
+
   const mysticalSharePayload = useMemo(() => {
     if (!p || groupedCards.length === 0) return null
     const prof = userProfile as Record<string, unknown> | null | undefined
@@ -1040,7 +1086,7 @@ export default function MysticalProfilePage() {
     >
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-heading font-light text-amber-400 mb-3 tracking-widest uppercase">
+          <h1 className="text-4xl md:text-5xl font-heading font-light shiny-gold-text mb-3 tracking-widest uppercase">
             Mystical profile
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto font-light italic">
@@ -1074,7 +1120,7 @@ export default function MysticalProfilePage() {
           <div className="space-y-14">
             {groupedCards.map(({ category, items }) => (
               <section key={category}>
-                <h2 className="text-xl font-heading font-light text-amber-400 mb-5 tracking-widest uppercase border-b border-amber-500/20 pb-2">
+                <h2 className="text-xl font-heading font-light shiny-gold-text mb-5 tracking-widest uppercase border-b border-amber-500/20 pb-2">
                   {category}
                 </h2>
                 <div className="grid gap-6 md:grid-cols-2">
