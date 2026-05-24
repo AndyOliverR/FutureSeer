@@ -3,18 +3,15 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { getHeroCtaVariant, heroCtaLabel, type HeroCtaVariant } from "@/lib/heroCtaVariant";
+import { heroCtaLabel } from "@/lib/heroCtaVariant";
+import { useHeroCtaVariant } from "@/hooks/useHeroCtaVariant";
 
 export function StickyCTA() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
-  const [ctaVariant, setCtaVariant] = useState<HeroCtaVariant>("early_access");
+  const ctaVariant = useHeroCtaVariant();
   const rafRef = useRef<number | null>(null);
   const lastScrollY = useRef(0);
-
-  useEffect(() => {
-    setCtaVariant(getHeroCtaVariant());
-  }, []);
 
   useEffect(() => {
     // Defer initialization slightly for better initial page load
