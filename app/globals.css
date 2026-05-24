@@ -220,6 +220,21 @@ main {
   -webkit-text-fill-color: transparent;
 }
 
+/* FutureSeer logotype — Inter + gold gradient (standard across nav, footer, landing) */
+.futureseer-wordmark,
+.futureseer-logo {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  font-style: normal;
+  text-shadow: none;
+  background: linear-gradient(180deg, #fde047 0%, #facc15 38%, #eab308 72%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -246,7 +261,35 @@ main {
   background-color: #0f172a; /* slate-900 */
 }
 
-/* Shared admin card style: solid surface, clear border */
-.admin-card {
-  @apply rounded-lg border border-slate-600/80 bg-slate-900 shadow-sm;
+/* Admin wide tables: top horizontal scrollbar; hide duplicate bar at bottom of body */
+.admin-table-scroll-top {
+  height: 14px;
+}
+
+.admin-table-scroll-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(100 116 139) rgb(15 23 42);
+}
+
+.admin-table-scroll-body::-webkit-scrollbar {
+  width: 8px;
+  height: 0;
+}
+
+.admin-table-scroll-body::-webkit-scrollbar-thumb {
+  background: rgb(100 116 139);
+  border-radius: 4px;
+}
+
+.admin-table-scroll-top::-webkit-scrollbar {
+  height: 10px;
+}
+
+.admin-table-scroll-top::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184);
+  border-radius: 4px;
+}
+
+.admin-table-scroll-top::-webkit-scrollbar-track {
+  background: rgb(15 23 42);
 }

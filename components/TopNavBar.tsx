@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ShareAppModal } from "@/components/ShareAppModal";
 import { UserMenuDropdown } from "@/components/UserMenuDropdown";
+import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark";
 
 const navLinks = [
   { name: "Home", href: "/", icon: "🏠" },
@@ -91,13 +92,7 @@ export function TopNavBar() {
     <>
     <TooltipProvider>
       <nav className="w-full min-w-0 max-w-full overflow-x-clip bg-[var(--m3-surface)]/95 backdrop-blur-xl border-b border-[var(--m3-outline-variant)] pt-[env(safe-area-inset-top)] px-4 flex items-center justify-between z-[100] sticky top-0 left-0 right-0 box-border select-none" role="navigation">
-        <Link 
-          href="/" 
-          className="futureseer-logo gold-glow text-xl font-bold tracking-tighter transition-transform text-amber-400 flex items-center h-14"
-          aria-label="FutureSeer - Home"
-        >
-          FutureSeer
-        </Link>
+        <FutureSeerWordmark href="/" size="md" className="flex items-center h-14" />
 
         <div className="flex items-center gap-1">
           {/* About Button - Increased to 48px for Android */}

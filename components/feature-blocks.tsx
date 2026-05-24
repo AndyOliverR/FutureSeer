@@ -1,6 +1,7 @@
 "use client";
 
 import { Heart, MessageCircle, Sparkles } from "lucide-react";
+import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark";
 
 const features = [
   {
@@ -29,27 +30,11 @@ const features = [
  */
 export function FeatureBlocks() {
   return (
-    <section className="py-8 sm:py-12 md:py-16 bg-transparent" aria-labelledby="features-heading">
+    <section className="py-10 sm:py-12 md:py-16 bg-transparent" aria-labelledby="features-heading">
       <h2 id="features-heading" className="sr-only">
         Features
       </h2>
       <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-8 md:mb-10 space-y-4 md:space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <p
-            className="text-sm md:text-base text-primary/80 font-medium tracking-[0.18em] uppercase"
-            id="product-name"
-          >
-            FutureSeer
-          </p>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-primary/85 font-light leading-relaxed tracking-wide normal-case px-2">
-            One birth profile powers every tradition you choose—Vedic, Tarot, Numerology, and dozens more—so you never
-            re-enter your details or juggle conflicting apps.
-          </p>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-primary/75 font-normal leading-relaxed tracking-normal normal-case px-2">
-            Charts use Swiss Ephemeris precision. Answers stay grounded in traditional rules—not generic horoscopes.
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {features.map((feature, index) => (
             <div
@@ -75,13 +60,15 @@ export function FeatureBlocks() {
         </div>
 
         <div className="mt-16 max-w-3xl mx-auto text-center animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-both">
-          <h3 className="text-2xl font-heading text-amber-400 mb-8 uppercase tracking-widest">Why FutureSeer</h3>
+          <h3 className="text-2xl mb-8 uppercase tracking-widest flex flex-wrap items-center justify-center gap-x-2">
+            <span className="font-heading text-amber-400">Why</span>
+            <FutureSeerWordmark size="md" className="inline-block normal-case tracking-normal" />
+          </h3>
           <ul className="space-y-4 text-left">
             {[
               "Start with what matters: love, career, money, personality, or timing—then go deeper when you are ready.",
-              "One profile, many traditions—no re-entering birth data for every tool.",
               "AI connects patterns across systems, grounded in what you actually saved.",
-              "Traditional methods + Swiss Ephemeris charts, explained without hype or guaranteed predictions.",
+              "Traditional methods explained without hype or guaranteed predictions.",
             ].map((text, i) => (
               <li key={i} className="flex gap-3 items-start group/item">
                 <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 group-hover/item:scale-125 transition-transform" />

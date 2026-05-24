@@ -8,6 +8,7 @@ import { useEffect, useState } from "react"
 import { useAnalytics } from "@/lib/analytics"
 import { ANALYTICS_EVENTS } from "@/lib/analytics"
 import { getHeroCtaVariant, heroCtaLabel, type HeroCtaVariant } from "@/lib/heroCtaVariant"
+import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark"
 
 export function HeroSection() {
   const router = useRouter()
@@ -22,19 +23,30 @@ export function HeroSection() {
 
   return (
     <section className="flex flex-col items-center justify-center min-h-[75vh] md:min-h-[85vh] px-4 text-center pt-20 md:pt-24 pb-12 relative bg-transparent">
-      <div className="max-w-5xl mx-auto space-y-8 md:space-y-12">
-        <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-heading text-primary leading-tight tracking-[0.1em] md:tracking-[0.2em] font-light uppercase">
+      <div className="max-w-5xl mx-auto space-y-8 md:space-y-10">
+        <FutureSeerWordmark size="xl" className="mx-auto block" />
+
+        <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-heading text-primary leading-tight tracking-[0.1em] md:tracking-[0.2em] font-light uppercase">
           Ask the Seer
         </h1>
 
-        <p className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-primary/90 font-light leading-relaxed normal-case tracking-normal px-2">
-          Ask one question. FutureSeer reads your birth profile across Vedic astrology, Tarot, Numerology, and more
-          to deliver one clear answer—not generic horoscope filler.
-        </p>
-
-        <p className="max-w-lg mx-auto text-sm text-primary/70 font-light normal-case tracking-wide">
-          Create your profile once · Ask about love, career, money, or timing · Get a unified reply
-        </p>
+        <div className="max-w-2xl mx-auto space-y-4 text-primary/90 font-light leading-relaxed normal-case tracking-normal px-2">
+          <p className="text-base sm:text-lg md:text-xl">
+            Ask one question.{" "}
+            <FutureSeerWordmark size="sm" className="align-baseline" /> reads your birth profile across Vedic
+            astrology, Tarot, Numerology, and more to deliver one clear answer—not generic horoscope filler.
+          </p>
+          <p className="text-sm md:text-base text-primary/75">
+            Create your profile once · Ask about love, career, money, or timing · Get a unified reply
+          </p>
+          <p className="text-sm md:text-base text-primary/80">
+            One birth profile powers every tradition you choose—Vedic, Tarot, Numerology, and dozens more—so you never
+            re-enter your details or juggle conflicting apps.
+          </p>
+          <p className="text-sm text-primary/70">
+            Charts use Swiss Ephemeris precision. Answers stay grounded in traditional rules—not generic horoscopes.
+          </p>
+        </div>
 
         <div className="max-w-xl mx-auto space-y-4 opacity-90">
           <p className="text-sm md:text-lg font-quote leading-relaxed gold-glow font-light not-italic">

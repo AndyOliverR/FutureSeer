@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Download, Search, Eye, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, AlertTriangle, Route } from 'lucide-react';
 import Link from 'next/link';
 import { getPricingHealthSnapshot } from '@/lib/pricingConfig';
+import { AdminTableScrollContainer } from '@/components/admin/AdminTableScrollContainer';
 
 function getErrorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -463,11 +464,11 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
           </div>
         )}
 
-        <p className="mt-1 mb-1 hidden text-xs text-slate-400 md:block">
-          Scroll horizontally to view all permission toggles.
+        <p className="mt-1 mb-1 text-xs text-slate-400">
+          Use the horizontal scrollbar above the table to view all permission toggles while you scroll the user list.
         </p>
 
-        <div className="mt-1 max-h-[60vh] overflow-x-auto overflow-y-auto">
+        <AdminTableScrollContainer className="mt-1">
           <table className="min-w-full text-left text-sm">
             <thead>
               <tr className="bg-slate-800/80 text-slate-200">
@@ -569,7 +570,7 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
               ))}
             </tbody>
           </table>
-        </div>
+        </AdminTableScrollContainer>
         <div className="flex justify-between items-center mt-4">
           <p className="text-sm text-slate-300">
             Showing {users.length} users
@@ -756,7 +757,7 @@ function SupportTools() {
           </Link>
           <Link href="/admin/social-posts">
             <Button variant="outline" className="border-slate-500 text-slate-200 hover:bg-slate-800">
-              Social post generator
+              Growth content generator
             </Button>
           </Link>
         </div>
