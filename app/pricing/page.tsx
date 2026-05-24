@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/use-auth'
 import { ContributionTiers } from '@/components/ContributionTiers'
 import { TipJarCard } from '@/components/TipJarCard'
+import { FutureSeerWordmark } from '@/components/brand/FutureSeerWordmark'
 export default function PricingPage() {
   const { userProfile } = useAuth()
   const [isMounted, setIsMounted] = useState(false)
@@ -28,15 +29,13 @@ export default function PricingPage() {
   return (
     <div className="starfield-ultra-sharp min-h-screen py-12 px-3 sm:px-4 md:px-6 pb-32 md:pb-12 overflow-x-hidden relative">
       {/* Logo - Top Left */}
-      <Link href="/" className="futureseer-logo text-2xl font-semibold tracking-wide transition-transform text-amber-400 absolute top-4 left-4 z-50">
-        FutureSeer
-      </Link>
+      <FutureSeerWordmark href="/" size="lg" className="absolute top-4 left-4 z-50" />
       
       <div className="max-w-7xl mx-auto pt-8" data-onboarding="pricing">
         <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-3">
-            <span className="text-amber-400">FutureSeer</span>
-            <span> membership plans</span>
+          <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <FutureSeerWordmark size="lg" className="inline-block" />
+            <span className="text-white font-bold normal-case tracking-normal">membership plans</span>
           </h1>
           <p className="text-white/80 text-sm md:text-base max-w-2xl mx-auto">
             Start with a 30-day trial, then choose monthly, quarterly, or annual membership.

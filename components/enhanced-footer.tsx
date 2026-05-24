@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StandardsBadges } from "./StandardsBadges";
 import { subscribeNewsletterClient } from "@/lib/newsletterSubscribeClient";
+import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark";
 
 export function EnhancedFooter() {
   const [email, setEmail] = useState("");
@@ -35,7 +36,7 @@ export function EnhancedFooter() {
       <div className="max-w-7xl mx-auto min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-4 min-w-0">
           <div className="flex items-center gap-3 shrink-0">
-            <h3 className="text-base text-amber-400 font-bold tracking-tighter">FutureSeer</h3>
+            <FutureSeerWordmark as="h3" size="sm" />
             <div className="h-4 w-[1px] bg-outline-variant/30 hidden sm:block" />
             <p className="text-xs text-surface-on-variant leading-none hidden sm:block">Ancient wisdom meets AI.</p>
           </div>

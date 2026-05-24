@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { X, Instagram, Facebook, Youtube } from 'lucide-react'
+import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark"
 
 export function Footer() {
   return (
@@ -10,7 +11,7 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="col-span-2">
-            <h3 className="text-xl font-bold text-amber-300 mb-4">FutureSeer</h3>
+            <FutureSeerWordmark as="h3" size="md" className="mb-4" />
             <p className="text-gray-400 mb-4">
               Where ancient wisdom meets artificial intelligence. Unlock the mysteries of your path 
               through personalized divination.

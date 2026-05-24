@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Copy, Share2 } from 'lucide-react'
+import { FutureSeerWordmark } from '@/components/brand/FutureSeerWordmark'
 
 interface ShareCardProps {
   archetypeName: string
@@ -14,7 +15,7 @@ interface ShareCardProps {
 export function ShareCard({ archetypeName, hookLine, shareUrl, onCopy, onShare }: ShareCardProps) {
   return (
     <div className="mx-auto max-w-md rounded-2xl border border-slate-600/50 bg-slate-900/90 p-6 text-center shadow-lg">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500/90">FutureSeer</p>
+      <FutureSeerWordmark size="xs" />
       <p className="mt-3 font-serif text-xl font-bold text-white">{archetypeName}</p>
       <p className="mt-2 text-sm leading-relaxed text-slate-300">{hookLine}</p>
       <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">

@@ -1,13 +1,16 @@
 "use client";
 
 import { Heart, MessageCircle, Sparkles, Users } from "lucide-react";
+import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark";
 
 export function InnovationInvitation() {
   return (
     <div className="text-center mb-16 space-y-6">
-      <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-        <span className="text-amber-400">FutureSeer</span>
-        <span className="text-white"> — one profile, many traditions</span>
+      <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 flex flex-wrap items-center justify-center gap-x-2">
+        <FutureSeerWordmark size="xl" className="inline-block" />
+        <span className="text-white font-bold normal-case tracking-normal text-2xl md:text-4xl">
+          — one profile, many traditions
+        </span>
       </h1>
 
       <p className="text-xl md:text-2xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed">
