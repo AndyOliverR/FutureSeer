@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface MysticalShareCardPanelProps {
-  payload: MysticalSharePayload;
+  payloads: MysticalSharePayload[];
   /** Matches mystical profile layout branch. */
   variant: 'm3' | 'web';
 }
@@ -33,15 +33,25 @@ async function exportCardPng(cardEl: HTMLElement): Promise<string> {
   });
 }
 
-export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPanelProps) {
+export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardPanelProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [busy, setBusy] = useState<'download' | 'share' | null>(null);
   const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_WIDTH / MYSTICAL_SHARE_CARD_EXPORT_WIDTH);
-  const viewedRef = useRef(false);
+  const viewedSlugsRef = useRef<Set<string>>(new Set());
+
+  const safeIndex = payloads.length === 0 ? 0 : Math.min(selectedIndex, payloads.length - 1);
+  const payload = payloads[safeIndex];
 
   const isM3 = variant === 'm3';
+
+  useEffect(() => {
+    if (selectedIndex >= payloads.length) {
+      setSelectedIndex(Math.max(0, payloads.length - 1));
+    }
+  }, [payloads.length, selectedIndex]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -57,24 +67,30 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
     const observer = new ResizeObserver(updateScale);
     observer.observe(frame);
     return () => observer.disconnect();
-  }, []);
+  }, [safeIndex]);
 
   useEffect(() => {
-    if (viewedRef.current) return;
-    viewedRef.current = true;
+    if (!payload) return;
+    if (viewedSlugsRef.current.has(payload.highlightToolSlug)) return;
+    viewedSlugsRef.current.add(payload.highlightToolSlug);
     analytics.trackMysticalShareCard('view', {
       archetype: payload.archetypeTitle,
       tool: payload.highlightToolName,
+      toolSlug: payload.highlightToolSlug,
+      cardCount: payloads.length,
     });
-  }, [payload.archetypeTitle, payload.highlightToolName]);
+  }, [payload, payloads.length]);
 
-  const shareText = `${payload.displayName}'s cosmic profile: ${payload.archetypeTitle} — ${payload.hookLine.slice(0, 120)}…`;
+  if (!payload) return null;
+
+  const shareText = `${payload.displayName}'s cosmic profile (${payload.highlightToolName}): ${payload.archetypeTitle} — ${payload.hookLine.slice(0, 120)}…`;
   const previewHeight = MYSTICAL_SHARE_CARD_EXPORT_HEIGHT * previewScale;
 
   const handleCopyLink = useCallback(async () => {
     const ok = await safeCopyToClipboard(payload.shareUrl);
     analytics.trackMysticalShareCard('copy_link', {
       archetype: payload.archetypeTitle,
+      toolSlug: payload.highlightToolSlug,
     });
     toast({
       title: ok ? 'Link copied' : 'Could not copy',
@@ -89,13 +105,14 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
     try {
       const dataUrl = await exportCardPng(cardRef.current);
       const link = document.createElement('a');
-      link.download = `futureseer-${payload.archetypeTitle.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.download = `futureseer-${payload.highlightToolSlug}-${payload.archetypeTitle.replace(/\s+/g, '-').toLowerCase()}.png`;
       link.href = dataUrl;
       link.click();
       analytics.trackMysticalShareCard('download', {
         archetype: payload.archetypeTitle,
+        toolSlug: payload.highlightToolSlug,
       });
-      toast({ title: 'Image saved', description: 'Post it to your story or feed' });
+      toast({ title: 'Image saved', description: `${payload.highlightToolName} card saved as PNG` });
     } catch {
       toast({
         title: 'Download failed',
@@ -113,7 +130,11 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
     try {
       const dataUrl = await exportCardPng(cardRef.current);
       const blob = await fetch(dataUrl).then((r) => r.blob());
-      const file = new File([blob], 'futureseer-profile.png', { type: 'image/png' });
+      const file = new File(
+        [blob],
+        `futureseer-${payload.highlightToolSlug}.png`,
+        { type: 'image/png' },
+      );
 
       if (typeof navigator !== 'undefined' && navigator.share) {
         const withFiles =
@@ -121,18 +142,19 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
         if (withFiles) {
           await navigator.share({
             files: [file],
-            title: 'My FutureSeer profile',
+            title: `My ${payload.highlightToolName} — FutureSeer`,
             text: `${shareText}\n${payload.shareUrl}`,
           });
         } else {
           await navigator.share({
-            title: 'My FutureSeer profile',
+            title: `My ${payload.highlightToolName} — FutureSeer`,
             text: `${shareText}\n${payload.shareUrl}`,
             url: payload.shareUrl,
           });
         }
         analytics.trackMysticalShareCard('native_share', {
           archetype: payload.archetypeTitle,
+          toolSlug: payload.highlightToolSlug,
         });
       } else {
         await handleCopyLink();
@@ -159,6 +181,14 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
 
   const subClass = isM3 ? 'text-sm text-surface-on-variant' : 'text-sm text-slate-400';
 
+  const chipActive = isM3
+    ? 'border-primary bg-primary-container text-on-surface'
+    : 'border-amber-500/60 bg-amber-500/15 text-amber-100';
+
+  const chipIdle = isM3
+    ? 'border-outline-variant bg-surface-container-low text-surface-on-variant hover:border-outline'
+    : 'border-amber-500/20 bg-slate-900/40 text-slate-400 hover:border-amber-500/40 hover:text-amber-200';
+
   return (
     <section className={cn('mb-8', isM3 ? 'px-0' : '')} aria-labelledby="mystical-share-heading">
       <div className={shellClass}>
@@ -171,16 +201,51 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
           >
             <Sparkles className="h-5 w-5" aria-hidden />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 id="mystical-share-heading" className={titleClass}>
-              Share your cosmic card
+              Share your cosmic cards
             </h2>
             <p className={cn('mt-1', subClass)}>
-              Download or share your highlight — friends see your archetype and find you on{' '}
+              {payloads.length === 1
+                ? 'Download or share your highlight — friends see your archetype and find you on '
+                : `${payloads.length} traditions ready — pick a card, then share or download. Friends find you on `}
               <span className="font-medium text-amber-400/90">futureseer.app</span>.
             </p>
           </div>
         </div>
+
+        {payloads.length > 1 ? (
+          <div
+            className="mb-4 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar"
+            role="tablist"
+            aria-label="Share card by tradition"
+          >
+            {payloads.map((p, index) => {
+              const selected = index === safeIndex;
+              return (
+                <button
+                  key={p.highlightToolSlug}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls="mystical-share-card-preview"
+                  onClick={() => setSelectedIndex(index)}
+                  className={cn(
+                    'shrink-0 rounded-xl border px-3 py-2 text-left transition-colors min-w-[9.5rem] max-w-[11rem]',
+                    selected ? chipActive : chipIdle,
+                  )}
+                >
+                  <span className="block text-[10px] font-bold uppercase tracking-wide opacity-80">
+                    {p.highlightToolName}
+                  </span>
+                  <span className="mt-0.5 block text-xs font-semibold leading-tight line-clamp-2">
+                    {p.archetypeTitle}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         <div className="flex flex-col items-center gap-5">
           <div
@@ -190,9 +255,11 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
             )}
           >
             <div
+              id="mystical-share-card-preview"
               ref={frameRef}
               className="relative w-full overflow-hidden rounded-[18px]"
               style={{ height: previewHeight }}
+              role="tabpanel"
             >
               <div
                 style={{
@@ -202,7 +269,11 @@ export function MysticalShareCardPanel({ payload, variant }: MysticalShareCardPa
                   transformOrigin: 'top left',
                 }}
               >
-                <MysticalShareCardVisual ref={cardRef} payload={payload} />
+                <MysticalShareCardVisual
+                  key={payload.highlightToolSlug}
+                  ref={cardRef}
+                  payload={payload}
+                />
               </div>
             </div>
           </div>

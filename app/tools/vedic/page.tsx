@@ -2,6 +2,7 @@
 
 import React, { Suspense, useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile";
@@ -22,11 +23,17 @@ import { CompatibilityTab } from "@/components/compatibility/CompatibilityTab";
 import ComprehensiveVedicReport, { type ComprehensiveAnalysis } from "@/components/vedic/ComprehensiveVedicReport";
 import { DashaPanelSimplified } from "@/components/vedic/DashaPanelSimplified";
 import { GotraTab } from "@/components/vedic/GotraTab";
-import VedicSeerChatInterface from "@/components/VedicSeerChatInterface";
+import VedicSeerChatInterface, { type VedicSeerFocusLens } from "@/components/VedicSeerChatInterface";
+import { VedicCareerReportPanel } from "@/components/vedic/VedicCareerReportPanel";
+import { VedicRelationshipReportPanel } from "@/components/vedic/VedicRelationshipReportPanel";
+import { ProfileList } from "@/components/profiles/ProfileList";
+import type { AdditionalProfile } from "@/lib/types/profileTypes";
+import { extractPersistedCareerAnalysis } from "@/lib/vedic/vedicCareerReport";
+import { extractPersistedRelationshipAnalysis } from "@/lib/vedic/vedicRelationshipReport";
 import { DevotionistStyleCard } from "@/components/western/DevotionistStyleCard";
 import { ToolReportStatusChips } from "@/components/tool-status/ToolReportStatusChips";
 import {
-  Sparkles, ChevronRight, Loader2, MessageCircle, RefreshCw, Users
+  Sparkles, ChevronRight, Loader2, MessageCircle, RefreshCw, Users, Briefcase, Heart
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -65,11 +72,38 @@ function extractComprehensiveFromAny(source: unknown): Record<string, unknown> |
   return null;
 }
 
+const VEDIC_TAB_VALUES = new Set([
+  'introduction',
+  'compatibility',
+  'career',
+  'relationships',
+  'overview',
+  'charts',
+  'planets',
+  'houses',
+  'dasha',
+  'remedies',
+  'gotra',
+  'ask-the-seer',
+]);
+
 function VedicAstrologyPageContent() {
   const { user, userProfile } = useAuth();
+  const searchParams = useSearchParams();
   const { profile: compProfile, loading: profileLoading, error: profileError } = useComprehensiveMysticalProfile();
   const { report: vedicToolReport, reportUpdatedAt, reportGeneratedAt, reportUnchanged } = useToolReport("vedic");
   const [activeTab, setActiveTab] = useState('introduction');
+  const [seerFocusLens, setSeerFocusLens] = useState<VedicSeerFocusLens | null>(null);
+  const [relationshipPartner, setRelationshipPartner] = useState<AdditionalProfile | null>(null);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && VEDIC_TAB_VALUES.has(tab)) {
+      setActiveTab(tab);
+      if (tab === 'career') setSeerFocusLens('career');
+      else if (tab === 'relationships') setSeerFocusLens('relationships');
+    }
+  }, [searchParams]);
   const freshnessLabel = useMemo(() => {
     const ts = reportUpdatedAt ?? reportGeneratedAt;
     if (!ts) return null;
@@ -102,9 +136,34 @@ function VedicAstrologyPageContent() {
   }, []);
 
   // Tab config for web – match Western astrology (value/label)
+  const cachedCareerReport = useMemo(
+    () =>
+      extractPersistedCareerAnalysis(vedicToolReport) ??
+      extractPersistedCareerAnalysis(compProfile) ??
+      extractPersistedCareerAnalysis(vedicProfileData) ??
+      null,
+    [vedicToolReport, compProfile, vedicProfileData],
+  );
+
+  const cachedRelationshipReport = useMemo(
+    () =>
+      extractPersistedRelationshipAnalysis(vedicToolReport) ??
+      extractPersistedRelationshipAnalysis(compProfile) ??
+      extractPersistedRelationshipAnalysis(vedicProfileData) ??
+      null,
+    [vedicToolReport, compProfile, vedicProfileData],
+  );
+
+  const openSeerWithLens = useCallback((lens: VedicSeerFocusLens) => {
+    setSeerFocusLens(lens);
+    setActiveTab('ask-the-seer');
+  }, []);
+
   const tabsConfig = useMemo(() => [
     { value: 'introduction', label: 'Introduction' },
     { value: 'compatibility', label: 'Compatibility' },
+    { value: 'career', label: 'Career & timing' },
+    { value: 'relationships', label: 'Love & relationships' },
     { value: 'overview', label: 'Overview' },
     { value: 'charts', label: 'Charts' },
     { value: 'planets', label: 'Planets' },
@@ -543,6 +602,7 @@ function VedicAstrologyPageContent() {
                     userId={user.uid}
                     userProfile={userProfile}
                     vedicChartData={vedicProfileData ?? undefined}
+                    focusLens={seerFocusLens}
                   />
                 </div>
               ) : (
@@ -570,6 +630,53 @@ function VedicAstrologyPageContent() {
               >
             <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"><ToolIntroductionTab toolSlug="vedic-astrology" /></TabsContent>
             <TabsContent value="compatibility" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"><CompatibilityTab toolSlug="vedic-astrology" /></TabsContent>
+            <TabsContent value="career" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
+              {hasVedicData && user?.uid && userProfile ? (
+                <VedicCareerReportPanel
+                  userId={user.uid}
+                  userProfile={userProfile}
+                  vedicChartData={vedicProfileData}
+                  cachedReport={cachedCareerReport}
+                  onAskSeer={() => openSeerWithLens('career')}
+                />
+              ) : (
+                <div className="p-8 bg-slate-900/40 border border-amber-500/20 rounded-3xl text-center text-slate-400">
+                  <Briefcase className="w-10 h-10 mx-auto mb-3 text-amber-500/60" />
+                  <p>Complete your profile and generate your mystical profile to unlock Career & timing.</p>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="relationships" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
+              {hasVedicData && user?.uid && userProfile ? (
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-amber-500/20 bg-slate-900/30 p-4">
+                    <p className="text-sm text-slate-400 mb-3">
+                      Optional: select someone to include in your connection narrative (birth data from saved profiles).
+                    </p>
+                    <ProfileList
+                      userId={user.uid}
+                      toolSlug="vedic-astrology"
+                      selectedProfileId={relationshipPartner?.id}
+                      onSelectProfile={(p) => setRelationshipPartner(p)}
+                    />
+                  </div>
+                  <VedicRelationshipReportPanel
+                    userId={user.uid}
+                    userProfile={userProfile}
+                    vedicChartData={vedicProfileData}
+                    cachedReport={cachedRelationshipReport}
+                    selectedPartner={relationshipPartner}
+                    onAskSeer={() => openSeerWithLens('relationships')}
+                    compatibilityHref="/tools/vedic?tab=compatibility"
+                  />
+                </div>
+              ) : (
+                <div className="p-8 bg-slate-900/40 border border-amber-500/20 rounded-3xl text-center text-slate-400">
+                  <Heart className="w-10 h-10 mx-auto mb-3 text-amber-500/60" />
+                  <p>Complete your profile and generate your mystical profile to unlock Love & relationships.</p>
+                </div>
+              )}
+            </TabsContent>
             <TabsContent value="overview" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {hasVedicData && user?.uid && userProfile ? (
                 <>
@@ -592,6 +699,28 @@ function VedicAstrologyPageContent() {
                       <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2 block">Mahadasha</span>
                       <span className="text-xl font-heading text-white">{(resolvedCurrentDasha as any)?.planet ?? "N/A"}</span>
                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('career')}
+                      className="text-left p-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 hover:bg-amber-950/40 transition-colors"
+                    >
+                      <span className="flex items-center gap-2 text-amber-300 font-medium text-sm">
+                        <Briefcase className="h-4 w-4" /> Career & timing
+                      </span>
+                      <p className="text-xs text-slate-400 mt-1">7-day plan, dasha windows, career paths from your chart.</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('relationships')}
+                      className="text-left p-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 hover:bg-amber-950/40 transition-colors"
+                    >
+                      <span className="flex items-center gap-2 text-amber-300 font-medium text-sm">
+                        <Heart className="h-4 w-4" /> Love & relationships
+                      </span>
+                      <p className="text-xs text-slate-400 mt-1">Connection, compatibility, and partnership timing in plain language.</p>
+                    </button>
                   </div>
                   {!effectiveVedicReport && (
                     <div className="p-3 bg-slate-800/50 border border-amber-500/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

@@ -1,10 +1,32 @@
-import { buildMysticalSharePayload } from '@/lib/growth/mysticalShareCard';
+import {
+  buildAllMysticalSharePayloads,
+  buildMysticalSharePayload,
+} from '@/lib/growth/mysticalShareCard';
 import { resolveArchetypeAccent, blendHaloWithAccent } from '@/lib/growth/mysticalShareCardArchetypeAccent';
 import { resolveMysticalShareCardTheme } from '@/lib/growth/mysticalShareCardTheme';
 
 describe('buildMysticalSharePayload', () => {
   it('returns null when profile has no ready reports', () => {
     expect(buildMysticalSharePayload({})).toBeNull();
+  });
+
+  it('builds multiple payloads when western and vedic are ready', () => {
+    const profile = {
+      displayName: 'Alex Morgan',
+      western: {
+        chartOverview: 'A steady presence with sharp intuition beneath the surface.',
+        personality: { summary: 'You lead with calm clarity.' },
+      },
+      vedic: {
+        chartOverview: 'Sidereal emphasis on the tenth house.',
+        planetaryAnalysis: [{ analysis: 'Strong Jupiter in the ascendant.' }],
+      },
+    };
+    const all = buildAllMysticalSharePayloads(profile, { userId: 'uid-1' });
+    expect(all.length).toBeGreaterThanOrEqual(2);
+    expect(all[0]?.highlightToolSlug).toBe('western');
+    expect(all.some((p) => p.highlightToolSlug === 'vedic')).toBe(true);
+    expect(all.find((p) => p.highlightToolSlug === 'vedic')?.archetypeTitle).toBe('Graha Witness');
   });
 
   it('builds payload from western report teaser fields', () => {

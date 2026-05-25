@@ -53,8 +53,67 @@ function toolDisplayName(slug: string): string {
   return toolManager.getTool(pathSeg)?.name ?? slug;
 }
 
+function shareToolOrder(): string[] {
+  const prioritySet = new Set<string>(SHARE_HEADLINE_PRIORITY);
+  const order: string[] = [...SHARE_HEADLINE_PRIORITY];
+  for (const slug of ALL_TOOL_SLUGS) {
+    if (!prioritySet.has(slug)) order.push(slug);
+  }
+  return order;
+}
+
+function buildPayloadForSlug(
+  profile: Record<string, unknown>,
+  slug: string,
+  options?: {
+    displayName?: string;
+    referralCode?: string;
+    userId?: string;
+  },
+): MysticalSharePayload | null {
+  const report = resolveToolReportFromProfile(profile, slug);
+  if (report == null) return null;
+  const { primaryLine, secondaryLine, teaser } = buildMysticalCardSnippet(slug, report);
+  if (!teaser.archetypeName || !primaryLine) return null;
+
+  return {
+    displayName: options?.displayName?.trim() || resolveDisplayName(profile),
+    archetypeTitle: teaser.archetypeName,
+    hookLine: primaryLine,
+    subLine: secondaryLine,
+    rarityLabel: teaser.rarityLabel,
+    highlightToolName: toolDisplayName(slug),
+    highlightToolSlug: slug,
+    shareUrl: buildShareUrl({
+      referralCode: options?.referralCode,
+      userId: options?.userId,
+    }),
+  };
+}
+
 /**
- * Picks the best tool snippet for a viral share card, or null if profile has no ready reports.
+ * One share card per ready tool (priority order). Empty when no usable teasers.
+ */
+export function buildAllMysticalSharePayloads(
+  profile: Record<string, unknown> | null | undefined,
+  options?: {
+    displayName?: string;
+    referralCode?: string;
+    userId?: string;
+  },
+): MysticalSharePayload[] {
+  if (!profile) return [];
+
+  const payloads: MysticalSharePayload[] = [];
+  for (const slug of shareToolOrder()) {
+    const payload = buildPayloadForSlug(profile, slug, options);
+    if (payload) payloads.push(payload);
+  }
+  return payloads;
+}
+
+/**
+ * Primary share card (highest-priority ready tool), or null if profile has no ready reports.
  */
 export function buildMysticalSharePayload(
   profile: Record<string, unknown> | null | undefined,
@@ -64,34 +123,5 @@ export function buildMysticalSharePayload(
     userId?: string;
   },
 ): MysticalSharePayload | null {
-  if (!profile) return null;
-
-  const prioritySet = new Set<string>(SHARE_HEADLINE_PRIORITY);
-  const order: string[] = [...SHARE_HEADLINE_PRIORITY];
-  for (const slug of ALL_TOOL_SLUGS) {
-    if (!prioritySet.has(slug)) order.push(slug);
-  }
-
-  for (const slug of order) {
-    const report = resolveToolReportFromProfile(profile, slug);
-    if (report == null) continue;
-    const { primaryLine, secondaryLine, teaser } = buildMysticalCardSnippet(slug, report);
-    if (!teaser.archetypeName || !primaryLine) continue;
-
-    return {
-      displayName: options?.displayName?.trim() || resolveDisplayName(profile),
-      archetypeTitle: teaser.archetypeName,
-      hookLine: primaryLine,
-      subLine: secondaryLine,
-      rarityLabel: teaser.rarityLabel,
-      highlightToolName: toolDisplayName(slug),
-      highlightToolSlug: slug,
-      shareUrl: buildShareUrl({
-        referralCode: options?.referralCode,
-        userId: options?.userId,
-      }),
-    };
-  }
-
-  return null;
+  return buildAllMysticalSharePayloads(profile, options)[0] ?? null;
 }
