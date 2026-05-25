@@ -15,6 +15,7 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 ## Related references
 
 - End-to-end tests: [E2E_TESTS.md](./E2E_TESTS.md)
+- Agent verification plans (path → commands, audit): [VERIFICATION_PLANS.md](./VERIFICATION_PLANS.md)
 - Android Studio issues: [ANDROID_STUDIO_ERRORS.md](./ANDROID_STUDIO_ERRORS.md)
 - Security commands: [SECURITY_CHECKS.md](./SECURITY_CHECKS.md)
 - Security baseline operations: [SECURITY_BASELINE_RUNBOOK.md](./SECURITY_BASELINE_RUNBOOK.md)
