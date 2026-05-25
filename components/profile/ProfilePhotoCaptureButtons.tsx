@@ -6,6 +6,8 @@ import {
   ProfileCameraModal,
   profilePhotoInputClassName,
 } from '@/components/profile/ProfileCameraModal';
+import { PalmHandGuidanceHint } from '@/components/profile/PalmHandGuidanceHint';
+import type { UserProfile } from '@/lib/firebase';
 
 interface ProfilePhotoCaptureButtonsProps {
   type: 'face' | 'palm';
@@ -14,6 +16,7 @@ interface ProfilePhotoCaptureButtonsProps {
   onUpload: (file: File) => void;
   onRemove: () => void;
   buttonClassName?: string;
+  gender?: UserProfile['gender'];
 }
 
 function prefersLiveCamera(): boolean {
@@ -28,6 +31,7 @@ export function ProfilePhotoCaptureButtons({
   onUpload,
   onRemove,
   buttonClassName,
+  gender,
 }: ProfilePhotoCaptureButtonsProps) {
   const cameraInputId = useId();
   const uploadInputId = useId();
@@ -114,6 +118,10 @@ export function ProfilePhotoCaptureButtons({
           </Button>
         ) : null}
       </div>
+
+      {type === 'palm' ? (
+        <PalmHandGuidanceHint gender={gender} compact className="mt-1 max-w-[14rem] mx-auto" />
+      ) : null}
 
       <ProfileCameraModal
         open={cameraOpen}
