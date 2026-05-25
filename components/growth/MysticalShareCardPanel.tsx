@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
-import { Copy, Download, Share2, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Download, Share2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { analytics } from '@/lib/analytics';
@@ -41,6 +41,10 @@ export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardP
   const [busy, setBusy] = useState<'download' | 'share' | null>(null);
   const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_WIDTH / MYSTICAL_SHARE_CARD_EXPORT_WIDTH);
   const viewedSlugsRef = useRef<Set<string>>(new Set());
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const tabButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
 
   const safeIndex = payloads.length === 0 ? 0 : Math.min(selectedIndex, payloads.length - 1);
   const payload = payloads[safeIndex];
@@ -80,6 +84,40 @@ export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardP
       cardCount: payloads.length,
     });
   }, [payload, payloads.length]);
+
+  const updateTabScrollHints = useCallback(() => {
+    const el = tabListRef.current;
+    if (!el) {
+      setCanScrollTabsLeft(false);
+      setCanScrollTabsRight(false);
+      return;
+    }
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollTabsLeft(scrollLeft > 4);
+    setCanScrollTabsRight(scrollLeft + clientWidth < scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    updateTabScrollHints();
+    const el = tabListRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateTabScrollHints, { passive: true });
+    const ro = new ResizeObserver(updateTabScrollHints);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateTabScrollHints);
+      ro.disconnect();
+    };
+  }, [payloads.length, updateTabScrollHints]);
+
+  useEffect(() => {
+    const btn = tabButtonRefs.current[safeIndex];
+    btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [safeIndex, payloads.length]);
+
+  const scrollTabsBy = useCallback((delta: number) => {
+    tabListRef.current?.scrollBy({ left: delta, behavior: 'smooth' });
+  }, []);
 
   const shareText = payload
     ? `${payload.displayName}'s cosmic profile (${payload.highlightToolName}): ${payload.archetypeTitle} — ${payload.hookLine.slice(0, 120)}…`
@@ -193,8 +231,8 @@ export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardP
   if (!payload) return null;
 
   return (
-    <section className={cn('mb-8', isM3 ? 'px-0' : '')} aria-labelledby="mystical-share-heading">
-      <div className={shellClass}>
+    <section className={cn('mb-8 min-w-0', isM3 ? 'px-0' : '')} aria-labelledby="mystical-share-heading">
+      <div className={cn(shellClass, 'min-w-0 overflow-visible')}>
         <div className="mb-4 flex items-start gap-3">
           <div
             className={cn(
@@ -218,35 +256,102 @@ export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardP
         </div>
 
         {payloads.length > 1 ? (
-          <div
-            className="mb-4 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar"
-            role="tablist"
-            aria-label="Share card by tradition"
-          >
-            {payloads.map((p, index) => {
-              const selected = index === safeIndex;
-              return (
-                <button
-                  key={p.highlightToolSlug}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  aria-controls="mystical-share-card-preview"
-                  onClick={() => setSelectedIndex(index)}
+          <div className="mb-4 min-w-0">
+            <p className={cn('mb-2 text-center text-[10px]', subClass)}>
+              Swipe sideways or use arrows to see every tradition
+            </p>
+            <div className="relative min-w-0">
+              {canScrollTabsLeft ? (
+                <div
                   className={cn(
-                    'shrink-0 rounded-xl border px-3 py-2 text-left transition-colors min-w-[9.5rem] max-w-[11rem]',
-                    selected ? chipActive : chipIdle,
+                    'pointer-events-none absolute left-0 top-0 bottom-2 z-10 w-10 bg-gradient-to-r to-transparent',
+                    isM3 ? 'from-surface-container-high' : 'from-slate-900/95',
+                  )}
+                  aria-hidden
+                />
+              ) : null}
+              {canScrollTabsRight ? (
+                <div
+                  className={cn(
+                    'pointer-events-none absolute right-0 top-0 bottom-2 z-10 w-10 bg-gradient-to-l to-transparent',
+                    isM3 ? 'from-surface-container-high' : 'from-slate-900/95',
+                  )}
+                  aria-hidden
+                />
+              ) : null}
+              {canScrollTabsLeft ? (
+                <button
+                  type="button"
+                  aria-label="Scroll traditions left"
+                  onClick={() => scrollTabsBy(-160)}
+                  className={cn(
+                    'absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-full border p-1 shadow-md',
+                    isM3
+                      ? 'border-outline-variant bg-surface-container-high text-on-surface'
+                      : 'border-amber-500/40 bg-slate-900/95 text-amber-200',
                   )}
                 >
-                  <span className="block text-[10px] font-bold uppercase tracking-wide opacity-80">
-                    {p.highlightToolName}
-                  </span>
-                  <span className="mt-0.5 block text-xs font-semibold leading-tight line-clamp-2">
-                    {p.archetypeTitle}
-                  </span>
+                  <ChevronLeft className="h-4 w-4" />
                 </button>
-              );
-            })}
+              ) : null}
+              {canScrollTabsRight ? (
+                <button
+                  type="button"
+                  aria-label="Scroll traditions right"
+                  onClick={() => scrollTabsBy(160)}
+                  className={cn(
+                    'absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full border p-1 shadow-md',
+                    isM3
+                      ? 'border-outline-variant bg-surface-container-high text-on-surface'
+                      : 'border-amber-500/40 bg-slate-900/95 text-amber-200',
+                  )}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              ) : null}
+              <div
+                ref={tabListRef}
+                className={cn(
+                  'flex min-w-0 gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 pl-1 pr-4 snap-x snap-mandatory',
+                  'touch-pan-x [-webkit-overflow-scrolling:touch]',
+                  '[scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5',
+                  '[&::-webkit-scrollbar-thumb]:rounded-full',
+                  isM3
+                    ? '[&::-webkit-scrollbar-thumb]:bg-primary/50'
+                    : '[&::-webkit-scrollbar-thumb]:bg-amber-500/40',
+                )}
+                role="tablist"
+                aria-label="Share card by tradition"
+              >
+                {payloads.map((p, index) => {
+                  const selected = index === safeIndex;
+                  return (
+                    <button
+                      key={p.highlightToolSlug}
+                      ref={(el) => {
+                        tabButtonRefs.current[index] = el;
+                      }}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      aria-controls="mystical-share-card-preview"
+                      onClick={() => setSelectedIndex(index)}
+                      className={cn(
+                        'shrink-0 snap-center rounded-xl border px-3 py-2 text-left transition-colors min-w-[9.5rem] max-w-[11rem]',
+                        selected ? chipActive : chipIdle,
+                      )}
+                    >
+                      <span className="block text-[10px] font-bold uppercase tracking-wide opacity-80">
+                        {p.highlightToolName}
+                      </span>
+                      <span className="mt-0.5 block text-xs font-semibold leading-tight line-clamp-2">
+                        {p.archetypeTitle}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ) : null}
 

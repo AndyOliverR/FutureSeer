@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
+import { PalmHandGuidanceHint } from '@/components/profile/PalmHandGuidanceHint'
 import { updateUserProfile, type UserProfile } from '@/lib/firebase'
 import {
   getReturningUserWithReportsDestination,
@@ -513,6 +514,11 @@ export default function ProfileSetupPage() {
                       />
                       <span className="text-[10px] font-bold text-amber-400 uppercase">Palm Scan</span>
                     </label>
+                    <PalmHandGuidanceHint
+                      gender={profileData.gender || undefined}
+                      compact
+                      className="px-1"
+                    />
                     <div className="text-center">
                       {profileData.palmPhoto ? (
                         <div className="text-[10px] text-white/60">{formatBytes(profileData.palmPhoto.size)}</div>

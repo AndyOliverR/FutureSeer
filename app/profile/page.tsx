@@ -1481,6 +1481,7 @@ export default function ProfilePage() {
                     onUpload={(f) => void handlePhotoUpload(f, "palm")}
                     onRemove={() => handleRemovePhoto("palm")}
                     buttonClassName="text-xs"
+                    gender={formData.gender}
                   />
                 )}
               </div>
@@ -1853,6 +1854,7 @@ export default function ProfilePage() {
                       onUpload={(f) => void handlePhotoUpload(f, "palm")}
                       onRemove={() => handleRemovePhoto("palm")}
                       buttonClassName="text-xs border-amber-400/30 text-amber-400"
+                      gender={formData.gender}
                     />
                   )}
                 </div>
