@@ -15,9 +15,9 @@ export type VedicSeerFocusLens = 'career' | 'relationships';
 
 interface VedicSeerChatInterfaceProps {
   userId: string;
-  userProfile: any;
-  vedicChartData?: any;
-  vedicNumerologyData?: any;
+  userProfile: Record<string, unknown>;
+  vedicChartData?: Record<string, unknown>;
+  vedicNumerologyData?: Record<string, unknown>;
   sessionId?: string;
   /** Ground answers in the career or relationships focused report when set. */
   focusLens?: VedicSeerFocusLens | null;
@@ -68,7 +68,7 @@ export default function VedicSeerChatInterface({
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState(sessionId);
+  const [currentSessionId] = useState(sessionId);
   const [expandedMessageIds, setExpandedMessageIds] = useState<Set<string>>(new Set());
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [streamingDisplayLength, setStreamingDisplayLength] = useState(0);
@@ -309,7 +309,7 @@ export default function VedicSeerChatInterface({
               <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" />
               <p className="text-amber-900 font-medium mb-2">Ask me anything about your destiny, timing, and life path…</p>
               <p className="text-slate-700 text-sm mt-1 mb-2">
-                I'll consult your Vedic birth chart, planetary periods, and yogas to reveal outcomes, timing, and karmic patterns.
+                I&apos;ll consult your Vedic birth chart, planetary periods, and yogas to reveal outcomes, timing, and karmic patterns.
               </p>
               <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
               <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
