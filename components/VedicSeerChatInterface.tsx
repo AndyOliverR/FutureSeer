@@ -11,12 +11,16 @@ import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 
+export type VedicSeerFocusLens = 'career' | 'relationships';
+
 interface VedicSeerChatInterfaceProps {
   userId: string;
   userProfile: any;
   vedicChartData?: any;
   vedicNumerologyData?: any;
   sessionId?: string;
+  /** Ground answers in the career or relationships focused report when set. */
+  focusLens?: VedicSeerFocusLens | null;
 }
 
 interface Message {
@@ -26,11 +30,25 @@ interface Message {
   timestamp: number;
 }
 
-const VEDIC_STARTER_QUESTIONS = [
+const VEDIC_STARTER_QUESTIONS_DEFAULT = [
   'When is a favorable period for career or business?',
   'Does my chart show marriage, and when?',
   'Which dasha am I running, and what does it bring?',
   'Why do I face repeated obstacles despite effort?',
+];
+
+const VEDIC_STARTER_QUESTIONS_CAREER = [
+  'What does my 10th house say about my next career move?',
+  'When is the best window to ask for a raise or switch jobs?',
+  'Which path in my career report fits me most right now?',
+  'What should I focus on in my 7-day action plan?',
+];
+
+const VEDIC_STARTER_QUESTIONS_RELATIONSHIPS = [
+  'What does my chart say about partnership timing?',
+  'How do Venus and Moon shape what I need in connection?',
+  'What patterns should I watch in relationships?',
+  'When is a supportive window for clarity or commitment?',
 ];
 
 export default function VedicSeerChatInterface({
@@ -38,8 +56,15 @@ export default function VedicSeerChatInterface({
   userProfile,
   vedicChartData,
   vedicNumerologyData,
-  sessionId
+  sessionId,
+  focusLens = null,
 }: VedicSeerChatInterfaceProps) {
+  const starterQuestions =
+    focusLens === 'career'
+      ? VEDIC_STARTER_QUESTIONS_CAREER
+      : focusLens === 'relationships'
+        ? VEDIC_STARTER_QUESTIONS_RELATIONSHIPS
+        : VEDIC_STARTER_QUESTIONS_DEFAULT;
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -115,7 +140,8 @@ export default function VedicSeerChatInterface({
           userProfile,
           vedicChartData,
           vedicNumerologyData,
-          sessionId: currentSessionId
+          sessionId: currentSessionId,
+          ...(focusLens ? { focusLens } : {}),
         })
       });
 
@@ -292,7 +318,7 @@ export default function VedicSeerChatInterface({
                 <li>Karmic and pattern questions (why struggles repeat, strengths from past karma, major life themes)</li>
               </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
-                {VEDIC_STARTER_QUESTIONS.map((q, i) => (
+                {starterQuestions.map((q, i) => (
                   <Button
                     key={i}
                     variant="outline"

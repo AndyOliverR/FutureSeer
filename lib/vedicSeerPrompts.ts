@@ -798,6 +798,8 @@ export function buildVedicSeerSystemPrompt(
   predictiveResonanceHint?: string,
   /** Optional deep knowledge base context for richer interpretations. */
   knowledgeContext?: string,
+  /** Pre-generated career or relationships lens report (from /api/vedic/career|relationships). */
+  focusedLensReport?: string,
 ): string {
   const resonanceBlock =
     predictiveResonanceHint && predictiveResonanceHint.trim().length > 0
@@ -841,5 +843,6 @@ ${slice}
 ## Question type
 ${questionType}
 ${resonanceBlock}
-Answer the user's question with specific references to the state above. Use Tier 1 when supported, Tier 2 when mixed, Tier 3 only when the slice indicates missing data.${knowledgeContext ? `\n\n${knowledgeContext}` : ''}`;
+${focusedLensReport?.trim() ? `\n\n${focusedLensReport.trim()}\n` : ''}
+Answer the user's question with specific references to the state above${focusedLensReport?.trim() ? ' and the lens report' : ''}. Use Tier 1 when supported, Tier 2 when mixed, Tier 3 only when the slice indicates missing data.${knowledgeContext ? `\n\n${knowledgeContext}` : ''}`;
 }

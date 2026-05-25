@@ -23,6 +23,15 @@ import {
   buildMarkovUserBehaviorSignals,
   formatPredictiveHintForVedicPrompt,
 } from '@/lib/predictionUserSignals';
+import {
+  formatCareerReportForSeer,
+  readVedicCareerCache,
+} from '@/lib/vedic/vedicCareerReport';
+import {
+  formatRelationshipReportForSeer,
+  readVedicRelationshipCache,
+} from '@/lib/vedic/vedicRelationshipReport';
+import type { VedicBirthProfile } from '@/lib/vedic/vedicReportFirestore';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-vedic-seer';
@@ -65,6 +74,8 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 type VedicChartPayload = Record<string, unknown>;
 
+type VedicSeerFocusLens = 'career' | 'relationships';
+
 interface VedicSeerRequest {
   userId: string;
   question: string;
@@ -72,6 +83,8 @@ interface VedicSeerRequest {
   vedicChartData: VedicChartPayload;
   vedicNumerologyData?: Record<string, unknown>;
   sessionId?: string;
+  /** When set, inject the matching focused Vedic report into the system prompt. */
+  focusLens?: VedicSeerFocusLens;
 }
 
 interface VedicSeerStoredPayload {
@@ -110,7 +123,8 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as VedicSeerRequest;
     const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_vedic_seer');
     if (__toolSeerGate) return __toolSeerGate;
-    const { userId, question, userProfile, vedicChartData, vedicNumerologyData, sessionId } = body;
+    const { userId, question, userProfile, vedicChartData, vedicNumerologyData, sessionId, focusLens } =
+      body;
 
     if (!userId || !question || !userProfile) {
       return jsonWithRobots(
@@ -134,7 +148,13 @@ export async function POST(request: NextRequest) {
 
     devLog.info('🔮 Vedic Seer API: Processing question for user:', userId, 'vedic-seer');
 
-    const questionType = classifyVedicQuestion(question);
+    let questionType = classifyVedicQuestion(question);
+    if (focusLens === 'career' && questionType === 'general') {
+      questionType = 'career';
+    }
+    if (focusLens === 'relationships' && (questionType === 'general' || questionType === 'career')) {
+      questionType = 'marriage';
+    }
     if (questionType === 'refusal') {
       const refusalMessage =
         'Vedic astrology indicates tendencies and periods, not certainties. I cannot give medical diagnosis, death prediction, or absolute certainty. I can help with timing, career, marriage, and remedies within the astrological framework.';
@@ -202,8 +222,29 @@ export async function POST(request: NextRequest) {
       knowledgeContext = formatKnowledgeForPrompt(kbResults);
     } catch { /* KB is optional; do not fail the request */ }
 
+    let focusedLensReport: string | undefined;
+    const birthProfile: VedicBirthProfile = {
+      birthDate: String(userProfile.birthDate ?? ''),
+      birthTime: String(userProfile.birthTime ?? '12:00:00'),
+      birthPlace: String(userProfile.birthPlace ?? ''),
+    };
+    if (focusLens === 'career' && birthProfile.birthDate && birthProfile.birthPlace) {
+      const career = await readVedicCareerCache(userId, birthProfile, { allowStale: true });
+      if (career) focusedLensReport = formatCareerReportForSeer(career);
+    }
+    if (focusLens === 'relationships' && birthProfile.birthDate && birthProfile.birthPlace) {
+      const rel = await readVedicRelationshipCache(userId, birthProfile, { allowStale: true });
+      if (rel) focusedLensReport = formatRelationshipReportForSeer(rel);
+    }
+
     const { messages } = buildToolSeerMessages({
-      systemContent: buildVedicSeerSystemPrompt(chartSlice, questionType, predictiveHint, knowledgeContext),
+      systemContent: buildVedicSeerSystemPrompt(
+        chartSlice,
+        questionType,
+        predictiveHint,
+        knowledgeContext,
+        focusedLensReport,
+      ),
       userMessage: question,
       history: conversationHistory,
       maxHistoryTurns: 5,

@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { getMissingFullProfileFields, isTrialActive } from "@/lib/subscriptionConfig"
 import { analytics } from "@/lib/analytics"
-import { buildMysticalSharePayload } from "@/lib/growth/mysticalShareCard"
+import { buildAllMysticalSharePayloads } from "@/lib/growth/mysticalShareCard"
 import { MysticalShareCardPanel } from "@/components/growth/MysticalShareCardPanel"
 
 const CATEGORY_ORDER = [
@@ -847,10 +847,10 @@ export default function MysticalProfilePage() {
     refreshMysticalProfile,
   ])
 
-  const mysticalSharePayload = useMemo(() => {
-    if (!p || groupedCards.length === 0) return null
+  const mysticalSharePayloads = useMemo(() => {
+    if (!p || groupedCards.length === 0) return []
     const prof = userProfile as Record<string, unknown> | null | undefined
-    return buildMysticalSharePayload(p, {
+    return buildAllMysticalSharePayloads(p, {
       displayName:
         typeof prof?.displayName === "string"
           ? prof.displayName
@@ -994,8 +994,8 @@ export default function MysticalProfilePage() {
         </div>
         {showMysticalProfileRefresh ? <MysticalProfileRefreshingBar variant="m3" /> : null}
         {ctaRow}
-        {mysticalSharePayload ? (
-          <MysticalShareCardPanel payload={mysticalSharePayload} variant="m3" />
+        {mysticalSharePayloads.length > 0 ? (
+          <MysticalShareCardPanel payloads={mysticalSharePayloads} variant="m3" />
         ) : null}
         {generationActive && groupedCards.length === 0 ? (
           <MysticalProfileGeneratingPlaceholder
@@ -1096,8 +1096,8 @@ export default function MysticalProfilePage() {
         </div>
         {showMysticalProfileRefresh ? <MysticalProfileRefreshingBar variant="web" /> : null}
         {ctaRow}
-        {mysticalSharePayload ? (
-          <MysticalShareCardPanel payload={mysticalSharePayload} variant="web" />
+        {mysticalSharePayloads.length > 0 ? (
+          <MysticalShareCardPanel payloads={mysticalSharePayloads} variant="web" />
         ) : null}
         {generationActive && groupedCards.length === 0 ? (
           <MysticalProfileGeneratingPlaceholder
