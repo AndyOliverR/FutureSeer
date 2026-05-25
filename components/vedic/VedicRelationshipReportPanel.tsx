@@ -6,7 +6,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Button } from '@/components/ui/button';
 import type { AdditionalProfile } from '@/lib/types/profileTypes';
 import type { VedicRelationshipAnalysis } from '@/lib/vedic/vedicRelationshipReport';
-import { extractPersistedRelationshipAnalysis } from '@/lib/vedic/vedicRelationshipReport';
 import {
   toVedicFocusedReportApiProfile,
   type VedicFocusedReportUserInput,

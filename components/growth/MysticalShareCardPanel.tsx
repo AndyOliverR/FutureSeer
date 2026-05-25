@@ -81,12 +81,13 @@ export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardP
     });
   }, [payload, payloads.length]);
 
-  if (!payload) return null;
-
-  const shareText = `${payload.displayName}'s cosmic profile (${payload.highlightToolName}): ${payload.archetypeTitle} — ${payload.hookLine.slice(0, 120)}…`;
+  const shareText = payload
+    ? `${payload.displayName}'s cosmic profile (${payload.highlightToolName}): ${payload.archetypeTitle} — ${payload.hookLine.slice(0, 120)}…`
+    : '';
   const previewHeight = MYSTICAL_SHARE_CARD_EXPORT_HEIGHT * previewScale;
 
   const handleCopyLink = useCallback(async () => {
+    if (!payload) return;
     const ok = await safeCopyToClipboard(payload.shareUrl);
     analytics.trackMysticalShareCard('copy_link', {
       archetype: payload.archetypeTitle,
@@ -100,7 +101,7 @@ export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardP
   }, [payload, toast]);
 
   const handleDownload = useCallback(async () => {
-    if (!cardRef.current) return;
+    if (!payload || !cardRef.current) return;
     setBusy('download');
     try {
       const dataUrl = await exportCardPng(cardRef.current);
@@ -125,7 +126,7 @@ export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardP
   }, [payload, toast]);
 
   const handleShare = useCallback(async () => {
-    if (!cardRef.current) return;
+    if (!payload || !cardRef.current) return;
     setBusy('share');
     try {
       const dataUrl = await exportCardPng(cardRef.current);
@@ -188,6 +189,8 @@ export function MysticalShareCardPanel({ payloads, variant }: MysticalShareCardP
   const chipIdle = isM3
     ? 'border-outline-variant bg-surface-container-low text-surface-on-variant hover:border-outline'
     : 'border-amber-500/20 bg-slate-900/40 text-slate-400 hover:border-amber-500/40 hover:text-amber-200';
+
+  if (!payload) return null;
 
   return (
     <section className={cn('mb-8', isM3 ? 'px-0' : '')} aria-labelledby="mystical-share-heading">
