@@ -15,7 +15,6 @@ export async function getVedicReportDoc(
 
   try {
     if (isAdminSDK(db)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let ref: any = db.collection(collectionPath[0]);
       for (let i = 1; i < collectionPath.length; i += 2) {
         const docIdInPath = collectionPath[i];
@@ -61,7 +60,6 @@ export async function setVedicReportDoc(
 
   try {
     if (isAdminSDK(db)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let ref: any = db.collection(collectionPath[0]);
       for (let i = 1; i < collectionPath.length; i += 2) {
         const docIdInPath = collectionPath[i];

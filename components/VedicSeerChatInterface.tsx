@@ -10,13 +10,14 @@ import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
+import type { UserProfile } from '@/lib/firebase';
 
 export type VedicSeerFocusLens = 'career' | 'relationships';
 
 interface VedicSeerChatInterfaceProps {
   userId: string;
-  userProfile: Record<string, unknown>;
-  vedicChartData?: Record<string, unknown>;
+  userProfile: UserProfile;
+  vedicChartData?: Record<string, unknown> | null;
   vedicNumerologyData?: Record<string, unknown>;
   sessionId?: string;
   /** Ground answers in the career or relationships focused report when set. */
