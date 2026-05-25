@@ -115,6 +115,8 @@ pnpm test            # Jest unit/integration tests
 pnpm test:integration  # integration tests only (15s timeout)
 ```
 
+**Agent inner loop (before PR):** Path → targeted commands in [docs/VERIFICATION_PLANS.md](docs/VERIFICATION_PLANS.md). Cursor skill: `.cursor/skills/verification-plans/SKILL.md`.
+
 **E2E (real browser):** `pnpm run test:e2e` — requires the app running (`pnpm build && pnpm start` in another terminal, or run `pnpm run test:e2e:ci` to build, start server, run Playwright, then stop). E2E runs in GitHub Actions on every PR. See [docs/E2E_TESTS.md](docs/E2E_TESTS.md) for details.
 
 Some tests reference modules via `@/lib/...` that may fail due to path resolution — these are pre-existing issues, not environment problems.
