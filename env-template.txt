@@ -56,8 +56,8 @@ RECAPTCHA_ENTERPRISE_API_KEY=
 # RECAPTCHA_MIN_SCORE_COMMUNITY=0.45
 # Auth captcha mode (client):
 # enforce = block sign-in when captcha is unavailable (default)
-# adaptive = allow email sign-in only when captcha script init fails after retry
-# Recommended during ongoing web captcha script incidents on production:
+# adaptive = allow email auth only when captcha script init fails after retry
+# Use only as a temporary incident override on production:
 # NEXT_PUBLIC_AUTH_CAPTCHA_MODE=adaptive
 # NEXT_PUBLIC_AUTH_CAPTCHA_MODE=enforce
 

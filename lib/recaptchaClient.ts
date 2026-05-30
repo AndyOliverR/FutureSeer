@@ -37,14 +37,11 @@ type LogFn = (
 
 export type AuthCaptchaMode = "adaptive" | "enforce";
 
-/** Production defaults to adaptive when unset; localhost defaults to enforce. */
+/** Fail closed unless operators explicitly opt into adaptive captcha mode. */
 export function getAuthCaptchaMode(): AuthCaptchaMode {
   const explicit = process.env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE;
   if (explicit === "adaptive" || explicit === "enforce") return explicit;
-  if (typeof window === "undefined") return "enforce";
-  const host = window.location.hostname;
-  const isLocal = host === "localhost" || host === "127.0.0.1";
-  return isLocal ? "enforce" : "adaptive";
+  return "enforce";
 }
 
 export type CaptchaErrorLike = {
