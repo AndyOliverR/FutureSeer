@@ -16,7 +16,7 @@ Email domain is not a gating factor here: Microsoft, Apple relay, Yahoo, custom 
 
 ## First-Response Checklist
 
-1. Confirm the event includes `route: /signin`, `method: email`, and the `code`.
+1. Confirm the event includes `route: /signin` or `/signup`, `method: email`, and the `code`.
 2. Check whether failures are isolated to one user/browser or broad across users.
 3. Ask user to retry with:
    - hard refresh,
@@ -52,7 +52,7 @@ Email domain is not a gating factor here: Microsoft, Apple relay, Yahoo, custom 
 - If OAuth sign-in works but email sign-in fails with `fs/captcha-*`, issue is likely in captcha path, not core Firebase email/password auth.
 - If browser console also shows Service Worker errors like `Response body is already used` or `FetchEvent ... network error`, treat this as a combined SW+caching contributor and escalate with both captcha and SW logs.
 - Strict-mode policy: if both captcha providers fail, email sign-in remains blocked by design.
-- Hybrid-mode policy (`NEXT_PUBLIC_AUTH_CAPTCHA_MODE=adaptive`): captcha is still attempted first; only `fs/captcha-missing-script` after retry can bypass for email sign-in.
+- Hybrid-mode policy (`NEXT_PUBLIC_AUTH_CAPTCHA_MODE=adaptive`): captcha is still attempted first; only `fs/captcha-missing-script` after retry can bypass for email sign-in and sign-up.
 - Adaptive default hardening: when `NEXT_PUBLIC_AUTH_CAPTCHA_MODE` is unset, production hosts default to adaptive and localhost defaults to enforce.
 - To force strict mode at any time, set `NEXT_PUBLIC_AUTH_CAPTCHA_MODE=enforce` and redeploy.
 - Do not advise users to bypass security checks.

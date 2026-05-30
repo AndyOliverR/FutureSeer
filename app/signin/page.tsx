@@ -46,7 +46,10 @@ import { getPostAuthDestination } from "@/lib/authRouting"
 import { getClientOAuthGuardrailReportDeferred } from "@/lib/deferredOAuthGuardrails"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
-import { ensureRecaptchaVerifiedForWebAuth } from "@/lib/recaptchaClient"
+import {
+  ensureRecaptchaVerifiedForWebAuthWithRecovery,
+  extractCaptchaMeta,
+} from "@/lib/recaptchaClient"
 
 const OnboardingStuckBanner = dynamic(
   () =>
@@ -81,32 +84,10 @@ function SignInContent() {
     logOnboarding: logOnboarding,
     funnelNewUser: user ? !isReturningUser(user) : null,
   })
-  const authCaptchaMode = React.useMemo(() => {
-    const explicit = process.env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE
-    if (explicit === "adaptive" || explicit === "enforce") return explicit
-    if (typeof window === "undefined") return "enforce"
-    const host = window.location.hostname
-    const isLocal = host === "localhost" || host === "127.0.0.1"
-    return isLocal ? "enforce" : "adaptive"
-  }, [])
-
   const isLikelyOAuthDomainMismatch = (code?: string) =>
     code === "auth/unauthorized-domain" ||
     code === "auth/invalid-continue-uri" ||
     code === "auth/invalid-dynamic-link-domain"
-
-  const extractCaptchaMeta = (err: {
-    code?: string
-    stage?: string
-    status?: number
-    reason?: string
-    preflight?: Record<string, unknown>
-  }) => ({
-    ...(typeof err.stage === "string" ? { captchaStage: err.stage } : {}),
-    ...(typeof err.status === "number" ? { httpStatus: err.status } : {}),
-    ...(typeof err.reason === "string" ? { captchaReason: err.reason } : {}),
-    ...(err.preflight && typeof err.preflight === "object" ? { captchaPreflight: err.preflight } : {}),
-  })
 
   useEffect(() => {
     void logError("view_loaded", "Sign-in screen loaded", "info", {
@@ -329,43 +310,12 @@ function SignInContent() {
     try {
       await logError("email_submit_clicked", "Email sign-in submitted", "info", { hasRedirect: !!redirectTo })
       trackAuthAttemptDeferred("email", "signin", { hasRedirect: !!redirectTo })
-      try {
-        await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
-      } catch (captchaError: unknown) {
-        const ce = captchaError as {
-          code?: string
-          stage?: string
-          status?: number
-          reason?: string
-          preflight?: Record<string, unknown>
-        }
-        if (ce?.code === "fs/captcha-missing-script") {
-          // One short retry for slow-network script readiness races.
-          await new Promise((resolve) => setTimeout(resolve, 900))
-          try {
-            await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
-          } catch (retryError: unknown) {
-            const re = retryError as {
-              code?: string
-              stage?: string
-              status?: number
-              reason?: string
-              preflight?: Record<string, unknown>
-            }
-            if (authCaptchaMode === "adaptive" && re?.code === "fs/captcha-missing-script") {
-              await logError("captcha_adaptive_bypass_used", "Captcha unavailable; adaptive bypass used", "warning", {
-                mode: authCaptchaMode,
-                reason: "script_unavailable_after_retry",
-                ...extractCaptchaMeta(re),
-              })
-            } else {
-              throw retryError
-            }
-          }
-        } else {
-          throw captchaError
-        }
-      }
+      await ensureRecaptchaVerifiedForWebAuthWithRecovery(
+        isMobileLayout,
+        RECAPTCHA_ACTIONS.LOGIN,
+        logError,
+        { authSurface: "signin" },
+      )
       const user = await signInWithEmail(email, password)
       const destination = getPostAuthDestination(redirectTo, isReturningUser(user))
       await logError("auth_success", "User signed in", "info", { method: "email", redirectTo: destination })

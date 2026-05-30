@@ -35,6 +35,39 @@ type LogFn = (
   meta?: Record<string, unknown>
 ) => Promise<void>;
 
+export type AuthCaptchaMode = "adaptive" | "enforce";
+
+/** Production defaults to adaptive when unset; localhost defaults to enforce. */
+export function getAuthCaptchaMode(): AuthCaptchaMode {
+  const explicit = process.env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE;
+  if (explicit === "adaptive" || explicit === "enforce") return explicit;
+  if (typeof window === "undefined") return "enforce";
+  const host = window.location.hostname;
+  const isLocal = host === "localhost" || host === "127.0.0.1";
+  return isLocal ? "enforce" : "adaptive";
+}
+
+export type CaptchaErrorLike = {
+  code?: string;
+  stage?: string;
+  status?: number;
+  reason?: string;
+  preflight?: Record<string, unknown>;
+};
+
+export function extractCaptchaMeta(err: CaptchaErrorLike): Record<string, unknown> {
+  return {
+    ...(typeof err.stage === "string" ? { captchaStage: err.stage } : {}),
+    ...(typeof err.status === "number" ? { httpStatus: err.status } : {}),
+    ...(typeof err.reason === "string" ? { captchaReason: err.reason } : {}),
+    ...(err.preflight && typeof err.preflight === "object" ? { captchaPreflight: err.preflight } : {}),
+  };
+}
+
+function asCaptchaError(err: unknown): CaptchaErrorLike {
+  return (err && typeof err === "object" ? err : {}) as CaptchaErrorLike;
+}
+
 declare global {
   interface Window {
     __fsRecaptchaFallbackAttempted?: boolean;
@@ -213,6 +246,43 @@ export async function ensureRecaptchaVerifiedForWebAuth(
   }
 
   await logError?.("captcha_verified", "Captcha verified", "info");
+}
+
+/**
+ * Attempts captcha verification with one short retry for script readiness races.
+ * In adaptive mode, allows email auth to proceed when the script remains unavailable after retry.
+ */
+export async function ensureRecaptchaVerifiedForWebAuthWithRecovery(
+  isMobileLayout: boolean,
+  action: string,
+  logError?: LogFn,
+  options?: { authSurface?: "signin" | "signup" }
+): Promise<void> {
+  const authSurface = options?.authSurface ?? "signin";
+  try {
+    await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, action, logError);
+  } catch (captchaError: unknown) {
+    const ce = asCaptchaError(captchaError);
+    if (ce.code !== "fs/captcha-missing-script") {
+      throw captchaError;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    try {
+      await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, action, logError);
+    } catch (retryError: unknown) {
+      const re = asCaptchaError(retryError);
+      if (getAuthCaptchaMode() === "adaptive" && re.code === "fs/captcha-missing-script") {
+        await logError?.("captcha_adaptive_bypass_used", "Captcha unavailable; adaptive bypass used", "warning", {
+          mode: getAuthCaptchaMode(),
+          authSurface,
+          reason: "script_unavailable_after_retry",
+          ...extractCaptchaMeta(re),
+        });
+        return;
+      }
+      throw retryError;
+    }
+  }
 }
 
 export async function getRecaptchaTokenForGuest(action: string): Promise<string | null> {

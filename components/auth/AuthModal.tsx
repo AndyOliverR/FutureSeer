@@ -27,7 +27,7 @@ import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
 import { useToast } from '@/hooks/use-toast';
 import { RecaptchaScript } from '@/components/RecaptchaScript';
 import { RECAPTCHA_ACTIONS } from '@/lib/recaptcha/actions';
-import { ensureRecaptchaVerifiedForWebAuth } from '@/lib/recaptchaClient';
+import { ensureRecaptchaVerifiedForWebAuthWithRecovery } from '@/lib/recaptchaClient';
 import { CountrySelector } from '@/components/CountrySelector';
 import { ModalPortal } from '@/components/ui/ModalPortal';
 import { getReturningUserWithReportsDestination } from '@/lib/authRouting';
@@ -181,7 +181,12 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     setError(null);
     
     try {
-      await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN);
+      await ensureRecaptchaVerifiedForWebAuthWithRecovery(
+        isMobileLayout,
+        RECAPTCHA_ACTIONS.LOGIN,
+        undefined,
+        { authSurface: 'signin' },
+      );
       await signInWithEmail(email, password);
       toast({
         title: "Welcome back! 🌟",
@@ -228,7 +233,12 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     setError(null);
     
     try {
-      await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.SIGNUP);
+      await ensureRecaptchaVerifiedForWebAuthWithRecovery(
+        isMobileLayout,
+        RECAPTCHA_ACTIONS.SIGNUP,
+        undefined,
+        { authSurface: 'signup' },
+      );
       await signUpWithEmail(email, password, displayName, selectedCountry);
       toast({
         title: "Welcome to FutureSeer! 🌟",
