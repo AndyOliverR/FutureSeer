@@ -48,7 +48,10 @@ import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
 import { getPostAuthDestination, NEW_USER_ONBOARDING_DESTINATION } from "@/lib/authRouting"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
-import { ensureRecaptchaVerifiedForWebAuth } from "@/lib/recaptchaClient"
+import {
+  ensureRecaptchaVerifiedForWebAuthWithRecovery,
+  extractCaptchaMeta,
+} from "@/lib/recaptchaClient"
 
 type SignupFlowCompleteData = {
   selectedPlan?: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
@@ -363,7 +366,12 @@ function SignUpPageContent() {
     setIsLoading(true); setError(null); setDismissAuthInfo(false)
     try {
       trackAuthAttemptDeferred("email", "signup", { hasRedirect: !!redirectTo })
-      await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.SIGNUP, logError)
+      await ensureRecaptchaVerifiedForWebAuthWithRecovery(
+        isMobileLayout,
+        RECAPTCHA_ACTIONS.SIGNUP,
+        logError,
+        { authSurface: "signup" },
+      )
       const selectedPlan = data.selectedPlan ?? "power-user-trial"
       const paymentMethodId = data.paymentMethodId && data.paymentMethodId !== "none" ? data.paymentMethodId : undefined
       await signUpWithEmail(
@@ -384,7 +392,14 @@ function SignUpPageContent() {
       trackAuthOutcomeDeferred("email", "signup", "success", { redirectTo: NEW_USER_ONBOARDING_DESTINATION })
       router.push(NEW_USER_ONBOARDING_DESTINATION)
     } catch (error: unknown) {
-      const err = error as { code?: string; message?: string }
+      const err = error as {
+        code?: string
+        message?: string
+        stage?: string
+        status?: number
+        reason?: string
+        preflight?: Record<string, unknown>
+      }
       const msg = getAuthErrorMessage(err)
       setError(msg)
       let authDomain: string | null = null
@@ -396,6 +411,7 @@ function SignUpPageContent() {
         /* ignore */
       }
       const benign = isBenignAuthUserInputError(err)
+      const captchaMeta = extractCaptchaMeta(err)
       await logError(
         "signup_email",
         typeof err.message === "string" ? err.message : msg,
@@ -404,6 +420,7 @@ function SignUpPageContent() {
           selectedPlan: data.selectedPlan ?? "power-user-trial",
           code: err.code ?? null,
           authDomain,
+          ...captchaMeta,
           ...(benign ? { expectedUserInputError: true } : {}),
         },
       )
