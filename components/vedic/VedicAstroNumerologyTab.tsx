@@ -387,7 +387,11 @@ export default function VedicAstroNumerologyTab({
                       <span className="font-semibold">Karmic Insights & Dasha Connections</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed space-y-3">
+                    <p className="text-amber-200/90 text-sm leading-relaxed">
+                      In Jyotish, karma appears as patterns and timing in your chart — lessons to integrate, not a fixed sentence.
+                      Difficult dashas and planets like Saturn or the nodes often mark refinement, redirection, or preparation.
+                    </p>
                     {comprehensiveAnalysis.karmicInsights || 'Karmic analysis available soon.'}
                   </AccordionContent>
                 </AccordionItem>

@@ -6,6 +6,7 @@ import type { StructuredFailureMode } from '@/lib/aiStructuredOutputParse';
 import { parseStructuredJsonFromResponse } from '@/lib/aiStructuredOutputParse';
 import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { type VedicNumerologyProfile } from '@/lib/vedicNumerologyCalculations';
+import { buildVedicKarmaInsights } from '@/lib/vedic/karmaChartInsights';
 import { devLog } from '@/lib/devLogger';
 
 // Helper to check if we're using Admin SDK
@@ -180,7 +181,7 @@ Generate a comprehensive Vedic Astro-Numerology analysis. Emphasize:
 Format your response as a JSON object with the following structure:
 {
   "personalitySynthesis": "Detailed paragraph explaining how the Moon sign (most important), Lagna, Sun sign, and numerology numbers work together. Emphasize Vedic (Sidereal) interpretations, emotional nature from Moon, and how planetary number influences create a unique personality profile. Include references to Navagraha planets.",
-  "karmicInsights": "Detailed paragraph about karmic lessons, past life influences, and how the numerology numbers and planetary associations reveal spiritual blueprint. Connect to Dasha periods and reincarnation themes. Reference the specific karmic lessons identified.",
+  "karmicInsights": "Detailed paragraph about karmic lessons as chart tendencies and dasha-activated themes — not fixed punishment. Explain how Moon nakshatra, Saturn/Rahu/Ketu placements, numerology karmic lessons (${karmicLessonsText}), and current dasha chapters shape growth-through-friction. Use awareness language: what to learn, prepare for, or release. No fatalism.",
   "remedies": "Detailed paragraph about Vedic remedial measures: recommended gemstones based on ruling planets (${lifePathGemstone}, ${destinyGemstone}), mantras (${lifePathMantra}), and upayas to balance planetary influences.",
   "careerGuidance": "Detailed paragraph about career paths aligned with Moon sign, Lagna, and numerology numbers. Include references to dharma (life purpose) and how planetary number associations guide vocational choices.",
   "relationshipInsights": "Detailed paragraph about relationship dynamics from Vedic perspective, combining Moon sign (emotional nature), Lagna (physical attraction), and numerology compatibility patterns.",
@@ -236,10 +237,25 @@ function buildDeterministicVedicAstroNumerology(
   lagnaSign: string,
   numerologyProfile: VedicNumerologyProfile,
 ): VedicComprehensiveAnalysis {
+  const karmaBundle = buildVedicKarmaInsights({
+    ascendant: { signName: lagnaSign },
+    planets: [{ name: 'Moon', signName: moonSign }],
+  });
+  const karmicLessons =
+    numerologyProfile.karmicLessons.length > 0
+      ? numerologyProfile.karmicLessons.join(' ')
+      : 'Integrating planetary number patterns with patience and self-awareness.';
+  const karmicInsights = [
+    karmaBundle.philosophy,
+    `With ${moonSign} Moon and ${lagnaSign} Lagna, emotional habit and life approach interact with Navagraha numerology: ${karmicLessons}`,
+    karmaBundle.dashaTheme,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return {
     personalitySynthesis: `Your ${moonSign} Moon sign (most important in Vedic astrology) combines with Life Path ${numerologyProfile.lifePathNumber} (ruled by ${numerologyProfile.planetaryInfluences['Life Path']?.planet}) and Lagna ${lagnaSign} to create a unique Vedic personality profile.`,
-    karmicInsights:
-      'Your karmic lessons are revealed through the planetary number associations in your numerology profile.',
+    karmicInsights,
     remedies: `Recommended gemstones: ${numerologyProfile.planetaryInfluences['Life Path']?.gemstone || 'Ruby'} for Life Path, ${numerologyProfile.planetaryInfluences['Destiny']?.gemstone || 'Pearl'} for Destiny.`,
     careerGuidance: `Career paths aligned with your ${moonSign} Moon sign and numerology numbers would be most fulfilling.`,
     relationshipInsights: `Your relationship style is influenced by your ${moonSign} Moon sign and numerological patterns.`,

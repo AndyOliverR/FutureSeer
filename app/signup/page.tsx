@@ -26,8 +26,10 @@ import {
   isUnauthorizedDomainAuthError,
   isAuthRedirectInitiatedError,
   isBenignAuthUserInputError,
+  isTransientAuthNetworkError,
   AUTH_DISMISS_RECOVERY_WINDOW_MS,
 } from "@/lib/firebase"
+import { shouldPreferOAuthRedirect } from "@/lib/oauthWebView"
 import { CountrySelector } from "@/components/CountrySelector"
 import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons"
 import { isAppleSignInEnabledClient } from "@/lib/authFeatureFlags"
@@ -217,6 +219,7 @@ function SignUpPageContent() {
           provider: "google",
           code: err.code ?? null,
           internalAssertion: isFirebaseAuthInternalAssertionError(error),
+          transientNetwork: isTransientAuthNetworkError(error),
           recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
         })
         trackAuthOutcomeDeferred("google", "signup", "success", { recoveredAfterTransient: true, redirectTo: destination })
@@ -245,8 +248,23 @@ function SignUpPageContent() {
           hostname: typeof window !== "undefined" ? window.location.hostname : null,
         })
       } else {
-        trackAuthOutcomeDeferred("google", "signup", "error", { code: err.code ?? null })
-        await logError("signup_google", msg, "error", { provider: "google", code: err.code ?? null })
+        const transientNetwork = isTransientAuthNetworkError(error)
+        trackAuthOutcomeDeferred("google", "signup", "error", {
+          code: err.code ?? null,
+          transientNetwork,
+        })
+        await logError(
+          "signup_google",
+          msg,
+          transientNetwork ? "warning" : "error",
+          {
+            provider: "google",
+            code: err.code ?? null,
+            oauthMode: shouldPreferOAuthRedirect() ? "redirect" : "popup",
+            visibilityState: typeof document !== "undefined" ? document.visibilityState : null,
+            ...(transientNetwork ? { transientNetworkError: true } : {}),
+          },
+        )
       }
     } finally {
       setIsLoading(false); setActiveProvider(null)
