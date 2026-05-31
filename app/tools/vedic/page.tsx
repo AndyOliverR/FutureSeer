@@ -30,6 +30,7 @@ import { ProfileList } from "@/components/profiles/ProfileList";
 import type { AdditionalProfile } from "@/lib/types/profileTypes";
 import { extractPersistedCareerAnalysis } from "@/lib/vedic/vedicCareerReport";
 import { extractPersistedRelationshipAnalysis } from "@/lib/vedic/vedicRelationshipReport";
+import { VedicKarmaAwarenessPanel } from "@/components/vedic/VedicKarmaAwarenessPanel";
 import { DevotionistStyleCard } from "@/components/western/DevotionistStyleCard";
 import { ToolReportStatusChips } from "@/components/tool-status/ToolReportStatusChips";
 import {
@@ -628,7 +629,10 @@ function VedicAstrologyPageContent() {
                     'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
                 )}
               >
-            <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"><ToolIntroductionTab toolSlug="vedic-astrology" /></TabsContent>
+            <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
+              <ToolIntroductionTab toolSlug="vedic-astrology" />
+              <VedicKarmaAwarenessPanel chartData={hasVedicData ? vedicProfileData : null} />
+            </TabsContent>
             <TabsContent value="compatibility" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"><CompatibilityTab toolSlug="vedic-astrology" /></TabsContent>
             <TabsContent value="career" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {hasVedicData && user?.uid && userProfile ? (
@@ -700,6 +704,7 @@ function VedicAstrologyPageContent() {
                       <span className="text-xl font-heading text-white">{(resolvedCurrentDasha as any)?.planet ?? "N/A"}</span>
                     </div>
                   </div>
+                  <VedicKarmaAwarenessPanel chartData={vedicProfileData} variant="compact" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                       type="button"

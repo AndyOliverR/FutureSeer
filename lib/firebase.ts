@@ -64,6 +64,10 @@ export function isFirebaseAuthInternalAssertionError(error: unknown): boolean {
   );
 }
 
+export function isTransientAuthNetworkError(error: unknown): boolean {
+  return (error as { code?: string })?.code === 'auth/network-request-failed';
+}
+
 /** Serialize redirect-result + popup OAuth so they never run concurrently in the SDK. */
 let authOperationChain: Promise<unknown> = Promise.resolve();
 
@@ -456,10 +460,10 @@ async function signInWithOAuthWeb(
       );
       throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
     }
-    if (isFirebaseAuthInternalAssertionError(error)) {
+    if (isFirebaseAuthInternalAssertionError(error) || isTransientAuthNetworkError(error)) {
       devLog.debug(
-        `OAuth ${label}: internal assertion — checking session`,
-        { attemptId, mode: 'popup' },
+        `OAuth ${label}: transient popup error — checking session`,
+        { attemptId, mode: 'popup', code },
         'firebase'
       );
       const sessionOk = await waitForAuthenticatedSession(8000);
@@ -616,7 +620,7 @@ export async function recoverOAuthSessionAfterPopupDismiss(
 }
 
 /**
- * Recover a signed-in user after dismiss or Firebase internal OAuth assertion (popup flows).
+ * Recover a signed-in user after dismiss, Firebase internal OAuth assertion, or transient network errors (popup flows).
  */
 export async function recoverOAuthUserAfterError(
   error: unknown,
@@ -631,7 +635,8 @@ export async function recoverOAuthUserAfterError(
 
   const recoverable =
     isUserDismissedAuthError(error as { code?: string }) ||
-    isFirebaseAuthInternalAssertionError(error);
+    isFirebaseAuthInternalAssertionError(error) ||
+    isTransientAuthNetworkError(error);
 
   if (!recoverable) return null;
 
@@ -659,10 +664,6 @@ const SIGNUP_MAX_ATTEMPTS = 3;
 function sleepSignupBackoff(attemptIndex: number): Promise<void> {
   const ms = 400 + attemptIndex * 250 + Math.floor(Math.random() * 400);
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isTransientAuthNetworkError(error: unknown): boolean {
-  return (error as { code?: string })?.code === 'auth/network-request-failed';
 }
 
 function isTransientFirestoreWriteError(error: unknown): boolean {

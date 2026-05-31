@@ -265,27 +265,29 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
     name: 'Vedic Astrology',
     icon: '🕉️',
     description: 'Ancient Indian astrological system with comprehensive birth chart analysis',
-    overview: 'Vedic Astrology, also known as Jyotish (science of light), is an ancient Indian astrological system dating back over 5,000 years. Unlike Western astrology, it uses the sidereal zodiac (fixed stars) rather than the tropical zodiac. This system places strong emphasis on predicting events, timing, and providing remedies for challenging planetary influences. It\'s deeply integrated with Hindu philosophy and offers comprehensive life guidance.',
-    howItWorks: 'Vedic Astrology calculates planetary positions using the sidereal zodiac system, which accounts for the precession of equinoxes. The system creates multiple chart types: Rasi (D1 - main birth chart), Navamsa (D9 - marriage and relationships), Dashas (planetary periods), and various divisional charts for specific life areas. It analyzes planetary positions, Nakshatras (lunar mansions), planetary periods (Dashas), transits (Gochara), and provides specific remedies (gemstones, mantras, rituals) for challenging influences.',
+    overview: 'Vedic Astrology (Jyotish — science of light) is a time-based system for understanding life patterns, psychological tendencies, and karmic cycles. It uses the sidereal zodiac (fixed stars), not tropical Sun-sign horoscopes. Your chart is read as a karmic blueprint: tendencies and timing to navigate with awareness, not a fixed script. Moon sign, Lagna, houses, divisional charts, and dashas together reveal who you are, when themes activate, and how to align effort with cosmic rhythm.',
+    howItWorks: 'FutureSeer calculates sidereal positions from your birth date, time, and place, then builds Rasi (D1), key divisional charts (e.g. D9, D10), nakshatras, Vimshottari dasha from Moon nakshatra, and transits. Interpretation follows traditional Jyotish: house lords from Lagna, functional benefics/malefics, yogas, and dasha–antardasha as the primary timing engine. Difficult placements (Saturn, nodes, dusthana houses) are read as refinement and lessons — growth through friction, not punishment.',
     keyConcepts: [
-      'Sidereal Zodiac: Fixed star-based system, more accurate for predictions',
-      'Nakshatras: 27 lunar mansions providing detailed personality insights',
-      'Dashas: Planetary periods determining timing of events (Vimshottari Dasha system)',
-      'Divisional Charts: Multiple charts (D1-D60) for different life areas',
-      'Planetary Strengths: Benefic and malefic planets, exaltation, debilitation',
-      'Yogas: Special planetary combinations indicating specific results',
-      'Remedies: Gemstones, mantras, rituals, and practices to balance planetary influences'
+      'Moon sign & nakshatra: emotional truth and dasha sequence (more central than Sun sign alone in Jyotish)',
+      'Lagna (ascendant): embodiment, life approach, and house-lord logic',
+      'Sidereal zodiac: star-based signs — different from Western newspaper astrology',
+      'Karmic blueprint: chart as tendencies and lessons; agency and awareness still shape outcomes',
+      'Vimshottari dasha: planetary periods that activate chart themes — when potential becomes lived experience',
+      'Transits (Gochara): refine timing alongside dasha; they do not override dasha logic',
+      'Saturn, Rahu & Ketu: structure, desire, and release — transformative karakas, not random misfortune',
+      'Divisional charts (D9, D10, D60): relationships, career, subtle karmic tone',
+      'Yogas & remedies: combinations and upayas to reduce friction, not bypass conscious choice'
     ],
     useCases: [
-      'Accurate event prediction and timing',
-      'Marriage and relationship compatibility',
-      'Career and financial guidance',
-      'Health predictions and remedies',
-      'Education and academic success',
-      'Spiritual growth and dharma',
-      'Remedial measures for challenging periods'
+      'Understanding emotional patterns (Moon) vs outer identity (Lagna, Sun)',
+      'Timing career, relationships, and major decisions with dasha + transits',
+      'Seeing why Sun-sign horoscopes feel inconsistent without full chart + timing',
+      'Navigating difficult periods with awareness — prepare, pause, or push wisely',
+      'Marriage and relationship depth (D9, 7th house, Venus, Moon)',
+      'Spiritual growth, dharma, and karmic themes without fatalism',
+      'Remedial measures for challenging planetary periods'
     ],
-    whyItMatters: 'Vedic Astrology offers exceptional accuracy in prediction and timing, making it invaluable for planning important life events. Its comprehensive system of remedies provides practical solutions for challenging planetary influences. Whether you\'re seeking to understand your life purpose (dharma), timing major decisions, or navigating difficult periods, Vedic Astrology provides both insight and actionable guidance.'
+    whyItMatters: 'Jyotish helps you move from “What will happen?” to “What is active now, and how do I respond wisely?” Timing often outweighs brute effort: aligned action in a supportive dasha flows; the same action in a preparatory period may teach patience instead. FutureSeer grounds this in your computed chart and dasha — awareness and alignment, not fear or fortune-telling slogans.'
   },
   'palmistry': {
     slug: 'palmistry',

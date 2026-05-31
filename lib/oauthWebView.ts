@@ -1,6 +1,6 @@
 /**
- * WebKit (Safari / iOS / iPadOS) often blocks or breaks Firebase OAuth popups.
- * Prefer full-page redirect for those environments; Chrome/Firefox can keep popup.
+ * WebKit (Safari / iOS / iPadOS) and Android mobile browsers often break Firebase OAuth popups
+ * (background-tab races, auth/network-request-failed). Prefer full-page redirect there.
  */
 export function shouldPreferOAuthRedirect(): boolean {
   if (typeof window === "undefined" || typeof navigator === "undefined") return false;
@@ -11,6 +11,9 @@ export function shouldPreferOAuthRedirect(): boolean {
 
   // iPadOS desktop UA can report as Macintosh with touch points.
   if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true;
+
+  // Android phones: popup OAuth is flaky when the account picker backgrounds the tab.
+  if (/Android/i.test(ua) && /Mobile/i.test(ua)) return true;
 
   // Safari on macOS (not Chrome, Chromium, Edge, Opera, Firefox).
   if (
