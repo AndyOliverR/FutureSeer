@@ -159,6 +159,21 @@ describe('Profile generate-mystical API', () => {
   }
 
   describe('Returning login (idempotent)', () => {
+    it('treats birth coordinate changes as profile-defining for regeneration', () => {
+      const originalHash = calculateProfileDataHash({
+        ...baseProfile,
+        birthLatitude: 40.7128,
+        birthLongitude: -74.006,
+      });
+      const correctedHash = calculateProfileDataHash({
+        ...baseProfile,
+        birthLatitude: 40.6892,
+        birthLongitude: -74.0445,
+      });
+
+      expect(correctedHash).not.toBe(originalHash);
+    });
+
     it('returns alreadyGenerated when profile is generated and hash matches', async () => {
       const profile = { ...baseProfile };
       const hash = calculateProfileDataHash(profile);

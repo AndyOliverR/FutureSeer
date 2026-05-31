@@ -13,6 +13,11 @@ import {
   clearPersistentProfileCache,
   computeComprehensiveProfileVersionHash
 } from '@/lib/comprehensiveProfileCache'
+import {
+  getComprehensiveProfileFreshnessMarker,
+  shouldApplyComprehensiveProfileSnapshot,
+  type ComprehensiveProfileFreshnessMarker,
+} from '@/lib/comprehensiveProfileFreshness'
 import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator'
 import {
   isUsableStoredReport,
@@ -152,7 +157,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const userProfileRef = useRef(userProfile)
   userProfileRef.current = userProfile
-  const lastAppliedGeneratedAtRef = useRef<string | null>(null)
+  const lastAppliedProfileMarkerRef = useRef<ComprehensiveProfileFreshnessMarker | null>(null)
   const profileUserIdRef = useRef<string | null>(null)
   const noProfileLoggedForUserRef = useRef<string | null>(null)
   const lastWarnAtRef = useRef<Record<string, number>>({})
@@ -182,13 +187,13 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     // (profileDataHash) has refreshed and the report would never appear.
     profileUserIdRef.current = userId
     if (data) {
-      const at = data.metadata?.generatedAt
-      if (at) lastAppliedGeneratedAtRef.current = at
+      lastAppliedProfileMarkerRef.current = getComprehensiveProfileFreshnessMarker(data)
       const version = computeComprehensiveProfileVersionHash(data)
       setProfile(data)
       profileCache.set(userId, { data, timestamp: Date.now() })
       setPersistentProfile(userId, version, data)
     } else {
+      lastAppliedProfileMarkerRef.current = null
       setProfile(null)
     }
   }, [])
@@ -205,12 +210,11 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
           if (isReportsStale(userProfileRef.current)) {
             setProfile(null)
+            lastAppliedProfileMarkerRef.current = null
             profileCache.delete(userId)
             clearPersistentProfileCache(userId)
           } else if (profileHasUsableReports(cached.data)) {
-            const incomingAt = cached.data.metadata?.generatedAt
-            const lastAt = lastAppliedGeneratedAtRef.current
-            if (!(incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime())) {
+            if (shouldApplyComprehensiveProfileSnapshot(cached.data, lastAppliedProfileMarkerRef.current)) {
               setProfile(cached.data)
             }
             if (!background) setLoading(false)
@@ -266,9 +270,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
 
       if (profileSnap.exists()) {
         const data = profileSnap.data() as ComprehensiveMysticalProfile
-        const incomingAt = data.metadata?.generatedAt
-        const lastAt = lastAppliedGeneratedAtRef.current
-        if (incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime()) {
+        if (!shouldApplyComprehensiveProfileSnapshot(data, lastAppliedProfileMarkerRef.current)) {
           if (!background) setLoading(false)
           return
         }
@@ -283,6 +285,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         }
       } else {
         setProfile(null)
+        lastAppliedProfileMarkerRef.current = null
         clearPersistentProfileCache(userId)
         if (noProfileLoggedForUserRef.current !== userId) {
           if (process.env.NODE_ENV === 'development') {
@@ -362,9 +365,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
           }
           if (cacheSnap?.exists()) {
             const data = cacheSnap.data() as ComprehensiveMysticalProfile
-            const incomingAt = data.metadata?.generatedAt
-            const lastAt = lastAppliedGeneratedAtRef.current
-            if (!(incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime())) {
+            if (shouldApplyComprehensiveProfileSnapshot(data, lastAppliedProfileMarkerRef.current)) {
               applyFirestoreProfile(userId, data)
             }
             setError(null)
@@ -401,12 +402,14 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     if (typeof window !== 'undefined' && sessionStorage.getItem('signing_out') === 'true') {
       setLoading(false)
       setProfile(null)
+      lastAppliedProfileMarkerRef.current = null
       profileUserIdRef.current = null
       return
     }
     if (!user?.uid) {
       setLoading(false)
       setProfile(null)
+      lastAppliedProfileMarkerRef.current = null
       profileUserIdRef.current = null
       return
     }
@@ -416,6 +419,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     if (profileUserIdRef.current !== null && profileUserIdRef.current !== uid) {
       setProfile(null)
       setLoading(true)
+      lastAppliedProfileMarkerRef.current = null
       profileCache.delete(profileUserIdRef.current)
     }
     profileUserIdRef.current = uid
@@ -450,9 +454,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
           }
           if (snapshot.exists()) {
             const data = snapshot.data() as ComprehensiveMysticalProfile
-            const incomingAt = data.metadata?.generatedAt
-            const lastAt = lastAppliedGeneratedAtRef.current
-            if (incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime()) {
+            if (!shouldApplyComprehensiveProfileSnapshot(data, lastAppliedProfileMarkerRef.current)) {
               return
             }
             applyFirestoreProfile(uid, data)
@@ -461,6 +463,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
             }
           } else {
             setProfile(null)
+            lastAppliedProfileMarkerRef.current = null
             clearPersistentProfileCache(uid)
           }
         },
@@ -500,6 +503,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         applyFirestoreProfile(uid, detail.comprehensiveProfile)
         return
       }
+      lastAppliedProfileMarkerRef.current = null
       clearComprehensiveMysticalProfileCache(uid)
       clearPersistentProfileCache(uid)
       refreshProfile()
@@ -515,6 +519,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       if (detail?.userId !== user.uid) return
       clearComprehensiveMysticalProfileCache(user.uid)
       clearPersistentProfileCache(user.uid)
+      lastAppliedProfileMarkerRef.current = null
       setProfile(null)
     }
     window.addEventListener('futureSeer:profileInvalidated', handler)

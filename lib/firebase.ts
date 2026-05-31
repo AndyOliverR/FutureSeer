@@ -1070,6 +1070,8 @@ export const calculateProfileDataHash = (profile: Partial<UserProfile>): string 
     birthDate: profile.birthDate,
     birthTime: profile.birthTime,
     birthPlace: profile.birthPlace,
+    birthLatitude: profile.birthLatitude,
+    birthLongitude: profile.birthLongitude,
     currentLocation: profile.currentLocation,
     gender: profile.gender,
     fullName: profile.fullName,
