@@ -115,7 +115,7 @@
     "@radix-ui/react-tooltip": "latest",
     "@react-pdf/renderer": "^4.3.0",
     "@rrweb/types": "latest",
-    "ai": "^5.0.52",
+    "ai": "^6.0.194",
     "astronomia": "^4.2.0",
     "autoprefixer": "^10.4.20",
     "celestine": "^0.2.1",

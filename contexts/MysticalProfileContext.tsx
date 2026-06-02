@@ -310,6 +310,10 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       const isBenignFirestoreError =
         errorMessage.includes('Target ID already exists') ||
         errorMessage.includes('Failed to get document from server') ||
+        errorMessage.includes('Failed to get document because the client is offline') ||
+        errorMessage.toLowerCase().includes('client is offline') ||
+        errorMessage.toLowerCase().includes('offline') ||
+        errorMessage.toLowerCase().includes('unavailable') ||
         errorMessage.includes('permission-denied') ||
         errorMessage.includes('Missing or insufficient permissions') ||
         errorMessage.toLowerCase().includes('insufficient permissions')
