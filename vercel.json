@@ -7,10 +7,6 @@
     {
       "path": "/api/cron/weekly-social-digest",
       "schedule": "0 8 * * 1"
-    },
-    {
-      "path": "/api/cron/mystical-stage-b",
-      "schedule": "*/5 * * * *"
     }
   ],
   "rewrites": [
