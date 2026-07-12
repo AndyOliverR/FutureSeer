@@ -2,7 +2,9 @@ import {
   buildInitialToolQueue,
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
+  selectIncompleteToolSlugs,
   selectRunnableToolSlugs,
+  selectTerminalFailedToolSlugs,
 } from '@/lib/mysticalStageBQueuePure';
 
 describe('mysticalStageBQueue', () => {
@@ -34,5 +36,35 @@ describe('mysticalStageBQueue', () => {
     expect(runnable).not.toContain('vedic');
     expect(runnable).not.toContain('western');
     expect(runnable.length).toBeGreaterThan(0);
+  });
+
+  it('keeps backoff-blocked tools incomplete instead of treating the queue as drained', () => {
+    const profileHash = 'h1';
+    const now = Date.now();
+    const queue = buildInitialToolQueue({}, profileHash, now);
+    queue.western = {
+      ...queue.western,
+      status: 'pending',
+      attempts: 1,
+      nextRetryAt: now + 60_000,
+    };
+
+    expect(selectRunnableToolSlugs(queue, {}, profileHash, now)).not.toContain('western');
+    expect(selectIncompleteToolSlugs({}, profileHash)).toContain('western');
+  });
+
+  it('identifies terminal failed tools as incomplete so they cannot finalize as completed', () => {
+    const profileHash = 'h1';
+    const queue = buildInitialToolQueue({}, profileHash);
+    queue.tarot = {
+      ...queue.tarot,
+      status: 'failed',
+      attempts: queue.tarot.maxAttempts,
+      nextRetryAt: null,
+    };
+
+    expect(selectRunnableToolSlugs(queue, {}, profileHash)).not.toContain('tarot');
+    expect(selectTerminalFailedToolSlugs(queue, {}, profileHash)).toContain('tarot');
+    expect(selectIncompleteToolSlugs({}, profileHash)).toContain('tarot');
   });
 });

@@ -317,6 +317,12 @@ describe('Profile generate-mystical API', () => {
         uid,
         expect.objectContaining({
           status: 'queued',
+          toolTasks: expect.objectContaining({
+            tarot: expect.objectContaining({
+              status: 'pending',
+              attempts: 0,
+            }),
+          }),
         }),
       );
     });

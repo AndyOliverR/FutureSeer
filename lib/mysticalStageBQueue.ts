@@ -23,7 +23,9 @@ import {
   buildInitialToolQueue,
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
+  selectIncompleteToolSlugs,
   selectRunnableToolSlugs,
+  selectTerminalFailedToolSlugs,
   TOOL_QUEUE_MAX_ATTEMPTS,
   type ToolQueueMap,
   type ToolQueueTask,
@@ -35,7 +37,9 @@ export {
   buildInitialToolQueue,
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
+  selectIncompleteToolSlugs,
   selectRunnableToolSlugs,
+  selectTerminalFailedToolSlugs,
 };
 
 const TOOL_MAX_ATTEMPTS = TOOL_QUEUE_MAX_ATTEMPTS;
@@ -287,17 +291,70 @@ export async function processMysticalStageBQueue(params: {
     {}) as Record<string, unknown>;
   const jobFinal = ((await getDocument('generationJobs', uid)) || {}) as Record<string, unknown>;
   const queueFinal = (jobFinal.toolTasks as ToolQueueMap) ?? {};
-  const remainingTools = selectRunnableToolSlugs(queueFinal, profileFinal, profileHash).length;
+  const runnableRemainingTools = selectRunnableToolSlugs(queueFinal, profileFinal, profileHash).length;
+  const incompleteTools = selectIncompleteToolSlugs(profileFinal, profileHash);
+  const terminalFailedTools = selectTerminalFailedToolSlugs(queueFinal, profileFinal, profileHash);
+  const retryableIncompleteTools = incompleteTools.filter((slug) => !terminalFailedTools.includes(slug));
 
-  if (remainingTools > 0) {
+  if (runnableRemainingTools > 0 || retryableIncompleteTools.length > 0) {
+    const now = Date.now();
+    const nextRetryAt =
+      retryableIncompleteTools
+        .map((slug) => queueFinal[slug]?.nextRetryAt)
+        .filter((value): value is number => typeof value === 'number' && value > now)
+        .sort((a, b) => a - b)[0] ?? now + 5_000;
     await setDocument('generationJobs', uid, {
       status: 'queued',
       phase: pipelineMode === 'unified' ? 'running' : 'stageB',
-      nextRetryAt: Date.now() + 5_000,
-      updatedAt: Date.now(),
+      nextRetryAt,
+      // A clean time-slice should not consume the crash/failure retry budget.
+      attempts: Math.max(0, attempt - 1),
+      updatedAt: now,
       claimId,
     });
-    return { done: false, processedTools, remainingTools, finalized: false };
+    return { done: false, processedTools, remainingTools: incompleteTools.length, finalized: false };
+  }
+
+  if (terminalFailedTools.length > 0) {
+    const failedAt = Date.now();
+    const readiness = summarizeToolReadiness(profileFinal, ALL_TOOL_SLUGS);
+    await userRootDocSet(
+      uid,
+      {
+        profileStatus: 'failed',
+        allReportsReady: false,
+        pendingToolSlugs: incompleteTools,
+        updatedAt: failedAt,
+        lastProgressAt: failedAt,
+      },
+      { merge: true },
+    );
+    await setDocument('generationLocks', uid, {
+      lockedAt: null,
+      status: 'failed',
+      phase: 'failed',
+      failedAt,
+      completedTools: readiness.readyToolsCount,
+      totalTools: ALL_TOOL_SLUGS.length,
+      pendingToolSlugs: incompleteTools,
+      terminalFailedToolSlugs: terminalFailedTools,
+      allReportsReady: false,
+      updatedAt: failedAt,
+    });
+    await setDocument('generationJobs', uid, {
+      status: 'failed_terminal',
+      phase: 'failed',
+      failedAt,
+      completedTools: readiness.readyToolsCount,
+      totalTools: ALL_TOOL_SLUGS.length,
+      pendingToolSlugs: incompleteTools,
+      terminalFailedToolSlugs: terminalFailedTools,
+      allReportsReady: false,
+      queueDrained: false,
+      updatedAt: failedAt,
+      claimId,
+    });
+    return { done: true, processedTools, remainingTools: incompleteTools.length, finalized: false };
   }
 
   const toolReports = toolReportsFromComprehensiveProfile(profileFinal);

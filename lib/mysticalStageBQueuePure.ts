@@ -78,3 +78,22 @@ export function selectRunnableToolSlugs(
   }
   return runnable;
 }
+
+export function selectIncompleteToolSlugs(
+  profile: Record<string, unknown>,
+  profileHash: string,
+): string[] {
+  return ALL_TOOL_SLUGS.filter((slug) => !isToolReportReadyForHash(profile[slug], profileHash));
+}
+
+export function selectTerminalFailedToolSlugs(
+  queue: ToolQueueMap,
+  profile: Record<string, unknown>,
+  profileHash: string,
+): string[] {
+  return selectIncompleteToolSlugs(profile, profileHash).filter((slug) => {
+    const task = queue[slug];
+    if (!task) return false;
+    return task.status === 'failed' && task.attempts >= task.maxAttempts;
+  });
+}

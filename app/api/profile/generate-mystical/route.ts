@@ -35,6 +35,7 @@ import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
 import { acquireMysticalGenerationLock, getMysticalLockRuntimeStatus } from '@/lib/generationLock';
 import { tryResumeMysticalStageB } from '@/lib/mysticalStageB';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
+import { buildInitialToolQueue } from '@/lib/mysticalStageBQueuePure';
 
 export const dynamic = 'force-dynamic';
 /** Stage B runs via `after()` after the 202 response; allow enough wall time for full sequential/parallel pipeline. */
@@ -423,6 +424,8 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
       currentToolSlug: null,
     });
+    const existingProfileForQueue = ((await getDocument('comprehensiveMysticalProfiles', uid)) || {}) as Record<string, unknown>;
+    const toolTasks = buildInitialToolQueue(existingProfileForQueue, newHash, now);
     const jobWriteOk = await setDocument('generationJobs', uid, {
       uid,
       status: 'queued',
@@ -439,6 +442,7 @@ export async function POST(request: NextRequest) {
       totalTools: ALL_TOOL_SLUGS.length,
       lastProgressAt: now,
       lastHeartbeatAt: now,
+      toolTasks,
     });
     if (!userWriteOk || !lockWriteOk || !jobWriteOk) {
       throw new Error('Failed to persist generation state. Check Firebase Admin availability.');

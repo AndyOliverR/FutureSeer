@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   try {
     const snap = await adminDb
       .collection('generationJobs')
-      .where('status', 'in', ['queued', 'failed', 'stale_running'])
+      .where('status', 'in', ['queued', 'failed', 'stale_running', 'running'])
       .limit(40)
       .get();
 
@@ -56,6 +56,14 @@ export async function GET(request: NextRequest) {
         status?: string;
       };
       if (typeof data.nextRetryAt === 'number' && data.nextRetryAt > now) continue;
+      if (
+        data.status === 'running' &&
+        typeof data.lastHeartbeatAt === 'number' &&
+        now - data.lastHeartbeatAt > STAGE_B_HEARTBEAT_STALE_MS
+      ) {
+        candidates.push(doc.id);
+        continue;
+      }
       if (data.status === 'stale_running') {
         candidates.push(doc.id);
         continue;
