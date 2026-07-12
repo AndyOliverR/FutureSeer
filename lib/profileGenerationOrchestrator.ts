@@ -1645,24 +1645,33 @@ export function toolReportsFromComprehensiveProfile(
   profile: Record<string, unknown>,
 ): ToolReports {
   const reports: ToolReports = {};
+  const nested = profile.toolReports as
+    | Record<string, { data?: unknown; status?: string; error?: string; generatedAt?: string }>
+    | undefined;
+
   for (const slug of ALL_TOOL_SLUGS) {
-    const val = profile[slug];
+    const nestedEntry = nested?.[slug];
+    const val = profile[slug] ?? nestedEntry?.data;
     if (!val || typeof val !== 'object') continue;
+
     const state = classifyToolReportState(val);
     const generatedAt =
       typeof (val as { generatedAt?: string }).generatedAt === 'string'
         ? (val as { generatedAt: string }).generatedAt
-        : new Date().toISOString();
+        : typeof nestedEntry?.generatedAt === 'string'
+          ? nestedEntry.generatedAt
+          : new Date().toISOString();
+
     if (state === 'ready') {
       reports[slug] = {
         status: 'success',
         data: val as Record<string, unknown>,
         generatedAt,
       };
-    } else if (state === 'failed') {
+    } else if (state === 'failed' || nestedEntry?.status === 'failed') {
       reports[slug] = {
         status: 'failed',
-        error: (val as { error?: string }).error ?? 'Generation failed',
+        error: (val as { error?: string }).error ?? nestedEntry?.error ?? 'Generation failed',
         generatedAt,
       };
     }
@@ -1677,6 +1686,7 @@ export async function finalizeProfileGenerationFromToolReports(
   userId: string,
   userProfile: UserProfile,
   toolReports: ToolReports,
+  existingProfile?: Record<string, unknown>,
 ): Promise<GenerationResult> {
   const baseUrl = getServerBaseUrl();
   const profile: UserProfile = {
@@ -1904,6 +1914,16 @@ export async function finalizeProfileGenerationFromToolReports(
   for (const [slug, entry] of Object.entries(toolReports)) {
     if (entry.status === 'success' && entry.data && typeof entry.data === 'object') {
       comprehensiveProfile[slug] = entry.data;
+    }
+  }
+  if (existingProfile) {
+    const nested = existingProfile.toolReports as Record<string, { data?: unknown }> | undefined;
+    for (const slug of ALL_TOOL_SLUGS) {
+      if (comprehensiveProfile[slug] != null) continue;
+      const stored = existingProfile[slug] ?? nested?.[slug]?.data;
+      if (stored && typeof stored === 'object' && isReadyToolReport(stored)) {
+        comprehensiveProfile[slug] = stored as Record<string, unknown>;
+      }
     }
   }
   const seerMaster = buildSeerMaster(toolReports, interpretations as Record<string, unknown>);
