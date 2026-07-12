@@ -1,0 +1,47 @@
+# Hobby-safe replacement for Vercel cron `*/5` (not allowed on Vercel Hobby).
+# Scans generationJobs for queued / failed / stale Stage B work and resumes processing.
+#
+# Setup: GitHub repo → Settings → Secrets → Actions → CRON_SECRET
+#        (same value as Vercel production CRON_SECRET)
+# Optional: Settings → Variables → CRON_BASE_URL (default https://futureseer.app)
+
+name: Mystical Stage B recovery
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: mystical-stage-b-cron
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    name: Resume stale Stage B jobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Call Stage B cron endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          CRON_BASE_URL: ${{ vars.CRON_BASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Add CRON_SECRET to repository secrets (same as Vercel production)."
+            exit 1
+          fi
+          base="${CRON_BASE_URL:-https://futureseer.app}"
+          base="${base%/}"
+          url="${base}/api/cron/mystical-stage-b"
+          echo "GET ${url}"
+          http_code=$(curl -sS -o /tmp/stage-b-cron.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${url}")
+          cat /tmp/stage-b-cron.json
+          echo ""
+          echo "HTTP ${http_code}"
+          if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
+            exit 1
+          fi
