@@ -39,7 +39,14 @@ import { clearAstroDataCache } from './astroDataService';
 import { generateReferralCode, trackReferralSignup } from './referralUtils';
 
 import { Capacitor } from '@capacitor/core';
-import { shouldPreferOAuthRedirect } from '@/lib/oauthWebView';
+import {
+  shouldPreferOAuthRedirect,
+  markOAuthRedirectPending,
+  clearOAuthRedirectPending,
+  shouldProcessOAuthRedirectReturn,
+  isMissingOAuthRedirectStateError,
+  cleanupStaleOAuthUrlParams,
+} from '@/lib/oauthWebView';
 
 /** Thrown after signInWithRedirect so callers can skip error UI; page navigates away. */
 export const AUTH_REDIRECT_INITIATED_MESSAGE = 'Redirect initiated';
@@ -414,6 +421,7 @@ async function signInWithOAuthWeb(
   return runSerializedAuthOperation(`oauth-${label}`, async () => {
   if (preferRedirect) {
     devLog.debug(`OAuth ${label}: signInWithRedirect (WebKit-friendly)`, { attemptId }, 'firebase');
+    markOAuthRedirectPending(label);
     await signInWithRedirect(auth, provider);
     const elapsedMs =
       (typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -448,6 +456,7 @@ async function signInWithOAuthWeb(
         { attemptId, mode: 'popup' },
         'firebase'
       );
+      markOAuthRedirectPending(label);
       await signInWithRedirect(auth, provider);
       const elapsedMs =
         (typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -580,19 +589,8 @@ export async function waitForAuthenticatedSession(timeoutMs = 3000): Promise<boo
 }
 
 /**
- * After popup-closed / cancelled-popup errors: check redirect result, then wait for session.
- * Call this instead of waitForAuthenticatedSession alone for better recovery on production.
- */
-function hasOAuthRedirectReturnInUrl(): boolean {
-  if (typeof window === 'undefined') return false;
-  const blob = `${window.location.search}${window.location.hash}`;
-  return /apiKey=|authType=|sessionId=/i.test(blob);
-}
-
-/**
  * After popup dismiss or Firebase internal OAuth assertion: wait for session.
- * Only calls getRedirectResult on WebKit redirect flows or when URL has redirect params
- * (popup-blocked → redirect fallback) — avoids races on Chromium popup sign-up.
+ * Only calls getRedirectResult when URL or sessionStorage indicates an OAuth return.
  */
 export async function recoverOAuthSessionAfterPopupDismiss(
   timeoutMs = AUTH_DISMISS_RECOVERY_WINDOW_MS
@@ -601,11 +599,7 @@ export async function recoverOAuthSessionAfterPopupDismiss(
   if (!auth) return false;
   if (auth.currentUser) return true;
 
-  const mayHaveRedirectResult =
-    typeof window !== 'undefined' &&
-    (shouldPreferOAuthRedirect() || hasOAuthRedirectReturnInUrl());
-
-  if (mayHaveRedirectResult) {
+  if (typeof window !== 'undefined' && shouldProcessOAuthRedirectReturn()) {
     try {
       const cred = await getRedirectResult();
       if (cred?.user) return true;
@@ -806,6 +800,9 @@ export const signOutUser = async (): Promise<void> => {
 export const getAuthErrorMessage = (error: any): string => {
   const code = error?.code || '';
   const raw = typeof error?.message === 'string' ? error.message : '';
+  if (isMissingOAuthRedirectStateError(error)) {
+    return 'Sign-in session expired. Please tap Sign in with Google again.';
+  }
   const appleEnabled =
     process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED === 'true' ||
     process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED === '1';
@@ -920,11 +917,8 @@ export const getRedirectResult = async (): Promise<UserCredential | null> => {
     const auth = getFirebaseAuth();
     if (!auth) return null;
 
-    if (
-      typeof window !== 'undefined' &&
-      !shouldPreferOAuthRedirect() &&
-      !hasOAuthRedirectReturnInUrl()
-    ) {
+    if (typeof window !== 'undefined' && !shouldProcessOAuthRedirectReturn()) {
+      cleanupStaleOAuthUrlParams();
       return null;
     }
 
@@ -933,6 +927,7 @@ export const getRedirectResult = async (): Promise<UserCredential | null> => {
     if (!inFlightPromise) {
       const nextPromise = firebaseGetRedirectResult(auth)
         .then((result) => {
+          clearOAuthRedirectPending();
           devLog.debug(
             'getRedirectResult: completed',
             { hasUser: !!result?.user, elapsedMs: Date.now() - startedAt },
@@ -941,7 +936,11 @@ export const getRedirectResult = async (): Promise<UserCredential | null> => {
           return result;
         })
         .catch((e: unknown) => {
-          if (isFirebaseAuthInternalAssertionError(e)) {
+          if (isMissingOAuthRedirectStateError(e)) {
+            clearOAuthRedirectPending();
+            cleanupStaleOAuthUrlParams();
+            devLog.debug('getRedirectResult: missing OAuth state (cleared)', e, 'firebase');
+          } else if (isFirebaseAuthInternalAssertionError(e)) {
             devLog.debug('getRedirectResult: internal assertion (ignored)', e, 'firebase');
           } else {
             devLog.debug('getRedirectResult: no result or error', e, 'firebase');
@@ -1380,6 +1379,16 @@ export interface UserProfile {
   specialUser?: boolean;
   special_user?: boolean;
   isSpecialUser?: boolean;
+  /** Pay-as-you-go wallet (default). Subscription members use unlimited billing. */
+  billingMode?: 'payg' | 'subscription';
+  creditBalance?: number;
+  freeUseConsumed?: {
+    mainSeer?: boolean;
+    profileRegen?: boolean;
+    toolSeer?: Record<string, boolean>;
+  };
+  creditOrderIds?: string[];
+  lastCreditPurchaseAt?: number;
 }
 
 export interface Note {

@@ -294,3 +294,48 @@ main {
 .admin-table-scroll-top::-webkit-scrollbar-track {
   background: rgb(15 23 42);
 }
+
+/* Tool routes: mobile M3 compliance — neutralize Devotionist glass below md (DESIGN.md) */
+@media (max-width: 767px) {
+  [data-tools-layout="true"] {
+    background-color: var(--m3-surface);
+  }
+
+  [data-tools-layout="true"] > .starfield-ultra-sharp {
+    opacity: 0.2;
+  }
+
+  [data-tools-layout="true"] .glass-card {
+    background: var(--m3-surface-container-high) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: var(--m3-outline-variant) !important;
+    box-shadow: none !important;
+  }
+
+  [data-tools-layout="true"] :where([class*="backdrop-blur"]) {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  [data-tools-layout="true"] :where(
+    .bg-slate-900\/30,
+    .bg-slate-900\/35,
+    .bg-slate-900\/40,
+    .bg-slate-900\/50,
+    .bg-slate-900\/80,
+    .bg-slate-900\/90,
+    .bg-slate-800\/20,
+    .bg-slate-800\/50
+  ) {
+    background-color: var(--m3-surface-container-high) !important;
+  }
+
+  [data-tools-layout="true"] :where([class*="border-amber-500"], [class*="border-amber-400"]) {
+    border-color: var(--m3-outline-variant) !important;
+  }
+
+  [data-tools-layout="true"] :where([class*="border-white\/5"], [class*="border-slate-7"]) {
+    border-color: var(--m3-outline-variant) !important;
+  }
+}

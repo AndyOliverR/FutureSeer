@@ -15,6 +15,7 @@ import {
   getRedirectResult,
   ensureUserDocumentFromAuth,
 } from '@/lib/firebase';
+import { cleanupStaleOAuthUrlParams } from '@/lib/oauthWebView';
 import { recordUserPresenceDeferred } from '@/lib/userPresence';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 
@@ -174,6 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const runRedirectBootstrap = async (): Promise<void> => {
         try {
+          cleanupStaleOAuthUrlParams();
           const redirectResult = await Promise.race([
             getRedirectResult(),
             new Promise<null>((resolve) => {

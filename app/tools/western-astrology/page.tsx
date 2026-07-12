@@ -26,6 +26,7 @@ import { TransitTimeline } from '@/components/western/TransitTimeline';
 import { LifeJourneyMap } from '@/components/western/LifeJourneyMap';
 import { AspectPatternDiagram } from '@/components/western/AspectPatternDiagram';
 import { ChartBirthSummaryCard } from '@/components/western/ChartBirthSummaryCard';
+import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge';
 import { WesternSpecialFeatures } from '@/components/western/WesternSpecialFeatures';
 import { WesternCelebritySampleSection } from '@/components/western/WesternCelebritySampleSection';
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
@@ -320,6 +321,7 @@ function WesternAstrologyPageContent() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Western Astrology</span>
           </h1>
           <p className="text-slate-200 leading-relaxed text-xl font-light">Traditional Western zodiac system with precise calculations</p>
+          <AstrologyMethodologyBadge variant="western" />
         </div>
         {/* Tabs – filing-cabinet style: one bordered container so tabs stay attached to content on all screens */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">

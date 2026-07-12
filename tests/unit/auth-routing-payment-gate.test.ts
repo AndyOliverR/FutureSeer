@@ -31,7 +31,7 @@ describe('authRouting payment gate parity', () => {
     ).toBe(true);
   });
 
-  it('gates returning users without active access', () => {
+  it('does not hard-gate returning users (credit-first billing)', () => {
     expect(
       shouldGateReturningUserForPaymentCommit({
         mysticalProfileGenerated: true,
@@ -39,7 +39,7 @@ describe('authRouting payment gate parity', () => {
         selectedPlan: 'power-user-trial',
         paymentMethodId: '',
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('respects bypass/admin flags when requiring commit', () => {
@@ -56,7 +56,7 @@ describe('authRouting payment gate parity', () => {
         isAdmin: false,
         isSpecialUser: false,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldRequireReturningPaymentCommit({
         profile,

@@ -13,6 +13,7 @@ For recurring operations, route-level examples, and incident workflow, see the [
 | `pnpm run security:audit` | Same as `pnpm audit` but fails only on high/critical (`--audit-level=high`). |
 | `pnpm run audit:fix` | Runs `pnpm audit --fix` to apply automatic fixes where possible. |
 | `pnpm run lint` | Runs ESLint including security rules (risky patterns like `eval`, unsafe regex, child_process, etc.). |
+| `pnpm run security:audit:skill` | Prints quarterly AI audit scope, cadence, and Cloudflare [security-audit-skill](https://github.com/cloudflare/security-audit-skill) setup (no LLM call). See § Security audit harness (lite) below. |
 
 ### Dependency overrides (moderate advisories)
 
@@ -24,6 +25,56 @@ For recurring operations, route-level examples, and incident workflow, see the [
 - **Code security lint**: `eslint-plugin-security` flags risky patterns (eval, non-literal regex, unsafe buffer, etc.). Configured in `eslint.config.mjs`; runs with `pnpm run lint`.
 
 No GitLab, Snyk, or other paid scanning. Optional: you can add a GitHub Actions workflow that runs `pnpm run security` on push.
+
+---
+
+## Security audit harness (lite)
+
+Mechanical checks (`pnpm security`, gitleaks in CI, Seer input gates) catch dependency CVEs and risky patterns. They do **not** replace adversarial review of auth boundaries, IDOR, or AI abuse paths.
+
+FutureSeer follows Cloudflare’s **start-with-a-skill** approach ([build your own vulnerability harness](https://blog.cloudflare.com/build-your-own-vulnerability-harness/)): a periodic **Recon → Hunt → Validate** pass using their open [security-audit-skill](https://github.com/cloudflare/security-audit-skill), scoped to this monolith (no fleet DB or per-PR full scans).
+
+### Cadence
+
+| When | What |
+|------|------|
+| **Every PR / push** | `pnpm run security` (audit + lint); gitleaks in GitHub Actions |
+| **Monthly (~30 min)** | Skim `aiCallEvents` for abuse; confirm prod env checklist in [ENGINEERING_BACKLOG](./ENGINEERING_BACKLOG_SCALE_AND_GROWTH.md) § P0 ops |
+| **Quarterly (~half day)** | Run the security-audit skill on scoped paths; **second model or agent** validates (disprove only); triage survivors to P0/P1 in backlog |
+| **After major auth/payment/Seer changes** | Ad-hoc Hunt on affected paths before next quarterly window |
+
+Run `pnpm run security:audit:skill` anytime to print scope, phases, and setup pointers (does not invoke an LLM).
+
+### Scoped paths (quarterly Hunt)
+
+Prioritize these over a whole-repo scan:
+
+| Area | Paths |
+|------|--------|
+| Main + tool Seer | `app/api/seer/`, `app/api/ask-the-seer/`, `app/api/ask-*-seer/` |
+| Auth + profile | `lib/userApiAuth.ts`, `lib/firebase.ts`, `lib/enforceToolSeerGate.ts`, `app/api/profile/` |
+| AI control layer | `lib/seerInputGuard.ts`, `lib/seerInjectionClassifier.ts`, `lib/aiGateway.ts`, `lib/aiFallbackRouter.ts` |
+| Payments | `app/api/payments/`, Razorpay webhook routes |
+| Admin / cron | `app/api/admin/`, `app/api/cron/`, `app/api/internal/` |
+| Data rules | Firestore security rules (if changed) |
+
+### Attack classes to Hunt
+
+- Auth bypass (`userId` in body without `verifyUserRequest` / `resolveOwnedUserId`)
+- IDOR (read or write another user’s profile, reports, or generation jobs)
+- Unauthenticated or under-rate-limited expensive AI routes (Groq spend)
+- Seer prompt injection (gate coverage on every `ask-*-seer` route — see P0-6 checklist)
+- Payment / webhook forgery (Razorpay signature verification)
+- Cron / internal routes without `CRON_SECRET` or equivalent
+
+### Rules (from Cloudflare, right-sized)
+
+1. **Threat model required** — who is the attacker, what boundary breaks?
+2. **Validator cannot file findings** — only disprove Hunt output.
+3. **No auto-merge** — human reviews any proposed patch.
+4. **Store output outside git** — e.g. local `security-audit-runs/` or private notes; do not commit `findings.json` with exploit detail.
+
+Backlog: **P1-12** in [ENGINEERING_BACKLOG_SCALE_AND_GROWTH.md](./ENGINEERING_BACKLOG_SCALE_AND_GROWTH.md).
 
 ---
 

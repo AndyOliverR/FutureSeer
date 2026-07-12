@@ -14,6 +14,9 @@ import { isPaidPlan } from '@/lib/profileEditQuota';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 import { blockSeerQuestionIfNeeded } from '@/lib/seerGateResponses';
 import { buildSeerMessages, type PromptSlot } from '@/lib/aiPromptBuilder';
+import { callSeerChatWithTools } from '@/lib/seerChatWithTools';
+import { consumeBillingAction } from '@/lib/billingCreditsServer';
+import { billingInsufficientCreditsResponse } from '@/lib/billingGateResponses';
 
 function getAddressName(profile: UserProfile | null | undefined): string | null {
   if (!profile) return null;
@@ -136,6 +139,11 @@ async function handleSeerChatRequest(req: NextRequest) {
     });
     if (inputBlocked) return inputBlocked;
 
+    const billing = await consumeBillingAction(userId, 'main_seer');
+    if (!billing.ok) {
+      return billingInsufficientCreditsResponse(billing);
+    }
+
     const profile = userId ? await getUserProfile(userId) : null;
     const birthProfile =
       clientBirthProfile ??
@@ -165,6 +173,22 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
     ];
     if (personalizationContext) {
       promptSlots.push({ kind: "context", content: personalizationContext, id: "seer-name" });
+    }
+    if (process.env.SEER_MCP_TOOLS === "1") {
+      promptSlots.push({
+        kind: "constraints",
+        content:
+          "You have read-only tools to fetch this user's stored divination reports, Seer Master summary, and occult reference material. Use them when the question needs specific chart or report data. Never mention tools, MCP, or function calls to the user.",
+        id: "seer-mcp-tools",
+      });
+    }
+    if (process.env.SEER_FORESIGHT_MODE === "1") {
+      promptSlots.push({
+        kind: "constraints",
+        content:
+          "Foresight mode: internally scan weak signals from chart and context, name the dominant pattern in plain language, choose one action band (Observe | Small step | Favorable window) without percentages or confidence scores, and shape one scenario question. Keep the visible reply to at most four sentences. Do not mention tools, MCP, foresight mode, or internal reasoning steps.",
+        id: "seer-foresight",
+      });
     }
     if (birthProfile && (birthProfile.birthDate || birthProfile.birthPlace || birthProfile.birthTime)) {
       promptSlots.push({
@@ -236,49 +260,112 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 
     let reply: string;
     try {
-      const data = await callTextAI({
-        label: 'seer-chat',
-        model: seerModel,
-        messages,
-        userId: userId ?? undefined,
-        temperature: 0.7,
-        topP: 0.9,
-        maxTokens,
-        frequencyPenalty: 0.3,
-        presencePenalty: 0.1,
-        maxAttempts: 2,
-      });
-      if (data.usage) {
-        try {
-          await recordInferenceUsage({
-            route: '/api/seer/chat',
-            model: seerModel,
-            userId: userId ?? null,
-            promptTokens: data.usage.promptTokens,
-            completionTokens: data.usage.completionTokens,
-            totalTokens: data.usage.totalTokens,
-          });
-          if (userId) {
-            await incrementSeerDailyTokens(userId, data.usage.totalTokens);
+      const useMcpTools = process.env.SEER_MCP_TOOLS === "1" && !!userId;
+      if (useMcpTools) {
+        const toolResult = await callSeerChatWithTools({
+          model: seerModel,
+          messages: messages as Array<{ role: "system" | "user" | "assistant"; content: string }>,
+          userId,
+          temperature: 0.7,
+          topP: 0.9,
+          maxTokens,
+          frequencyPenalty: 0.3,
+          presencePenalty: 0.1,
+        });
+        if (toolResult.content) {
+          if (toolResult.usage) {
+            try {
+              await recordInferenceUsage({
+                route: '/api/seer/chat',
+                model: seerModel,
+                userId: userId ?? null,
+                promptTokens: toolResult.usage.promptTokens,
+                completionTokens: toolResult.usage.completionTokens,
+                totalTokens: toolResult.usage.totalTokens,
+              });
+              await incrementSeerDailyTokens(userId, toolResult.usage.totalTokens);
+            } catch (e) {
+              devLog.warn('[Seer] inference logging failed (non-blocking)', e, 'route');
+            }
           }
-        } catch (e) {
-          devLog.warn('[Seer] inference logging failed (non-blocking)', e, 'route');
-        }
-      }
-      if (data.usage && userId) {
-        devLog.debug(
-          "[Seer] Token usage",
-          {
-            userId,
+          reply = toolResult.content;
+        } else {
+          const data = await callTextAI({
+            label: 'seer-chat',
             model: seerModel,
-            prompt_tokens: data.usage.promptTokens,
-            completion_tokens: data.usage.completionTokens,
-            total_tokens: data.usage.totalTokens,
-          },
-          "route"
-        );
+            messages,
+            userId: userId ?? undefined,
+            temperature: 0.7,
+            topP: 0.9,
+            maxTokens,
+            frequencyPenalty: 0.3,
+            presencePenalty: 0.1,
+            maxAttempts: 2,
+          });
+          if (data.usage) {
+            try {
+              await recordInferenceUsage({
+                route: '/api/seer/chat',
+                model: seerModel,
+                userId: userId ?? null,
+                promptTokens: data.usage.promptTokens,
+                completionTokens: data.usage.completionTokens,
+                totalTokens: data.usage.totalTokens,
+              });
+              if (userId) {
+                await incrementSeerDailyTokens(userId, data.usage.totalTokens);
+              }
+            } catch (e) {
+              devLog.warn('[Seer] inference logging failed (non-blocking)', e, 'route');
+            }
+          }
+          reply = data.content?.trim() || "The vision is unclear. Ask again.";
+        }
+      } else {
+        const data = await callTextAI({
+          label: 'seer-chat',
+          model: seerModel,
+          messages,
+          userId: userId ?? undefined,
+          temperature: 0.7,
+          topP: 0.9,
+          maxTokens,
+          frequencyPenalty: 0.3,
+          presencePenalty: 0.1,
+          maxAttempts: 2,
+        });
+        if (data.usage) {
+          try {
+            await recordInferenceUsage({
+              route: '/api/seer/chat',
+              model: seerModel,
+              userId: userId ?? null,
+              promptTokens: data.usage.promptTokens,
+              completionTokens: data.usage.completionTokens,
+              totalTokens: data.usage.totalTokens,
+            });
+            if (userId) {
+              await incrementSeerDailyTokens(userId, data.usage.totalTokens);
+            }
+          } catch (e) {
+            devLog.warn('[Seer] inference logging failed (non-blocking)', e, 'route');
+          }
+        }
+        if (data.usage && userId) {
+          devLog.debug(
+            "[Seer] Token usage",
+            {
+              userId,
+              model: seerModel,
+              prompt_tokens: data.usage.promptTokens,
+              completion_tokens: data.usage.completionTokens,
+              total_tokens: data.usage.totalTokens,
+            },
+            "route"
+          );
+        }
+        reply = data.content?.trim() || "The vision is unclear. Ask again.";
       }
-      reply = data.content?.trim() || "The vision is unclear. Ask again.";
     } catch (aiErr) {
       devLog.warn("Seer Groq/Gateway error", { err: aiErr }, "seer-chat");
       return NextResponse.json(

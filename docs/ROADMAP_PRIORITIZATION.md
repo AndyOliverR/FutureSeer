@@ -40,6 +40,47 @@ Users may jump from a reading to a fixed life conclusion. Product copy and Seer 
 
 AI responses (Groq) favor speed; **chart math and timezones** favor validation. Prefer reusing [lib/birthDateTimeToUTC.ts](../lib/birthDateTimeToUTC.ts) and existing ephemeris modules over quick hacks—see [AGENTS.md](../AGENTS.md) astrology pipeline.
 
+## Team archetypes and sprint mix
+
+Product work is not only “engineer vs designer vs PM.” A healthy FutureSeer cadence mixes **five archetypes** (people often span 2–3):
+
+| Archetype | Focus | FutureSeer examples |
+|-----------|--------|---------------------|
+| **Prototyper (P)** | New ideas; many spikes, few ship | MCP-style Seer tools (P1-11), experimental retention hooks |
+| **Builder (B)** | Prototype → production | Stage B queue (P1-1), orchestrator splits, API routes behind flags |
+| **Sweeper (S)** | Simplify UI/code; unship; perf | Dual design system compliance (`DESIGN.md`), dedupe Seer paths, ESLint debt |
+| **Grower (G)** | PMF iteration | Profile completion UX (P1-9), daily insights (P1-4–P1-6), share card (P2-5) |
+| **Maintainer (M)** | Secure, reliable, scalable | Distributed rate limit/circuit (P0-1/P0-2), security audit, cron resume, token caps |
+
+### Stage-appropriate mix
+
+| Product stage | Primary archetypes | FutureSeer (2026) |
+|---------------|-------------------|-------------------|
+| Pre-PMF / new | P + B + S | Occasional P; most energy on B + M for core loop |
+| Growing / PMF forming | B + S + G (+ M) | **Current target:** Builder + Maintainer + Grower |
+| Mature / strong PMF | S + G + M (+ B) | Later: more Sweeper + Grower on retention |
+
+### Sprint allocation (solo or small team)
+
+Aim per 2-week slice (adjust when incident):
+
+- **2× Builder/Maintainer** — ship reliability, deploy, fix production fires  
+- **1× Grower** — one funnel metric + one UX improvement on sign-up → profile → Seer  
+- **0–1× Sweeper** — one simplification (dead code, duplicate route, design drift)  
+- **0–1× Prototyper** — time-boxed spike behind env flag; backlog if not shippable  
+
+### Backlog band → archetype hint
+
+When picking from [ENGINEERING_BACKLOG_SCALE_AND_GROWTH.md](./ENGINEERING_BACKLOG_SCALE_AND_GROWTH.md):
+
+- **P0** → mostly **M** (sometimes **B**)  
+- **P1 reliability/cost** → **B** + **M**  
+- **P1 retention/notifications** → **G** + **B**  
+- **P1 Seer quality (P1-7, P1-11)** → **G** + **P** → **B**  
+- **P2 differentiation** → **G** + **P**; defer until core loop SEQ is stable  
+
+Agents: bias toward **Maintainer + Builder** when production integrity is at risk; bias toward **Grower** when choosing between a new tool surface and fixing profile generation completion.
+
 ## Related
 
 - [HEART_AND_METRICS.md](./HEART_AND_METRICS.md)  

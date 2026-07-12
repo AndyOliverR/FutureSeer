@@ -11,6 +11,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ShareAppModal } from "@/components/ShareAppModal";
 import { UserMenuDropdown } from "@/components/UserMenuDropdown";
 import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark";
+import { CreditBalanceWidget } from "@/components/billing/CreditBalanceWidget";
 
 const navLinks = [
   { name: "Home", href: "/", icon: "🏠" },
@@ -23,6 +24,7 @@ const navLinks = [
   { name: "Tip Jar", href: "/tip-jar", icon: "💝", isModal: true },
   { name: "Settings", href: "/settings", icon: "⚙️" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
+  { name: "Credits", href: "/credits", icon: "🪙" },
   { name: "About", href: "/about", icon: "ℹ️" },
   { name: "Terms", href: "/terms", icon: "📄" },
   { name: "Privacy", href: "/privacy", icon: "🔒" },
@@ -106,6 +108,13 @@ export function TopNavBar() {
           >
             <Share2 className="w-6 h-6" />
           </button>
+
+          {/* Credits balance */}
+          {user && (
+            <div className="hidden sm:flex items-center shrink-0 mr-1">
+              <CreditBalanceWidget />
+            </div>
+          )}
 
           {/* User avatar dropdown (Profile, Settings, Sign out) when logged in */}
           {user && (

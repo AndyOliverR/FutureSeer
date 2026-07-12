@@ -45,7 +45,7 @@ The app runs TWO distinct design systems based on screen size and platform:
 - **No breakage**: Customer experience is critical. Every code change must be tested to ensure no regressions in existing flows — especially profile generation, report storage/retrieval, and the Ask the Seer chat.
 - **Data integrity**: User-generated reports must persist correctly. A returning user must always see their previously generated data.
 
-**Design principles (product + UX):** See [docs/DESIGN_PRINCIPLES.md](docs/DESIGN_PRINCIPLES.md) for the short principle set (tradition vs. novelty, dual design system, grounded AI, persistence, accessibility). HEART/SEQ and roadmap prioritization live in [docs/HEART_AND_METRICS.md](docs/HEART_AND_METRICS.md) and [docs/ROADMAP_PRIORITIZATION.md](docs/ROADMAP_PRIORITIZATION.md).
+**Design principles (product + UX):** See [docs/DESIGN_PRINCIPLES.md](docs/DESIGN_PRINCIPLES.md) for the short principle set (tradition vs. novelty, dual design system, grounded AI, persistence, accessibility). HEART/SEQ and roadmap prioritization live in [docs/HEART_AND_METRICS.md](docs/HEART_AND_METRICS.md) and [docs/ROADMAP_PRIORITIZATION.md](docs/ROADMAP_PRIORITIZATION.md) (includes team archetypes and sprint mix for Builder/Maintainer/Grower balance).
 
 ### Astrology calculation pipeline
 

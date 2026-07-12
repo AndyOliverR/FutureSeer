@@ -19,16 +19,17 @@ import { after } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb, ensureAdminAvailable, getDocument, setDocument } from '@/lib/firebase-admin';
 import { ALL_TOOL_SLUGS, summarizeToolReadiness } from '@/lib/profileGenerationOrchestrator';
+import { extractFailedToolSummaries } from '@/lib/generationFailureUx';
 import type { UserProfile } from '@/lib/firebase';
 import { calculateProfileDataHash } from '@/lib/firebase';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { devLog } from '@/lib/devLogger';
 import {
-  canRunFullPipeline,
   getMissingFullProfileFields,
   isNoChargeSubscriptionEmail,
-  isTrialExpired,
 } from '@/lib/subscriptionConfig';
+import { consumeBillingAction } from '@/lib/billingCreditsServer';
+import { hasUnlimitedBillingAccess } from '@/lib/billingAccess';
 import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
 import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
@@ -253,41 +254,34 @@ export async function POST(request: NextRequest) {
         );
       }
       if (!isFirstOnboardingGeneration) {
-        const trialExpired = isTrialExpired(profileWithUid as Partial<UserProfile>);
-        const canRunFull = canRunFullPipeline(profileWithUid as Partial<UserProfile>);
-        if (!canRunFull) {
-          const auditId = await writeRegenDecisionTelemetry(uid, {
-            event: 'mystical_regen_blocked_payment',
-            generationMode,
-            hashMatch: false,
-            pendingToolCount: 0,
-            reason: 'payment_blocked',
-          });
-          const subscriptionStatus = String((profileWithUid as Partial<UserProfile>).subscriptionStatus ?? '').trim().toLowerCase();
-          const paymentBlockReason =
-            trialExpired
-              ? 'trial_expired'
-              : subscriptionStatus === 'past_due' || subscriptionStatus === 'incomplete'
-                ? 'payment_method_update_required'
-                : 'payment_required';
-          return NextResponse.json(
-            {
-              error: trialExpired
-                ? 'Your trial has ended. Please choose a plan and add payment details to generate the full report.'
-                : subscriptionStatus === 'past_due' || subscriptionStatus === 'incomplete'
-                  ? 'Your payment method needs an update before full report generation can continue.'
-                  : 'To unlock the full report, add your plan and payment details.',
-              blockReason: paymentBlockReason,
-              missingFields: missingFullFields,
-              trialExpired,
-              subscriptionStatus,
+        const profileForBilling = profileWithUid as Partial<UserProfile>;
+        if (!hasUnlimitedBillingAccess(profileForBilling)) {
+          const billing = await consumeBillingAction(uid, 'profile_regen');
+          if (!billing.ok) {
+            const auditId = await writeRegenDecisionTelemetry(uid, {
+              event: 'mystical_regen_blocked_payment',
               generationMode,
-              decision: 'blocked',
-              decisionReason: 'payment_blocked',
-              auditId,
-            },
-            { status: 403 },
-          );
+              hashMatch: false,
+              pendingToolCount: 0,
+              reason: 'payment_blocked',
+            });
+            return NextResponse.json(
+              {
+                error: 'Add credits to regenerate your full mystical profile, or choose unlimited membership.',
+                blockReason: 'credits_required',
+                code: 'insufficient_credits',
+                creditBalance: billing.creditBalance,
+                creditsRequired: billing.creditsRequired,
+                addCreditsUrl: '/credits',
+                missingFields: missingFullFields,
+                generationMode,
+                decision: 'blocked',
+                decisionReason: 'payment_blocked',
+                auditId,
+              },
+              { status: 402 },
+            );
+          }
         }
       }
     }
@@ -656,6 +650,7 @@ export async function GET(request: NextRequest) {
         null,
       baseUrlSource,
     });
+    const failedToolSummaries = !inProgress ? extractFailedToolSummaries(profile) : [];
     return NextResponse.json({
       success: true,
       inProgress,
@@ -667,6 +662,8 @@ export async function GET(request: NextRequest) {
       allReportsReady,
       readyToolsCount: readiness.readyToolsCount,
       pendingToolSlugs,
+      failedToolSlugs: failedToolSummaries.map((t) => t.slug),
+      failedTools: failedToolSummaries,
       toolStatus: (profile?.toolStatus as Record<string, unknown> | undefined) ?? null,
       lastProgressAt:
         (profile?.lastProgressAt as number | undefined) ??

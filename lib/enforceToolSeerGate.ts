@@ -8,10 +8,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 import { rateLimiters } from '@/lib/rateLimit';
 import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
+import { blockSeerQuestionIfNeeded } from '@/lib/seerGateResponses';
+import { consumeBillingAction } from '@/lib/billingCreditsServer';
+import { toolSlugFromSeerRoute } from '@/lib/billingConfig';
 import {
-  blockSeerQuestionIfNeeded,
-  type SeerBlockedResponseFormat,
-} from '@/lib/seerGateResponses';
+  billingInsufficientCreditsResponse,
+  billingInsufficientCreditsStreamResponse,
+} from '@/lib/billingGateResponses';
+import type { SeerBlockedResponseFormat } from '@/lib/seerGateResponses';
 
 export type ToolSeerBlockedResponseFormat = SeerBlockedResponseFormat;
 
@@ -111,6 +115,16 @@ export async function enforceToolSeerGate(
     userId: rateUid,
   });
   if (blocked) return blocked;
+
+  const toolSlug = toolSlugFromSeerRoute(routeLogicalKey);
+  const billing = await consumeBillingAction(rateUid, 'tool_seer', { toolSlug });
+  if (!billing.ok) {
+    const format = options?.blockedResponseFormat ?? 'stream';
+    if (format === 'json') {
+      return billingInsufficientCreditsResponse(billing);
+    }
+    return billingInsufficientCreditsStreamResponse(billing);
+  }
 
   return null;
 }

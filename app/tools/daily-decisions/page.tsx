@@ -42,9 +42,7 @@ import {
   Loader2,
   BookOpen,
   Sparkles,
-  Clock,
   CheckCircle,
-  XCircle,
   DollarSign,
   Scissors,
   Droplet,
@@ -56,6 +54,7 @@ import {
 } from 'lucide-react'
 import { DailyDecisionsSeerChatInterface } from '@/components/DailyDecisionsSeerChatInterface'
 import { DevotionistStyleCard } from '@/components/western/DevotionistStyleCard'
+import { ActionBandBadge } from '@/components/foresight/ActionBandBadge'
 
 export default function DailyDecisionsPage() {
   const { user, userProfile } = useAuth()
@@ -171,18 +170,6 @@ export default function DailyDecisionsPage() {
     if (typeof window === 'undefined') return false
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
   }, [])
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600'
-    if (score >= 60) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
-  const getScoreBadge = (score: number) => {
-    if (score >= 80) return <CheckCircle className="w-5 h-5 text-green-600" />
-    if (score >= 60) return <Clock className="w-5 h-5 text-yellow-600" />
-    return <XCircle className="w-5 h-5 text-red-600" />
-  }
 
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Daily Decisions">
@@ -684,11 +671,9 @@ export default function DailyDecisionsPage() {
                             colorScheme="green"
                           >
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-green-800">Score:</span>
-                                <span className={`font-bold ${getScoreColor(effectiveAnalysis.recommendations.lendMoney.score ?? 0)}`}>
-                                  {(effectiveAnalysis.recommendations.lendMoney.score ?? 0)}/100
-                                </span>
+                              <div>
+                                <span className="font-semibold text-green-800 block mb-1">Timing band:</span>
+                                <ActionBandBadge score={effectiveAnalysis.recommendations.lendMoney.score ?? 0} />
                               </div>
                               <div>
                                 <div className="font-semibold text-green-800 mb-1">Best Days:</div>
@@ -721,11 +706,9 @@ export default function DailyDecisionsPage() {
                             colorScheme="blue"
                           >
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-blue-800">Score:</span>
-                                <span className={`font-bold ${getScoreColor(effectiveAnalysis.recommendations.borrowMoney.score ?? 0)}`}>
-                                  {(effectiveAnalysis.recommendations.borrowMoney.score ?? 0)}/100
-                                </span>
+                              <div>
+                                <span className="font-semibold text-blue-800 block mb-1">Timing band:</span>
+                                <ActionBandBadge score={effectiveAnalysis.recommendations.borrowMoney.score ?? 0} />
                               </div>
                               <div>
                                 <div className="font-semibold text-blue-800 mb-1">Best Days:</div>
@@ -752,11 +735,9 @@ export default function DailyDecisionsPage() {
                             colorScheme="orange"
                           >
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-orange-800">Score:</span>
-                                <span className={`font-bold ${getScoreColor(effectiveAnalysis.recommendations.payBackDebts.score ?? 0)}`}>
-                                  {(effectiveAnalysis.recommendations.payBackDebts.score ?? 0)}/100
-                                </span>
+                              <div>
+                                <span className="font-semibold text-orange-800 block mb-1">Timing band:</span>
+                                <ActionBandBadge score={effectiveAnalysis.recommendations.payBackDebts.score ?? 0} />
                               </div>
                               <div>
                                 <div className="font-semibold text-orange-800 mb-1">Best Days:</div>
@@ -783,11 +764,9 @@ export default function DailyDecisionsPage() {
                             colorScheme="blue"
                           >
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-blue-800">Score:</span>
-                                <span className={`font-bold ${getScoreColor(effectiveAnalysis.recommendations.travel.score ?? 0)}`}>
-                                  {(effectiveAnalysis.recommendations.travel.score ?? 0)}/100
-                                </span>
+                              <div>
+                                <span className="font-semibold text-blue-800 block mb-1">Timing band:</span>
+                                <ActionBandBadge score={effectiveAnalysis.recommendations.travel.score ?? 0} />
                               </div>
                               <div>
                                 <div className="font-semibold text-blue-800 mb-1">Best Days:</div>
@@ -826,15 +805,13 @@ export default function DailyDecisionsPage() {
                               colorScheme="amber"
                             >
                               <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-amber-800">Auspicious score:</span>
-                                  <span className={`font-bold ${getScoreColor(effectiveAnalysis.propertyConstruction.auspiciousScore)}`}>
-                                    {effectiveAnalysis.propertyConstruction.auspiciousScore}/100
-                                  </span>
+                                <div>
+                                  <span className="font-semibold text-amber-800 block mb-1">Timing band:</span>
+                                  <ActionBandBadge score={effectiveAnalysis.propertyConstruction.auspiciousScore} />
                                   {effectiveAnalysis.propertyConstruction.isAuspicious ? (
-                                    <span className="text-sm text-green-600">— Favorable</span>
+                                    <span className="text-sm text-green-600 mt-1 block">— Favorable for major work</span>
                                   ) : (
-                                    <span className="text-sm text-amber-600">— Consider postponing major work</span>
+                                    <span className="text-sm text-amber-600 mt-1 block">— Consider postponing major work</span>
                                   )}
                                 </div>
                                 {effectiveAnalysis.propertyConstruction.bestActivities.length > 0 && (
@@ -879,11 +856,9 @@ export default function DailyDecisionsPage() {
                             colorScheme="pink"
                           >
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-pink-800">Score:</span>
-                                <span className={`font-bold ${getScoreColor(effectiveAnalysis.recommendations.haircut.score ?? 0)}`}>
-                                  {(effectiveAnalysis.recommendations.haircut.score ?? 0)}/100
-                                </span>
+                              <div>
+                                <span className="font-semibold text-pink-800 block mb-1">Timing band:</span>
+                                <ActionBandBadge score={effectiveAnalysis.recommendations.haircut.score ?? 0} />
                               </div>
                               <div>
                                 <div className="font-semibold text-pink-800 mb-1">Best Days:</div>
@@ -911,11 +886,9 @@ export default function DailyDecisionsPage() {
                             colorScheme="purple"
                           >
                             <div className="space-y-4">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-purple-800">Score:</span>
-                                <span className={`font-bold ${getScoreColor(effectiveAnalysis.recommendations.cutNails.score ?? 0)}`}>
-                                  {(effectiveAnalysis.recommendations.cutNails.score ?? 0)}/100
-                                </span>
+                              <div>
+                                <span className="font-semibold text-purple-800 block mb-1">Timing band:</span>
+                                <ActionBandBadge score={effectiveAnalysis.recommendations.cutNails.score ?? 0} />
                               </div>
                               <div>
                                 <div className="font-semibold text-purple-800 mb-1">Best Days:</div>
@@ -981,11 +954,9 @@ export default function DailyDecisionsPage() {
                             colorScheme="cyan"
                           >
                             <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-cyan-800">Score:</span>
-                                <span className={`font-bold ${getScoreColor(effectiveAnalysis.recommendations.hairOil.score ?? 0)}`}>
-                                  {(effectiveAnalysis.recommendations.hairOil.score ?? 0)}/100
-                                </span>
+                              <div>
+                                <span className="font-semibold text-cyan-800 block mb-1">Timing band:</span>
+                                <ActionBandBadge score={effectiveAnalysis.recommendations.hairOil.score ?? 0} />
                               </div>
                               <div>
                                 <div className="font-semibold text-cyan-800 mb-1">Best Days:</div>

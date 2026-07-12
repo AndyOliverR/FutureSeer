@@ -17,6 +17,7 @@ import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser";
 import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath";
 import { cn } from "@/lib/utils";
 import { ToolPageHeader } from '@/components/navigation/ToolPageHeader'
+import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToolIntroductionTab } from "@/components/ToolIntroductionTab";
 import { CompatibilityTab } from "@/components/compatibility/CompatibilityTab";
@@ -524,6 +525,7 @@ function VedicAstrologyPageContent() {
               toolCategory="Astrology"
               toolDescription="Comprehensive sidereal birth chart analysis and interpretations."
             />
+            <AstrologyMethodologyBadge variant="vedic" className="mt-3 mb-0" />
           </div>
           {/* Web: Devotionist centered hero (like Western astrology) */}
           <div className="hidden md:block text-center mb-8 pt-4">
@@ -532,6 +534,7 @@ function VedicAstrologyPageContent() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Vedic Astrology</span>
             </h1>
             <p className="text-slate-200 leading-relaxed text-xl font-light">Comprehensive sidereal birth chart analysis and interpretations.</p>
+            <AstrologyMethodologyBadge variant="vedic" className="mt-4 mb-0" />
           </div>
 
           {showVedicViral && !bypassViral && (
