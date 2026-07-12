@@ -53,7 +53,7 @@ export interface GenerationResult {
   systemsUsed: string[];
   aggregateUsage?: { promptTokens: number; completionTokens: number; totalTokens: number };
   remainingTools?: string[];
-  phase?: 'stageA' | 'final';
+  phase?: 'stageA' | 'stageB' | 'final';
 }
 
 export type GenerationProgressUpdate = {
@@ -1640,6 +1640,312 @@ function buildSeerMaster(
   };
 }
 
+/** Reconstruct tool report entries from a stored comprehensive profile document. */
+export function toolReportsFromComprehensiveProfile(
+  profile: Record<string, unknown>,
+): ToolReports {
+  const reports: ToolReports = {};
+  for (const slug of ALL_TOOL_SLUGS) {
+    const val = profile[slug];
+    if (!val || typeof val !== 'object') continue;
+    const state = classifyToolReportState(val);
+    const generatedAt =
+      typeof (val as { generatedAt?: string }).generatedAt === 'string'
+        ? (val as { generatedAt: string }).generatedAt
+        : new Date().toISOString();
+    if (state === 'ready') {
+      reports[slug] = {
+        status: 'success',
+        data: val as Record<string, unknown>,
+        generatedAt,
+      };
+    } else if (state === 'failed') {
+      reports[slug] = {
+        status: 'failed',
+        error: (val as { error?: string }).error ?? 'Generation failed',
+        generatedAt,
+      };
+    }
+  }
+  return reports;
+}
+
+/**
+ * Interpretations, dependent numerology passes, comprehensive profile merge, Seer Master.
+ */
+export async function finalizeProfileGenerationFromToolReports(
+  userId: string,
+  userProfile: UserProfile,
+  toolReports: ToolReports,
+): Promise<GenerationResult> {
+  const baseUrl = getServerBaseUrl();
+  const profile: UserProfile = {
+    ...userProfile,
+    birthTime: normalizeBirthTime(userProfile.birthTime) || userProfile.birthTime || '12:00:00',
+  };
+  const failedTools: string[] = [];
+  const aggregateUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  for (const [slug, entry] of Object.entries(toolReports)) {
+    if (entry.status === 'failed') failedTools.push(slug);
+    if (entry._usage) addResponseUsage(aggregateUsage, { _usage: entry._usage });
+  }
+
+  let interpretations: Record<string, unknown> = {};
+  const vedicEntry = toolReports.vedic;
+  if (vedicEntry?.status === 'success' && vedicEntry.data && typeof vedicEntry.data === 'object') {
+    try {
+      const { universalInterpretationEngine } = await import('./universalInterpretationEngine');
+      const vedicData = vedicEntry.data as Record<string, unknown>;
+      const interpretation = await universalInterpretationEngine.generateInterpretation(
+        'vedic',
+        userId,
+        vedicData,
+        profile,
+      );
+      interpretations = interpretation as unknown as Record<string, unknown>;
+    } catch (err) {
+      devLog.warn('[ProfileOrchestrator] Interpretation engine failed:', err, 'profileGenerationOrchestrator');
+    }
+
+    const vedicAstroNumGeneratedAt = new Date().toISOString();
+    try {
+      const vdata = vedicEntry.data as Record<string, unknown>;
+      const getSign = (src: unknown, key: string, subKey: string): string => {
+        const obj = src as Record<string, unknown> | undefined;
+        if (!obj) return 'Unknown';
+        const val = obj[key] ?? obj[subKey];
+        if (typeof val === 'string') return val;
+        const inner = val as Record<string, unknown> | undefined;
+        return (inner?.signName ?? inner?.sign) as string ?? 'Unknown';
+      };
+      const planets = vdata?.planets as Array<{ name: string; sign?: string; signName?: string }> | undefined;
+      const findPlanet = (name: string) =>
+        Array.isArray(planets) ? planets.find((p) => p.name === name || p.name === name.toLowerCase()) : undefined;
+      const moonSign =
+        getSign(vdata?.moon, 'sign', 'signName') !== 'Unknown'
+          ? getSign(vdata?.moon, 'sign', 'signName')
+          : (findPlanet('Moon')?.signName ?? findPlanet('Moon')?.sign ?? 'Unknown');
+      const sunSign =
+        getSign(vdata?.sun, 'sign', 'signName') !== 'Unknown'
+          ? getSign(vdata?.sun, 'sign', 'signName')
+          : (findPlanet('Sun')?.signName ?? findPlanet('Sun')?.sign ?? 'Unknown');
+      const lagnaSign =
+        getSign(vdata?.ascendant, 'signName', 'sign') !== 'Unknown'
+          ? getSign(vdata?.ascendant, 'signName', 'sign')
+          : getSign(vdata?.lagna, 'signName', 'sign');
+      const birthDate = profile.birthDate ?? '';
+      const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
+      if (birthDate && fullName && moonSign !== 'Unknown') {
+        const numerologyProfile = calculateVedicNumerologyProfile(fullName, birthDate);
+        const res = await fetch(`${baseUrl}/api/vedic-astro-numerology/analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            birthDate,
+            fullName,
+            moonSign,
+            lagnaSign: lagnaSign !== 'Unknown' ? lagnaSign : 'Aries',
+            sunSign: sunSign !== 'Unknown' ? sunSign : 'Aries',
+            numerologyProfile,
+          }),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          addResponseUsage(aggregateUsage, result);
+          const data = result?.data ?? result;
+          toolReports.vedicAstroNumerology = {
+            status: 'success',
+            data: data as Record<string, unknown>,
+            generatedAt: vedicAstroNumGeneratedAt,
+            _usage: result._usage ?? result.usage,
+          };
+        } else {
+          const err = await res.json().catch(() => ({}));
+          toolReports.vedicAstroNumerology = {
+            status: 'failed',
+            error: err?.error ?? `API ${res.status}`,
+            generatedAt: vedicAstroNumGeneratedAt,
+          };
+          failedTools.push('vedicAstroNumerology');
+        }
+      } else {
+        toolReports.vedicAstroNumerology = {
+          status: 'failed',
+          error: 'Missing birthDate, fullName, or moonSign',
+          generatedAt: vedicAstroNumGeneratedAt,
+        };
+        failedTools.push('vedicAstroNumerology');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown';
+      devLog.warn('[ProfileOrchestrator] Vedic Astro-Numerology failed:', msg, 'profileGenerationOrchestrator');
+      toolReports.vedicAstroNumerology = {
+        status: 'failed',
+        error: msg,
+        generatedAt: new Date().toISOString(),
+      };
+      failedTools.push('vedicAstroNumerology');
+    }
+  }
+
+  for (const entry of Object.values(toolReports)) {
+    if (entry._usage) addResponseUsage(aggregateUsage, { _usage: entry._usage });
+  }
+
+  const astroNumGeneratedAt = new Date().toISOString();
+  try {
+    const westernEntry = toolReports.western;
+    const westernData =
+      westernEntry?.status === 'success' && westernEntry?.data
+        ? (westernEntry.data as Record<string, unknown>)
+        : undefined;
+    const chart = westernData?.chart as { planets?: Array<{ name: string; sign?: string; signName?: string }> } | undefined;
+    const planets = chart?.planets;
+    const findSun = () =>
+      Array.isArray(planets) ? planets.find((p) => p.name === 'Sun' || p.name === 'sun') : undefined;
+    const sunPlanet = findSun();
+    const sunSign = (sunPlanet?.signName ?? sunPlanet?.sign) ?? 'Unknown';
+    const birthDate = profile.birthDate ?? '';
+    const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
+    if (birthDate && fullName && sunSign !== 'Unknown') {
+      const res = await fetch(`${baseUrl}/api/astro-numerology/analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, birthDate, fullName, sunSign }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        addResponseUsage(aggregateUsage, result);
+        const data = result?.data ?? result;
+        toolReports.astroNumerology = {
+          status: 'success',
+          data: data as Record<string, unknown>,
+          generatedAt: astroNumGeneratedAt,
+          _usage: result._usage ?? result.usage,
+        };
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toolReports.astroNumerology = {
+          status: 'failed',
+          error: (err as { error?: string })?.error ?? `API ${res.status}`,
+          generatedAt: astroNumGeneratedAt,
+        };
+        failedTools.push('astroNumerology');
+      }
+    } else {
+      toolReports.astroNumerology = {
+        status: 'failed',
+        error: 'Missing birthDate, fullName, or sunSign from Western chart',
+        generatedAt: astroNumGeneratedAt,
+      };
+      failedTools.push('astroNumerology');
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown';
+    toolReports.astroNumerology = { status: 'failed', error: msg, generatedAt: new Date().toISOString() };
+    failedTools.push('astroNumerology');
+  }
+
+  const systemsUsed = Object.entries(toolReports)
+    .filter(([, v]) => v.status === 'success')
+    .map(([k]) => k);
+  const interp = interpretations as Record<string, unknown>;
+  const timing = interp.timing as Record<string, unknown> | undefined;
+  const vedicDataForProfile =
+    vedicEntry?.status === 'success' && vedicEntry.data && typeof vedicEntry.data === 'object'
+      ? (vedicEntry.data as Record<string, unknown>)
+      : {};
+  const comprehensiveProfile: Record<string, unknown> = {
+    vedic: {
+      ascendant: vedicDataForProfile?.ascendant ?? 0,
+      planets: (vedicDataForProfile?.planets as unknown[]) ?? [],
+      houses: (vedicDataForProfile?.houses as unknown[]) ?? [],
+      dasha: (vedicDataForProfile?.dasha as unknown[]) ?? [],
+      currentDasha: (vedicDataForProfile?.currentDasha as Record<string, unknown> | null) ?? null,
+    },
+    interpretations: {
+      comprehensive: (interp.personality as Record<string, unknown>)?.overview ?? '',
+      personality: interp.personality,
+      lifePurpose: interp.lifePurpose,
+      relationships: interp.relationships,
+      career: interp.career,
+      health: interp.health,
+      spirituality: interp.spirituality,
+      dasha: timing
+        ? {
+            overview: timing.overview,
+            current: timing.currentPeriod,
+            upcoming: timing.upcomingPeriods,
+            timing: timing.favorableTiming,
+          }
+        : {},
+      remedies: interp.remedies,
+    },
+    toolReports,
+    metadata: {
+      source: 'profile_generation_orchestrator',
+      version: '2.0',
+      generatedAt: new Date().toISOString(),
+      calculationTime: Date.now(),
+      systemsUsed,
+      interpretationType: 'universal_comprehensive',
+      ...(typeof process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE === 'string' &&
+      process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE.trim().length > 0
+        ? { pipelineRelease: process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE.trim() }
+        : {}),
+    },
+    userId,
+    lastUpdated: Date.now(),
+    birthDate: profile.birthDate,
+    birthPlace: profile.birthPlace,
+    birthTime: profile.birthTime,
+  };
+  for (const [slug, entry] of Object.entries(toolReports)) {
+    if (entry.status === 'success' && entry.data && typeof entry.data === 'object') {
+      comprehensiveProfile[slug] = entry.data;
+    }
+  }
+  const seerMaster = buildSeerMaster(toolReports, interpretations as Record<string, unknown>);
+  return {
+    success: systemsUsed.length > 0,
+    toolReports,
+    seerMaster,
+    comprehensiveProfile,
+    failedTools,
+    systemsUsed,
+    aggregateUsage,
+    phase: 'final',
+  };
+}
+
+/** Run a subset of tools (no finalize). Used by durable Stage B queue workers. */
+export async function runProfileGenerationToolSlugs(
+  userId: string,
+  userProfile: UserProfile,
+  toolSlugs: readonly string[],
+  options?: {
+    onProgress?: (update: GenerationProgressUpdate) => void | Promise<void>;
+    onToolRun?: (update: ToolRunUpdate) => void | Promise<void>;
+    onToolHeartbeat?: (update: ToolHeartbeatUpdate) => void | Promise<void>;
+  },
+): Promise<{
+  toolReports: ToolReports;
+  failedTools: string[];
+  aggregateUsage: { promptTokens: number; completionTokens: number; totalTokens: number };
+}> {
+  const partial = await runProfileGeneration(userId, userProfile, {
+    ...options,
+    onlyToolSlugs: toolSlugs,
+    skipFinalize: true,
+  });
+  return {
+    toolReports: partial.toolReports,
+    failedTools: partial.failedTools,
+    aggregateUsage: partial.aggregateUsage ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+  };
+}
+
 /**
  * Main orchestrator: Run ALL tools, store reports, build Seer Master.
  * If one tool fails, mark status but do not rerun others.
@@ -1651,6 +1957,10 @@ export async function runProfileGeneration(
     onProgress?: (update: GenerationProgressUpdate) => void | Promise<void>;
     onToolRun?: (update: ToolRunUpdate) => void | Promise<void>;
     onToolHeartbeat?: (update: ToolHeartbeatUpdate) => void | Promise<void>;
+    /** When set, only these tool slugs are executed (vedic-first ordering preserved). */
+    onlyToolSlugs?: readonly string[];
+    /** Skip interpretations / Seer master (queue worker runs tools in batches). */
+    skipFinalize?: boolean;
   },
 ): Promise<GenerationResult> {
   const baseUrl = getServerBaseUrl();
@@ -1773,227 +2083,43 @@ export async function runProfileGeneration(
     }
   };
 
-  // 1) Run Vedic first as a strict priority path so critical report data lands early.
-  await runOneSlug('vedic');
+  const toolPlan = options?.onlyToolSlugs?.length
+    ? [...options.onlyToolSlugs]
+    : [...ALL_TOOL_SLUGS];
 
-  // 1a) Run remaining tools in canonical UI grid order (bounded parallelism).
-  const remainingToolSlugs = ALL_TOOL_SLUGS.filter((slug) => slug !== 'vedic');
+  if (toolPlan.includes('vedic')) {
+    await runOneSlug('vedic');
+  }
+
+  const remainingToolSlugs = toolPlan.filter((slug) => slug !== 'vedic');
   for (let i = 0; i < remainingToolSlugs.length; i += toolRunConcurrency) {
     const slice = remainingToolSlugs.slice(i, i + toolRunConcurrency);
     await Promise.all(slice.map((slug) => runOneSlug(slug)));
   }
 
-  let interpretations: Record<string, unknown> = {};
-  const vedicEntry = toolReports.vedic;
-  if (vedicEntry?.status === 'success' && vedicEntry.data && typeof vedicEntry.data === 'object') {
-    // 2) Generate interpretations via universal engine once Vedic data exists.
-    try {
-      const { universalInterpretationEngine } = await import('./universalInterpretationEngine');
-      const vedicData = vedicEntry.data as Record<string, unknown>;
-      const interpretation = await universalInterpretationEngine.generateInterpretation(
-        'vedic',
-        userId,
-        vedicData,
-        profile
-      );
-      interpretations = interpretation as unknown as Record<string, unknown>;
-    } catch (err) {
-      devLog.warn('[ProfileOrchestrator] Interpretation engine failed:', err, 'profileGenerationOrchestrator');
-    }
-
-    // 2a) Vedic comprehensive report is now attempted in the strict-priority section above.
-
-    // 2b) Run Vedic Astro-Numerology derived payload.
-    const vedicAstroNumGeneratedAt = new Date().toISOString();
-    try {
-      const vdata = vedicEntry.data as Record<string, unknown>;
-      const getSign = (src: unknown, key: string, subKey: string): string => {
-        const obj = src as Record<string, unknown> | undefined;
-        if (!obj) return 'Unknown';
-        const val = obj[key] ?? obj[subKey];
-        if (typeof val === 'string') return val;
-        const inner = val as Record<string, unknown> | undefined;
-        return (inner?.signName ?? inner?.sign) as string ?? 'Unknown';
-      };
-      const planets = vdata?.planets as Array<{ name: string; sign?: string; signName?: string }> | undefined;
-      const findPlanet = (name: string) =>
-        Array.isArray(planets) ? planets.find((p) => p.name === name || p.name === name.toLowerCase()) : undefined;
-      const moonSign =
-        getSign(vdata?.moon, 'sign', 'signName') !== 'Unknown'
-          ? getSign(vdata?.moon, 'sign', 'signName')
-          : (findPlanet('Moon')?.signName ?? findPlanet('Moon')?.sign ?? 'Unknown');
-      const sunSign =
-        getSign(vdata?.sun, 'sign', 'signName') !== 'Unknown'
-          ? getSign(vdata?.sun, 'sign', 'signName')
-          : (findPlanet('Sun')?.signName ?? findPlanet('Sun')?.sign ?? 'Unknown');
-      const lagnaSign =
-        getSign(vdata?.ascendant, 'signName', 'sign') !== 'Unknown'
-          ? getSign(vdata?.ascendant, 'signName', 'sign')
-          : getSign(vdata?.lagna, 'signName', 'sign');
-      const birthDate = profile.birthDate ?? '';
-      const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
-      if (birthDate && fullName && moonSign !== 'Unknown') {
-        const numerologyProfile = calculateVedicNumerologyProfile(fullName, birthDate);
-        const res = await fetch(`${baseUrl}/api/vedic-astro-numerology/analysis`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            birthDate,
-            fullName,
-            moonSign,
-            lagnaSign: lagnaSign !== 'Unknown' ? lagnaSign : 'Aries',
-            sunSign: sunSign !== 'Unknown' ? sunSign : 'Aries',
-            numerologyProfile,
-          }),
-        });
-        if (res.ok) {
-          const result = await res.json();
-          addResponseUsage(aggregateUsage, result);
-          const data = result?.data ?? result;
-          toolReports.vedicAstroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: vedicAstroNumGeneratedAt, _usage: result._usage ?? result.usage };
-        } else {
-          const err = await res.json().catch(() => ({}));
-          toolReports.vedicAstroNumerology = { status: 'failed', error: err?.error ?? `API ${res.status}`, generatedAt: vedicAstroNumGeneratedAt };
-          failedTools.push('vedicAstroNumerology');
-        }
-      } else {
-        toolReports.vedicAstroNumerology = { status: 'failed', error: 'Missing birthDate, fullName, or moonSign', generatedAt: vedicAstroNumGeneratedAt };
-        failedTools.push('vedicAstroNumerology');
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown';
-      devLog.warn('[ProfileOrchestrator] Vedic Astro-Numerology failed:', msg, 'profileGenerationOrchestrator');
-      toolReports.vedicAstroNumerology = { status: 'failed', error: msg, generatedAt: new Date().toISOString() };
-      failedTools.push('vedicAstroNumerology');
-    }
-  }
-
-  for (const entry of Object.values(toolReports)) {
-    if (entry._usage) addResponseUsage(aggregateUsage, { _usage: entry._usage });
-  }
-
-  // 3b. Run Western Astro-Numerology (depends on Western chart for sun sign; runs after western so we have chart)
-  const astroNumGeneratedAt = new Date().toISOString();
-  try {
-    const westernEntry = toolReports.western;
-    const westernData = westernEntry?.status === 'success' && westernEntry?.data ? (westernEntry.data as Record<string, unknown>) : undefined;
-    const chart = westernData?.chart as { planets?: Array<{ name: string; sign?: string; signName?: string }> } | undefined;
-    const planets = chart?.planets;
-    const findSun = () =>
-      Array.isArray(planets) ? planets.find((p) => p.name === 'Sun' || p.name === 'sun') : undefined;
-    const sunPlanet = findSun();
-    const sunSign =
-      (sunPlanet?.signName ?? sunPlanet?.sign) ?? 'Unknown';
-
-    const birthDate = profile.birthDate ?? '';
-    const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
-
-    if (birthDate && fullName && sunSign !== 'Unknown') {
-      const res = await fetch(`${baseUrl}/api/astro-numerology/analysis`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          birthDate,
-          fullName,
-          sunSign,
-        }),
-      });
-      if (res.ok) {
-        const result = await res.json();
-        addResponseUsage(aggregateUsage, result);
-        const data = result?.data ?? result;
-        toolReports.astroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: astroNumGeneratedAt, _usage: result._usage ?? result.usage };
-      } else {
-        const err = await res.json().catch(() => ({}));
-        toolReports.astroNumerology = { status: 'failed', error: (err as { error?: string })?.error ?? `API ${res.status}`, generatedAt: astroNumGeneratedAt };
-        failedTools.push('astroNumerology');
-      }
-    } else {
-      toolReports.astroNumerology = { status: 'failed', error: 'Missing birthDate, fullName, or sunSign from Western chart', generatedAt: astroNumGeneratedAt };
-      failedTools.push('astroNumerology');
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown';
-    devLog.warn('[ProfileOrchestrator] Western Astro-Numerology failed:', msg, 'profileGenerationOrchestrator');
-    toolReports.astroNumerology = { status: 'failed', error: msg, generatedAt: astroNumGeneratedAt };
-    failedTools.push('astroNumerology');
-  }
-
-  const systemsUsed = Object.entries(toolReports).filter(([, v]) => v.status === 'success').map(([k]) => k);
-
-  // 4. Build comprehensive profile (backward compatible with existing structure)
-  const interp = interpretations as Record<string, unknown>;
-  const timing = interp.timing as Record<string, unknown> | undefined;
-  const vedicDataForProfile =
-    vedicEntry?.status === 'success' && vedicEntry.data && typeof vedicEntry.data === 'object'
-      ? (vedicEntry.data as Record<string, unknown>)
-      : {};
-  const comprehensiveProfile: Record<string, unknown> = {
-    vedic: {
-      ascendant: vedicDataForProfile?.ascendant ?? 0,
-      planets: (vedicDataForProfile?.planets as unknown[]) ?? [],
-      houses: (vedicDataForProfile?.houses as unknown[]) ?? [],
-      dasha: (vedicDataForProfile?.dasha as unknown[]) ?? [],
-      currentDasha: (vedicDataForProfile?.currentDasha as Record<string, unknown> | null) ?? null,
-    },
-    interpretations: {
-      comprehensive: (interp.personality as Record<string, unknown>)?.overview ?? '',
-      personality: interp.personality,
-      lifePurpose: interp.lifePurpose,
-      relationships: interp.relationships,
-      career: interp.career,
-      health: interp.health,
-      spirituality: interp.spirituality,
-      dasha: timing ? { overview: timing.overview, current: timing.currentPeriod, upcoming: timing.upcomingPeriods, timing: timing.favorableTiming } : {},
-      remedies: interp.remedies,
-    },
-    toolReports,
-    metadata: {
-      source: 'profile_generation_orchestrator',
-      version: '2.0',
-      generatedAt: new Date().toISOString(),
-      calculationTime: Date.now(),
+  if (options?.skipFinalize) {
+    const systemsUsed = Object.entries(toolReports)
+      .filter(([, v]) => v.status === 'success')
+      .map(([k]) => k);
+    return {
+      success: systemsUsed.length > 0,
+      toolReports,
+      seerMaster: {
+        core_identity: [],
+        life_purpose: [],
+        career_themes: [],
+        relationship_patterns: [],
+        health_tendencies: [],
+        timing_windows: [],
+        remedies: { gemstones: [], mudras: [], colors: [], mantras: [], behaviors: [] },
+      },
+      comprehensiveProfile: { toolReports, metadata: { source: 'profile_generation_orchestrator', phase: 'stageB' } },
+      failedTools,
       systemsUsed,
-      interpretationType: 'universal_comprehensive',
-      ...(typeof process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE === 'string' &&
-      process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE.trim().length > 0
-        ? { pipelineRelease: process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE.trim() }
-        : {}),
-    },
-    userId,
-    lastUpdated: Date.now(),
-    birthDate: profile.birthDate,
-    birthPlace: profile.birthPlace,
-    birthTime: profile.birthTime,
-  };
-
-  // 5. Merge successful tool reports into comprehensiveProfile (top-level keys for Seer route)
-  const placeholders: string[] = [];
-  for (const [slug, entry] of Object.entries(toolReports)) {
-    if (entry.status === 'success' && entry.data && typeof entry.data === 'object') {
-      comprehensiveProfile[slug] = entry.data;
-      if ((entry.data as Record<string, unknown>).placeholder === true) {
-        placeholders.push(slug);
-      }
-    }
-  }
-  if (placeholders.length > 0) {
-    devLog.info('[ProfileOrchestrator] Tools that returned placeholder (no real report)', placeholders, 'profileGenerationOrchestrator');
+      aggregateUsage,
+      phase: 'stageB',
+    };
   }
 
-  // 6. Build Seer Master (normalized insight for Ask the Seer)
-  const seerMaster = buildSeerMaster(toolReports, interpretations as Record<string, unknown>);
-
-  return {
-    success: systemsUsed.length > 0,
-    toolReports,
-    seerMaster,
-    comprehensiveProfile,
-    failedTools,
-    systemsUsed,
-    aggregateUsage,
-    phase: 'final',
-  };
+  return finalizeProfileGenerationFromToolReports(userId, profile, toolReports);
 }

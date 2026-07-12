@@ -44,4 +44,5 @@ AI responses (Groq) favor speed; **chart math and timezones** favor validation. 
 
 - [HEART_AND_METRICS.md](./HEART_AND_METRICS.md)  
 - [FAILURE_TRIAGE.md](./FAILURE_TRIAGE.md)  
-- [SYSTEM_DESIGN_GAPS_AND_FUTURESEER.md](./SYSTEM_DESIGN_GAPS_AND_FUTURESEER.md)
+- [SYSTEM_DESIGN_GAPS_AND_FUTURESEER.md](./SYSTEM_DESIGN_GAPS_AND_FUTURESEER.md)  
+- [ENGINEERING_BACKLOG_SCALE_AND_GROWTH.md](./ENGINEERING_BACKLOG_SCALE_AND_GROWTH.md) — P0/P1/P2 file-level tasks (scale, article alignment)

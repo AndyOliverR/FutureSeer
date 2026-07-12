@@ -137,3 +137,8 @@ NEWS_API_KEY=
 # Server: stricter cap on POST /api/profile/generate-mystical per user per hour
 # RATE_LIMIT_STRICT=1
 # RATE_LIMIT_PROFILE_GEN_MAX_PER_HOUR=12
+
+# Production (Vercel): distributed rate limits + AI circuit breaker across serverless instances.
+# Requires FIREBASE_ADMIN_* — writes _apiRateLimits and _aiCircuitBreaker in Firestore.
+# RATE_LIMIT_STORE=firestore
+# AI_CIRCUIT_STORE=firestore
