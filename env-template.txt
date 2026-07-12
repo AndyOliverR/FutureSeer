@@ -70,6 +70,14 @@ GROQ_API_KEY=your-groq-api-key
 # Seer tone dial (optional): subtle | elevated | oracle. Default: elevated
 # SEER_TONE_MODE=elevated
 
+# Main Seer MCP-style tool calling (optional): set to 1 to let /api/seer/chat fetch reports on demand via Groq tools
+# SEER_MCP_TOOLS=1
+
+# Main Seer foresight mode (optional): set to 1 for signal → pattern → action-band replies (max 4 sentences, no %)
+# SEER_FORESIGHT_MODE=1
+
+# Credit wallet billing is always on for AI routes (first instance free per action; Razorpay credit packs at /credits)
+
 # Vercel AI Gateway (optional - enables centralized monitoring and budget controls)
 # Get your API key from: https://vercel.com/ai-gateway
 AI_GATEWAY_API_KEY=your-ai-gateway-api-key
@@ -122,6 +130,8 @@ SUPPORT_FORWARD_EMAIL=
 
 # Cron secret (secure the cron route; set in Vercel env and send as Authorization: Bearer CRON_SECRET)
 CRON_SECRET=your-cron-secret
+# Daily insights cron batch size (optional, default 120; response includes nextCursor when hasMore)
+# DAILY_INSIGHTS_BATCH_SIZE=120
 
 # Optional integrations (server-side only - never expose these as NEXT_PUBLIC_*)
 # OpenWeatherMap - current weather for birth coordinates (https://openweathermap.org/api)

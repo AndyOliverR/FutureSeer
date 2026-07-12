@@ -17,6 +17,7 @@
     "audit:fix": "pnpm audit --fix",
     "security:audit": "pnpm audit --audit-level=high",
     "security": "node scripts/run-security.mjs",
+    "security:audit:skill": "node scripts/security-audit-skill.mjs",
     "check:firebase-admin": "node scripts/check-firebase-admin-env.mjs",
     "check:distributed-controls": "node scripts/verify-distributed-controls-env.mjs",
     "setup-users": "node scripts/setup-user-modes.js",

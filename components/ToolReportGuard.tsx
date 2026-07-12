@@ -8,6 +8,7 @@ import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGa
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { toolReportMissingBody } from '@/lib/accessGatingCopy'
 import { classifyToolReportState, type ReportReadinessState } from '@/lib/profileGenerationOrchestrator'
+import { fsAdaptivePanel } from '@/lib/designSystemClasses'
 
 export interface ToolReportViralConfig {
   toolSlug: string
@@ -84,7 +85,7 @@ export function ToolReportGuard({
       <div className="relative min-h-screen starfield-ultra-sharp">
         <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
           <div
-            className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center max-w-2xl mx-auto"
+            className={`${fsAdaptivePanel} p-6 text-center max-w-2xl mx-auto`}
             role="alert"
           >
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" aria-hidden />
@@ -105,7 +106,7 @@ export function ToolReportGuard({
     return (
       <div className="relative min-h-screen starfield-ultra-sharp">
         <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/30 rounded-xl p-8 text-center max-w-2xl mx-auto mt-12">
+          <div className={`${fsAdaptivePanel} p-8 text-center max-w-2xl mx-auto mt-12`}>
             <Sparkles className="w-12 h-12 text-amber-400 mx-auto mb-4" aria-hidden />
             <h3 className="text-xl font-serif font-semibold text-amber-300 mb-2">
               {stateTitle}

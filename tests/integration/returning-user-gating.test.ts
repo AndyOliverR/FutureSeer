@@ -10,13 +10,13 @@ import {
 } from '@/lib/authRouting';
 
 describe('Returning user payment gating', () => {
-  it('gates returning user without active subscription', () => {
+  it('does not hard-gate returning users without subscription (credit-first)', () => {
     expect(
       shouldGateReturningUserForPaymentCommit({
         mysticalProfileGenerated: true,
         subscriptionStatus: 'trial',
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('does not gate returning user with active subscription', () => {

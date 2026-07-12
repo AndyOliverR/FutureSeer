@@ -17,18 +17,30 @@ const mockClearCachedDivinationData = jest.fn();
 const mockTryResumeMysticalStageB = jest.fn();
 const mockEnsureAdminAvailable = jest.fn();
 
+/** User doc snapshot returned inside adminDb.runTransaction (billing credits). */
+let mockBillingTransactionUserData: Record<string, unknown> = {};
+
 jest.mock('firebase-admin/auth', () => ({
   getAuth: () => ({ verifyIdToken: mockVerifyIdToken }),
 }));
 
 jest.mock('@/lib/firebase-admin', () => {
-  /** Firestore admin: generationLock uses runTransaction; route logs profileGenerationUsage. */
+  /** Firestore admin: generationLock + billing credits use runTransaction. */
   const mockAdminDb = {
     runTransaction: jest.fn(async (callback: (tx: { get: jest.Mock; set: jest.Mock }) => Promise<unknown>) => {
       const tx = {
-        get: jest.fn().mockResolvedValue({
-          exists: false,
-          data: () => undefined,
+        get: jest.fn(async (ref: { path?: string }) => {
+          const path = ref?.path ?? '';
+          if (path.startsWith('users/') && !path.includes('/billingLedger/')) {
+            return {
+              exists: true,
+              data: () => mockBillingTransactionUserData,
+            };
+          }
+          return {
+            exists: false,
+            data: () => undefined,
+          };
         }),
         set: jest.fn(),
       };
@@ -40,13 +52,12 @@ jest.mock('@/lib/firebase-admin', () => {
         const ref: { path: string; collection?: jest.Mock } = {
           path: `${colName}/${docId}`,
         };
-        if (colName === 'profileGenerationUsage') {
-          ref.collection = jest.fn(() => ({
-            doc: jest.fn(() => ({
-              set: jest.fn().mockResolvedValue(undefined),
-            })),
-          }));
-        }
+        ref.collection = jest.fn((subCol: string) => ({
+          doc: jest.fn((ledgerId?: string) => ({
+            path: `${colName}/${docId}/${subCol}/${ledgerId ?? 'auto-id'}`,
+            set: jest.fn().mockResolvedValue(undefined),
+          })),
+        }));
         return ref;
       }),
     })),
@@ -111,6 +122,7 @@ describe('Profile generate-mystical API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockBillingTransactionUserData = {};
     consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined);
     mockVerifyIdToken.mockResolvedValue({ uid });
     mockSetDocument.mockResolvedValue(true);
@@ -350,8 +362,8 @@ describe('Profile generate-mystical API', () => {
       expect(data.error).toBeDefined();
     });
 
-    it('returns payment_method_update_required for full mode when status is past_due', async () => {
-      mockGetDocument.mockResolvedValue({
+    it('returns credits_required for full regen when past_due and free regen already used', async () => {
+      const profile = {
         ...baseProfile,
         mysticalProfileGenerated: true,
         fullName: 'Test User',
@@ -362,13 +374,25 @@ describe('Profile generate-mystical API', () => {
         selectedPlan: 'premium',
         subscriptionStatus: 'past_due',
         paymentMethodId: '',
-      });
+        creditBalance: 0,
+        freeUseConsumed: { profileRegen: true },
+      };
+      mockGetDocument.mockResolvedValue(profile);
+      mockBillingTransactionUserData = {
+        creditBalance: 0,
+        freeUseConsumed: { profileRegen: true },
+        subscriptionStatus: 'past_due',
+        selectedPlan: 'premium',
+        paymentMethodId: '',
+      };
 
       const res = await callGenerate('fake-token', { mode: 'full' });
       const data = await res.json();
-      expect(res.status).toBe(403);
-      expect(data.blockReason).toBe('payment_method_update_required');
-      expect(data.subscriptionStatus).toBe('past_due');
+      expect(res.status).toBe(402);
+      expect(data.blockReason).toBe('credits_required');
+      expect(data.code).toBe('insufficient_credits');
+      expect(data.creditsRequired).toBe(8);
+      expect(data.creditBalance).toBe(0);
     });
 
     it('allows first onboarding full generation without payment setup', async () => {

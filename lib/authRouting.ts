@@ -99,10 +99,11 @@ export function isReturningUserProfile(profile: PaymentGateProfile | null): bool
 }
 
 /**
- * Gate only returning users without active access.
+ * Credit-first billing: returning users browse tools and stored reports without a subscription wall.
+ * Metering happens at AI / regen actions via consumeBillingAction.
  */
-export function shouldGateReturningUserForPaymentCommit(profile: PaymentGateProfile | null): boolean {
-  return isReturningUserProfile(profile) && !hasActiveSubscriptionAccess(profile)
+export function shouldGateReturningUserForPaymentCommit(_profile: PaymentGateProfile | null): boolean {
+  return false;
 }
 
 type ReturningPaymentCommitContext = {

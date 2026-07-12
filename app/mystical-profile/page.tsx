@@ -37,6 +37,14 @@ import { getMissingFullProfileFields, isTrialActive } from "@/lib/subscriptionCo
 import { analytics } from "@/lib/analytics"
 import { buildAllMysticalSharePayloads } from "@/lib/growth/mysticalShareCard"
 import { MysticalShareCardPanel } from "@/components/growth/MysticalShareCardPanel"
+import { GenerationPartialFailureBanner } from "@/components/mystical/GenerationPartialFailureBanner"
+import {
+  extractFailedToolSummaries,
+  type FailedToolSummary,
+} from "@/lib/generationFailureUx"
+import { humanizePipelineSlug } from "@/lib/toolSlugLabels"
+import { buildStrategicReadData } from "@/lib/strategicRead"
+import { StrategicReadCard } from "@/components/foresight/StrategicReadCard"
 
 const CATEGORY_ORDER = [
   "Astrology",
@@ -49,13 +57,6 @@ const CATEGORY_ORDER = [
   "Analysis",
   "Energy",
 ] as const
-
-function humanizePipelineSlug(slug: string): string {
-  return slug
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (s) => s.toUpperCase())
-    .trim()
-}
 
 function MysticalProfileRefreshingBar({ variant }: { variant: "m3" | "web" }) {
   const isM3 = variant === "m3"
@@ -268,6 +269,7 @@ export default function MysticalProfilePage() {
   const [, setResumeAttempted] = useState(false)
   const [lastProgressUpdatedAt, setLastProgressUpdatedAt] = useState<number | null>(null)
   const [, setGenerationWarning] = useState<string | null>(null)
+  const [polledFailedTools, setPolledFailedTools] = useState<FailedToolSummary[]>([])
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const hasGeneratingIntent = searchParams.get("generating") === "1"
@@ -309,6 +311,19 @@ export default function MysticalProfilePage() {
       return isUsableStoredReport(report)
     })
   }, [p])
+  const failedToolSummaries = useMemo(() => {
+    if (generationActive || !p) return polledFailedTools
+    const fromProfile = extractFailedToolSummaries(p)
+    return fromProfile.length > 0 ? fromProfile : polledFailedTools
+  }, [generationActive, p, polledFailedTools])
+  const strategicRead = useMemo(
+    () =>
+      buildStrategicReadData(
+        profile,
+        userProfile?.displayName ?? userProfile?.fullName ?? user?.displayName ?? null,
+      ),
+    [profile, userProfile?.displayName, userProfile?.fullName, user?.displayName],
+  )
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
   const staleRecoveryRef = useRef(false)
@@ -422,6 +437,10 @@ export default function MysticalProfilePage() {
             lastHeartbeatAt?: number | null
             resumeAttempted?: boolean
             updatedAt?: number | null
+            failedTools?: FailedToolSummary[]
+          }
+          if (Array.isArray(data.failedTools)) {
+            setPolledFailedTools(data.failedTools)
           }
           setGenerationPhase(data.phase ?? null)
           setCompletedTools(typeof data.completedTools === "number" ? data.completedTools : null)
@@ -993,6 +1012,10 @@ export default function MysticalProfilePage() {
           </p>
         </div>
         {showMysticalProfileRefresh ? <MysticalProfileRefreshingBar variant="m3" /> : null}
+        {!generationActive ? (
+          <GenerationPartialFailureBanner failedTools={failedToolSummaries} variant="m3" />
+        ) : null}
+        {!generationActive ? <StrategicReadCard data={strategicRead} className="mb-6" /> : null}
         {ctaRow}
         {mysticalSharePayloads.length > 0 ? (
           <MysticalShareCardPanel payloads={mysticalSharePayloads} variant="m3" />
@@ -1095,6 +1118,10 @@ export default function MysticalProfilePage() {
           </p>
         </div>
         {showMysticalProfileRefresh ? <MysticalProfileRefreshingBar variant="web" /> : null}
+        {!generationActive ? (
+          <GenerationPartialFailureBanner failedTools={failedToolSummaries} variant="web" />
+        ) : null}
+        {!generationActive ? <StrategicReadCard data={strategicRead} className="mb-8" /> : null}
         {ctaRow}
         {mysticalSharePayloads.length > 0 ? (
           <MysticalShareCardPanel payloads={mysticalSharePayloads} variant="web" />

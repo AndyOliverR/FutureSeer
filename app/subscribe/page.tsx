@@ -8,7 +8,8 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Zap, Users, Crown, Sparkles, TrendingUp, Shield, BookOpen, Heart, LogIn } from "lucide-react";
+import { CreditPackCheckout } from "@/components/billing/CreditPackCheckout";
+import { Check, Star, Zap, Users, Crown, Sparkles, TrendingUp, Shield, BookOpen, Heart, LogIn, Coins } from "lucide-react";
 const PLAN_DISPLAY_NAME: Record<string, string> = {
   'power-user-trial': 'Trial',
   'buy-coffee': 'Coffee',
@@ -23,7 +24,7 @@ export default function SubscribePage() {
   const signInRedirect = `/signin?redirect=${encodeURIComponent(
     typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/subscribe",
   )}`;
-  const { user, isSpecialUser } = useAuth();
+  const { user, isSpecialUser, userProfile } = useAuth();
   const {
     loading,
     error,
@@ -112,19 +113,44 @@ export default function SubscribePage() {
           </Card>
         )}
 
+        {/* Pay-as-you-go credits (primary) */}
+        {user && !isSpecialUser && (
+          <Card className="mb-12 border-amber-500/40 bg-gradient-to-b from-amber-500/10 to-slate-900/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-200">
+                <Coins className="h-5 w-5" />
+                Pay as you go — full app access
+              </CardTitle>
+              <p className="text-sm text-slate-300 font-normal">
+                Buy credits in bulk. First reading in each area is free. No monthly commitment required.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <CreditPackCheckout
+                countryCode={userProfile?.country?.trim().toUpperCase() || 'IN'}
+                compact
+              />
+              <p className="text-center text-xs text-slate-500 mt-4">
+                <Link href="/credits" className="text-amber-400 hover:underline">
+                  Manage credits & balance
+                </Link>
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="text-center mb-16">
           {isReturningCommitFlow ? (
             <p className="mb-4 text-amber-300 text-sm">
-              Returning access check: choose a paid plan and verify payment to start your one-month free trial, then continue on your selected subscription cadence.
+              Add credits for pay-as-you-go access, or choose unlimited membership below.
             </p>
           ) : null}
           <h1 className="text-5xl md:text-6xl font-bold text-amber-300 mb-6">
-            Choose Your Cosmic Path
+            Unlimited membership
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Embark on a mystical journey with AI-powered divination. From curious seekers to cosmic masters, 
-            find your perfect level of spiritual guidance.
+            Daily explorers: skip credits with Coffee, Treat, or Hamper — best value if you use FutureSeer every day.
           </p>
         </div>
 

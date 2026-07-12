@@ -4,6 +4,8 @@ import { EnhancedFooter } from "@/components/enhanced-footer"
 import { FeatureBlocks } from "@/components/feature-blocks"
 import { LandingSurveyTestimonials } from "@/components/landing/LandingSurveyTestimonials"
 import { LandingValueIntro } from "@/components/landing/LandingValueIntro"
+import { HomeDailyInsightSection } from "@/components/home/HomeDailyInsightSection"
+import { HomeStrategicReadSection } from "@/components/home/HomeStrategicReadSection"
 import dynamic from "next/dynamic"
 
 const StickyCTA = dynamic(() => import("@/components/sticky-cta").then(mod => ({ default: mod.StickyCTA })), {
@@ -19,6 +21,8 @@ export default function HomePage() {
     >
       <div className="relative flex-1 z-20 bg-transparent flex flex-col w-full min-w-0 max-w-full">
         <HeroSection />
+        <HomeDailyInsightSection />
+        <HomeStrategicReadSection />
         <LandingValueIntro />
         <div className="px-4 w-full min-w-0 max-w-full">
           <FeatureBlocks />

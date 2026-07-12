@@ -21,7 +21,7 @@ export interface TarotReading {
   spreadType: string
   spreadName: string
   positions: string[]
-  cards: (TarotCard & { isUpright: boolean; position: string })[]
+  cards: (TarotCard & { isUpright: boolean; position: string; signalGravity?: 'fleeting' | 'moderate' | 'major' })[]
   overallReading: string
   detailedInterpretation: string
   individualCardReadings: Array<{
@@ -181,6 +181,13 @@ class TarotIntelligence {
     { key: 'life-purpose', name: 'Life Purpose Spread', description: 'Five cards to help with guidance on life path or career.', positions: ['Your Purpose', 'Your Gifts', 'Challenges', 'Path Forward', 'Outcome'] },
     { key: 'love-compatibility', name: 'Love & Compatibility Spread', description: 'Analyze love life and relationships.', positions: ['Your Feelings', 'Their Feelings', 'Relationship Dynamics', 'Challenges', 'Strengths', 'Future Potential'] },
     { key: 'elemental', name: 'Elemental Spread', description: 'Explore the balance of Fire, Water, Air, and Earth in your life.', positions: ['Fire Energy', 'Water Energy', 'Air Energy', 'Earth Energy', 'Overall Balance'] },
+    {
+      key: 'matrix-whisper',
+      name: 'Matrix + Whisper Spread',
+      description:
+        'Foresight layout: a blind-spot Whisper card plus four isolated factors synthesized into one pattern. Each card includes signal gravity (fleeting, moderate, or major).',
+      positions: ['Whisper (Blind Spot)', 'Inner Life', 'Environment', 'Habit', 'Coincidence', 'Synthesis (Pattern)'],
+    },
   ]
 
   // Map spread name to key
@@ -198,6 +205,7 @@ class TarotIntelligence {
       'Life Purpose Spread': 'life-purpose',
       'Love & Compatibility Spread': 'love-compatibility',
       'Elemental Spread': 'elemental',
+      'Matrix + Whisper Spread': 'matrix-whisper',
     }
     return mapping[spreadName] || 'single'
   }
@@ -245,11 +253,18 @@ class TarotIntelligence {
     const cards = spread.positions.map((pos, i) => {
       const card = deck.pop()!
       const isUpright = Math.random() > 0.3 // 70% chance of upright
-      return {
+      const base = {
         ...card,
         isUpright,
-        position: pos
+        position: pos,
       }
+      if (spreadKey === 'matrix-whisper') {
+        const roll = ((card.numerology ?? i + 1) % 6) + 1
+        const signalGravity: 'fleeting' | 'moderate' | 'major' =
+          roll <= 2 ? 'fleeting' : roll <= 4 ? 'moderate' : 'major'
+        return { ...base, signalGravity }
+      }
+      return base
     })
 
     // Elemental balance
@@ -319,18 +334,30 @@ class TarotIntelligence {
     }
   }
 
-  private generateIndividualCardReadings(cards: (TarotCard & { isUpright: boolean; position: string })[], question: string): Array<{ cardName: string; position: string; isUpright: boolean; meaning: string; interpretation: string }> {
-    return cards.map(card => {
+  private gravityLabel(gravity: 'fleeting' | 'moderate' | 'major'): string {
+    if (gravity === 'major') return 'Major shift — treat this theme as a macro pattern, not a passing mood.'
+    if (gravity === 'moderate') return 'Moderate weight — real, but still shapeable with intentional action.'
+    return 'Fleeting energy — notice it, but do not over-structure your life around it.'
+  }
+
+  private generateIndividualCardReadings(
+    cards: (TarotCard & { isUpright: boolean; position: string; signalGravity?: 'fleeting' | 'moderate' | 'major' })[],
+    question: string,
+  ): Array<{ cardName: string; position: string; isUpright: boolean; meaning: string; interpretation: string }> {
+    return cards.map((card) => {
       const meaning = card.isUpright ? card.upright : card.reversed
       const positionContext = this.getPositionContext(card.position)
-      const interpretation = `${card.name} appears ${card.isUpright ? 'upright' : 'reversed'} in the ${card.position} position. ${positionContext} This suggests: ${meaning}.`
-      
+      const gravityBit = card.signalGravity
+        ? ` Signal gravity: ${card.signalGravity}. ${this.gravityLabel(card.signalGravity)}`
+        : ''
+      const interpretation = `${card.name} appears ${card.isUpright ? 'upright' : 'reversed'} in the ${card.position} position. ${positionContext} This suggests: ${meaning}.${gravityBit}`
+
       return {
         cardName: card.name,
         position: card.position,
         isUpright: card.isUpright,
         meaning,
-        interpretation
+        interpretation,
       }
     })
   }
@@ -347,12 +374,18 @@ class TarotIntelligence {
       'You': 'In relation to yourself,',
       'Partner': 'Regarding your partner or the other person,',
       'Relationship': 'In terms of the relationship itself,',
+      'Whisper (Blind Spot)': 'As the quiet anomaly or blind spot,',
+      'Inner Life': 'Regarding your inner world,',
+      'Environment': 'In your outer environment,',
+      'Habit': 'Through habitual patterns,',
+      'Coincidence': 'Through seeming coincidence,',
+      'Synthesis (Pattern)': 'When the isolated factors are woven together,',
     }
     return contexts[position] || 'In this position,'
   }
 
   private generateOverallReading(cards: (TarotCard & { isUpright: boolean; position: string })[], question: string, spread: any): string {
-    const mainCard = cards.find(c => c.position === 'Present' || c.position === 'Message' || c.position === 'Situation') || cards[0]
+    const mainCard = cards.find(c => c.position === 'Present' || c.position === 'Message' || c.position === 'Situation' || c.position === 'Synthesis (Pattern)') || cards[0]
     const adviceCard = cards.find(c => c.position === 'Advice')
     const outcomeCard = cards.find(c => c.position === 'Outcome' || c.position === 'Future')
     return `For your question: "${question}", the ${spread.name} reveals ${mainCard.name} (${mainCard.isUpright ? 'upright' : 'reversed'}) in the ${mainCard.position} position, indicating: ${mainCard.isUpright ? mainCard.upright : mainCard.reversed}. ${adviceCard ? `Advice: ${adviceCard.name} - ${adviceCard.isUpright ? adviceCard.upright : adviceCard.reversed}.` : ''} ${outcomeCard ? `Outcome: ${outcomeCard.name} - ${outcomeCard.isUpright ? outcomeCard.upright : outcomeCard.reversed}.` : ''} The elemental balance is ${this.getElementalDescription(cards)}. Trust the guidance of the Tarot.`
@@ -441,7 +474,23 @@ class TarotIntelligence {
     }
   }
 
-  private generateRecommendations(cards: (TarotCard & { isUpright: boolean })[], elementalBalance: TarotReading['elementalBalance'], timing: TarotReading['timing']): string[] {
+  private generateRecommendations(
+    cards: (TarotCard & { isUpright: boolean; position: string; signalGravity?: 'fleeting' | 'moderate' | 'major' })[],
+    elementalBalance: TarotReading['elementalBalance'],
+    timing: TarotReading['timing'],
+  ): string[] {
+    const whisper = cards.find((c) => c.position === 'Whisper (Blind Spot)');
+    if (whisper) {
+      const synthesis = cards.find((c) => c.position === 'Synthesis (Pattern)');
+      return [
+        `Treat the Whisper card (${whisper.name}) as the quiet anomaly — the theme you are tempted to dismiss.`,
+        'Read Inner Life, Environment, Habit, and Coincidence as isolated forces before merging them.',
+        synthesis
+          ? `Let ${synthesis.name} in Synthesis name the macro pattern only after you have honored each factor.`
+          : 'Name what each factor wants before you merge them into one story.',
+        'Use signal gravity: fleeting themes are notes; major themes are course corrections.',
+      ];
+    }
     const recs = [
       'Reflect on the main card in your spread',
       'Pay attention to the advice card for guidance',
