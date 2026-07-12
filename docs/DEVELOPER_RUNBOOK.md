@@ -54,6 +54,48 @@ Use this when Google/Apple auth fails on Safari/iOS/macOS or shows `redirect_uri
 5. Apple Sign in (if enabled) includes exact return URL: `https://<authDomain>/__/auth/handler`.
 6. Check `GET /api/diagnose` and inspect `services.oauth.checks` for pass/warn/fail hints.
 
+## Distributed controls (production scale)
+
+Firestore-backed **rate limits** and **AI circuit breaker** coordinate across Vercel serverless instances. Without these env vars, each instance uses in-memory state only.
+
+| Variable | Value | Requires |
+|----------|-------|----------|
+| `RATE_LIMIT_STORE` | `firestore` | `FIREBASE_ADMIN_*` → collection `_apiRateLimits` |
+| `AI_CIRCUIT_STORE` | `firestore` | `FIREBASE_ADMIN_*` → collection `_aiCircuitBreaker` |
+
+### Enable on Vercel (Production)
+
+1. [Vercel Dashboard](https://vercel.com) → your **FutureSeer** project → **Settings** → **Environment Variables**.
+2. Add **`RATE_LIMIT_STORE`** = `firestore` → scope **Production** (optionally Preview for staging).
+3. Add **`AI_CIRCUIT_STORE`** = `firestore` → scope **Production**.
+4. Confirm **`FIREBASE_ADMIN_PROJECT_ID`**, **`FIREBASE_ADMIN_CLIENT_EMAIL`**, **`FIREBASE_ADMIN_PRIVATE_KEY`** are already set for Production (same as other Admin routes).
+5. **Redeploy** production (env vars apply on the next deployment, not retroactively to running lambdas).
+
+CLI alternative (after `npx vercel login` and `vercel link`):
+
+```bash
+npx vercel env add RATE_LIMIT_STORE production
+# enter: firestore
+npx vercel env add AI_CIRCUIT_STORE production
+# enter: firestore
+npx vercel --prod
+```
+
+### Verify
+
+**Local env (optional):** `pnpm run check:distributed-controls` — checks `.env.local` only.
+
+**Production (authoritative):** As an admin user, call:
+
+```http
+GET https://futureseer.app/api/diagnose
+Authorization: Bearer <Firebase ID token>
+```
+
+Expect `services.distributedControls.mode` = **`"firestore"`** and both `active: true`. If `mode` is `"partial"` or `"memory"`, read `recommendations` in the JSON.
+
+After real API traffic, optional Firestore console check: collections **`_apiRateLimits`** and **`_aiCircuitBreaker`** receive documents.
+
 ## External comparison (optional)
 
 Community Next + Capacitor starters are useful to compare **config only** (static export, `webDir`, scripts)—not to replace this app’s stack. Prefer **[Capacitor Next.js](https://capacitorjs.com/docs/next)** and **[Next.js static exports](https://nextjs.org/docs/app/building-your-application/deploying/static-exports)** for correctness.

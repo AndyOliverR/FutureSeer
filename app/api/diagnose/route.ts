@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAstroAppToken } from '@/lib/astroapp'
 import { getServerOAuthGuardrailReport } from '@/lib/oauthDomainGuardrails'
 import { verifyAdminRequest } from '@/lib/adminApiAuth'
+import { getDistributedControlsStatus } from '@/lib/distributedControlsStatus'
 
 export const dynamic = 'force-static'
 
@@ -128,6 +129,17 @@ export async function GET(request: NextRequest) {
       status: '❌ Error',
       error: error instanceof Error ? error.message : 'unknown_error'
     }
+  }
+
+  const distributed = getDistributedControlsStatus()
+  diagnostics.services.distributedControls = {
+    mode: distributed.mode,
+    rateLimitStore: distributed.rateLimitStore,
+    circuitBreakerStore: distributed.circuitBreakerStore,
+    firebaseAdminAvailable: distributed.firebaseAdminAvailable,
+    capacitorBuild: distributed.capacitorBuild,
+    recommendations: distributed.recommendations,
+    vercelEnv: process.env.VERCEL_ENV ?? process.env.NEXT_PUBLIC_VERCEL_ENV ?? undefined,
   }
 
   return NextResponse.json(diagnostics)
