@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { batchSetDocuments, getDocument } from '@/lib/firebase-admin';
+import { batchSetDocuments, getDocument, setDocument } from '@/lib/firebase-admin';
 import {
   ALL_TOOL_SLUGS,
   classifyToolReportState,
@@ -122,7 +122,6 @@ export async function applyStageBFinalPersistence(params: {
     throw new Error('Failed to save Stage B data.');
   }
   const completedAt = Date.now();
-  const { setDocument } = await import('@/lib/firebase-admin');
   await setDocument('generationLocks', uid, {
     lockedAt: null,
     status: 'completed',

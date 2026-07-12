@@ -301,7 +301,12 @@ export async function processMysticalStageBQueue(params: {
   }
 
   const toolReports = toolReportsFromComprehensiveProfile(profileFinal);
-  const result = await finalizeProfileGenerationFromToolReports(uid, profileWithUid, toolReports);
+  const result = await finalizeProfileGenerationFromToolReports(
+    uid,
+    profileWithUid,
+    toolReports,
+    profileFinal,
+  );
   const { applyStageBFinalPersistence } = await import('@/lib/mysticalStageBPersist');
   await applyStageBFinalPersistence({
     uid,
