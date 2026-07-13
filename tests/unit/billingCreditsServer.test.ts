@@ -4,9 +4,15 @@
 
 jest.mock('server-only', () => ({}), { virtual: true });
 
-var mockSetCalls: Array<{ path: string; data: Record<string, unknown> }> = [];
-var mockUserData: Record<string, unknown> = { creditBalance: 5 };
-var mockClaimData: Record<string, unknown> | null = null;
+const mockState: {
+  setCalls: Array<{ path: string; data: Record<string, unknown> }>;
+  userData: Record<string, unknown>;
+  claimData: Record<string, unknown> | null;
+} = {
+  setCalls: [],
+  userData: { creditBalance: 5 },
+  claimData: null,
+};
 
 function makeRef(path: string) {
   return {
@@ -28,13 +34,13 @@ jest.mock('@/lib/firebase-admin', () => ({
           if (ref.path.startsWith('users/')) {
             return {
               exists: true,
-              data: () => mockUserData,
+              data: () => mockState.userData,
             };
           }
           if (ref.path.startsWith('_creditPaymentOrders/')) {
             return {
-              exists: mockClaimData !== null,
-              data: () => mockClaimData ?? undefined,
+              exists: mockState.claimData !== null,
+              data: () => mockState.claimData ?? undefined,
             };
           }
           return {
@@ -43,7 +49,7 @@ jest.mock('@/lib/firebase-admin', () => ({
           };
         }),
         set: jest.fn((ref: { path: string }, data: Record<string, unknown>) => {
-          mockSetCalls.push({ path: ref.path, data });
+          mockState.setCalls.push({ path: ref.path, data });
         }),
       };
       return callback(tx);
@@ -51,13 +57,17 @@ jest.mock('@/lib/firebase-admin', () => ({
   },
 }));
 
-import { addCreditsFromPack } from '@/lib/billingCreditsServer';
+let addCreditsFromPack: typeof import('@/lib/billingCreditsServer').addCreditsFromPack;
 
 describe('addCreditsFromPack', () => {
+  beforeAll(async () => {
+    ({ addCreditsFromPack } = await import('@/lib/billingCreditsServer'));
+  });
+
   beforeEach(() => {
-    mockSetCalls.length = 0;
-    mockUserData = { creditBalance: 5 };
-    mockClaimData = null;
+    mockState.setCalls.length = 0;
+    mockState.userData = { creditBalance: 5 };
+    mockState.claimData = null;
     jest.clearAllMocks();
   });
 
@@ -65,8 +75,8 @@ describe('addCreditsFromPack', () => {
     const result = await addCreditsFromPack('user-1', 'starter', 'order_123', 'pay_123');
 
     expect(result).toEqual({ success: true, creditsAdded: 15, creditBalance: 20 });
-    expect(mockSetCalls.some((call) => call.path === '_creditPaymentOrders/order_123')).toBe(true);
-    expect(mockSetCalls.find((call) => call.path === '_creditPaymentOrders/order_123')?.data).toMatchObject({
+    expect(mockState.setCalls.some((call) => call.path === '_creditPaymentOrders/order_123')).toBe(true);
+    expect(mockState.setCalls.find((call) => call.path === '_creditPaymentOrders/order_123')?.data).toMatchObject({
       orderId: 'order_123',
       userId: 'user-1',
       packId: 'starter',
@@ -76,8 +86,8 @@ describe('addCreditsFromPack', () => {
   });
 
   it('treats same-user replay as an idempotent duplicate', async () => {
-    mockUserData = { creditBalance: 20 };
-    mockClaimData = { userId: 'user-1', orderId: 'order_123' };
+    mockState.userData = { creditBalance: 20 };
+    mockState.claimData = { userId: 'user-1', orderId: 'order_123' };
 
     await expect(addCreditsFromPack('user-1', 'starter', 'order_123', 'pay_123')).resolves.toEqual({
       success: true,
@@ -85,15 +95,15 @@ describe('addCreditsFromPack', () => {
       creditBalance: 20,
       duplicate: true,
     });
-    expect(mockSetCalls).toEqual([]);
+    expect(mockState.setCalls).toEqual([]);
   });
 
   it('rejects replay of a paid order on another user account', async () => {
-    mockClaimData = { userId: 'user-2', orderId: 'order_123' };
+    mockState.claimData = { userId: 'user-2', orderId: 'order_123' };
 
     await expect(addCreditsFromPack('user-1', 'starter', 'order_123', 'pay_123')).rejects.toThrow(
       'Payment order already processed',
     );
-    expect(mockSetCalls).toEqual([]);
+    expect(mockState.setCalls).toEqual([]);
   });
 });
