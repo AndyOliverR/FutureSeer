@@ -25,25 +25,24 @@ jobs:
     name: Resume stale Stage B jobs
     runs-on: ubuntu-latest
     timeout-minutes: 6
-    # Scheduled runs skip quietly until CRON_SECRET exists (no red failure spam).
-    # Manual runs still execute so you get a clear setup error when testing.
-    if: github.event_name == 'workflow_dispatch' || secrets.CRON_SECRET != ''
     steps:
-      - name: Verify CRON_SECRET is configured
-        if: secrets.CRON_SECRET == ''
-        run: |
-          echo "::error::Add CRON_SECRET to GitHub Actions secrets (same value as Vercel production CRON_SECRET)."
-          echo "Vercel: Project → Settings → Environment Variables → CRON_SECRET"
-          echo "GitHub: Repository → Settings → Secrets and variables → Actions → New repository secret"
-          exit 1
-
       - name: Call Stage B cron endpoint
-        if: secrets.CRON_SECRET != ''
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           CRON_BASE_URL: ${{ vars.CRON_BASE_URL }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+              echo "::error::Add CRON_SECRET to GitHub Actions secrets (same value as Vercel production CRON_SECRET)."
+              echo "Vercel: Project → Settings → Environment Variables → CRON_SECRET"
+              echo "GitHub: Repository → Settings → Secrets and variables → Actions → New repository secret"
+              exit 1
+            fi
+            echo "CRON_SECRET not configured — skipping scheduled run."
+            exit 0
+          fi
           base="${CRON_BASE_URL:-https://futureseer.app}"
           base="${base%/}"
           url="${base}/api/cron/mystical-stage-b"
