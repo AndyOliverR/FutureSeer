@@ -3,6 +3,7 @@ import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
 import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
 import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import { devLog } from '@/lib/devLogger';
+import { getGroqVisionModel } from '@/lib/groqModels';
 
 interface PalmAnalysisRequest {
   imageUrl: string;
@@ -313,8 +314,8 @@ function validatePalmVisionData(palmData: Record<string, unknown>): PalmVisionVa
 /**
  * Palm Image Analysis Endpoint
  *
- * Uses vision-capable AI model (meta-llama/llama-4-scout-17b-16e-instruct) to analyze actual palm images.
- * Llama 4 Scout is Groq's multimodal vision model (replacement for deprecated Llama 4 Maverick 17B 128E).
+ * Uses Groq vision model (default qwen/qwen3.6-27b; override GROQ_VISION_MODEL) to analyze palm images.
+ * Llama 4 Scout was deprecated 2026-07-17 — see lib/groqModels.ts.
  * 
  * The AI examines the uploaded palm photo and provides specific assessments of:
  * - Palm lines (length, depth, quality)
@@ -427,7 +428,7 @@ REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not ev
       tryLlm: async () => {
         const aiRun = await runStructuredReportAI({
           label: 'palmistry-vision-analysis',
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          model: getGroqVisionModel(),
           messages: [
             {
               role: 'user',
