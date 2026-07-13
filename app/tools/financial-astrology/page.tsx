@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab';
 import { DashboardSection } from '@/components/western/DashboardSection';
 import type { AstroEvent } from '@/lib/financialAstrology/astroMarketCorrelation';
+import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge';
 import FinancialSeerChatInterface from '@/components/FinancialSeerChatInterface';
 import { MarketOverviewCards } from '@/components/charts/MarketOverviewCards';
 import { MarketTransitChart } from '@/components/charts/MarketTransitChart';
@@ -279,6 +280,7 @@ function FinancialAstrologyPageContent() {
             <p className="text-slate-200 leading-relaxed text-xl font-light">
               Natal wealth analysis and market cycle timing — not financial advice
             </p>
+            <AstrologyMethodologyBadge variant="financial" className="mt-4 mb-0" />
           </div>
 
           <div className="rounded-2xl border border-emerald-500/40 bg-slate-900/80 overflow-hidden shadow-[0_0_30px_rgba(16,185,129,0.1)]">

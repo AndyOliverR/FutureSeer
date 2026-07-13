@@ -1,4 +1,5 @@
 import { generateChartData } from './astrology'
+import { getTropicalSkyBodies } from '@/lib/astrology/computedSkyPositions';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { generateFallbackAstroData, isFallbackDataReliable } from './astroFallback'
 import { getIntelligentAstroData, getSystemStatus } from './astroIntelligence'
@@ -464,17 +465,41 @@ function calculateCurrentTransits(planets: any[]): Array<{
   orb: number;
   effect: string;
 }> {
-  // Simplified transit calculation - in a real implementation,
-  // this would calculate current planetary positions and aspects
-  return [
-    {
-      planet: 'Jupiter',
-      aspect: 'Trine',
-      targetPlanet: 'Sun',
-      orb: 2.5,
-      effect: 'Expansion and growth opportunities'
+  if (!planets?.length) return [];
+
+  const sky = getTropicalSkyBodies(new Date());
+  const aspects: Array<{ planet: string; aspect: string; targetPlanet: string; orb: number; effect: string }> = [];
+
+  const aspectDefs = [
+    { name: 'Conjunction', deg: 0, orb: 8 },
+    { name: 'Trine', deg: 120, orb: 8 },
+    { name: 'Square', deg: 90, orb: 8 },
+    { name: 'Opposition', deg: 180, orb: 8 },
+    { name: 'Sextile', deg: 60, orb: 6 },
+  ];
+
+  for (const transit of sky) {
+    for (const natal of planets) {
+      const natalLon = typeof natal.longitude === 'number' ? natal.longitude : null;
+      if (natalLon == null) continue;
+      const diff = Math.abs(transit.longitude - natalLon);
+      const angle = Math.min(diff, 360 - diff);
+      for (const def of aspectDefs) {
+        const orb = Math.abs(angle - def.deg);
+        if (orb <= def.orb) {
+          aspects.push({
+            planet: transit.name,
+            aspect: def.name,
+            targetPlanet: natal.name ?? 'Natal',
+            orb: Math.round(orb * 10) / 10,
+            effect: `${transit.name} ${def.name.toLowerCase()} natal ${natal.name ?? 'point'}`,
+          });
+        }
+      }
     }
-  ]
+  }
+
+  return aspects.slice(0, 12);
 }
 
 // Clear cache for a specific user (useful when profile is updated)

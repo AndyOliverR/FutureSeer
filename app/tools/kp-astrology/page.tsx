@@ -46,6 +46,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import { getPermanentChart, storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
 import { calculateCurrentDasha } from '@/lib/vedic-core'
+import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge'
 import { Phase2VisualPanel } from '@/components/charts/Phase2VisualPanel'
 import { adaptKpOverlay } from '@/lib/charts/phase2Adapters'
 import { isKpChartsV2Enabled } from '@/lib/charts/featureFlags'
@@ -1031,9 +1032,10 @@ export default function KPAstrologyPage() {
             <span className="text-yellow-400">🎯</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">KP Astrology</span>
           </h1>
-          <p className="text-slate-200 leading-relaxed text-xl font-light mb-8">
+          <p className="text-slate-200 leading-relaxed text-xl font-light mb-4">
             Krishnamurti Paddhati - The most precise system of astrological predictions
           </p>
+          <AstrologyMethodologyBadge variant="kp" className="mb-6" />
           <ToolReportStatusChips
             freshnessLabel={freshnessLabel}
             reportUnchanged={reportUnchanged}

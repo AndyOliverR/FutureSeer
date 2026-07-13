@@ -1,160 +1,141 @@
 /**
- * FutureSeer Current Transit Service
- * 
- * This service provides information about CURRENT planetary transits
- * (what's happening right now in 2025) as opposed to future predictions
- * 
- * Third-party attribution: See internal documentation for details.
+ * Current sidereal transit positions (computed via getChart).
+ * Replaces static 2025 tables — positions update with the live ephemeris.
  */
 
+import { getChart } from '@/lib/astronomia-vedic';
+import { nakshatraFromLongitude } from '@/lib/vedic-core';
 import { devLog } from '@/lib/devLogger';
 
 export interface CurrentTransit {
-  planet: string
-  currentSign: string
-  enteredDate: string
-  exitDate: string
-  influence: string
-  significance: string
-  impact: 'positive' | 'negative' | 'neutral'
-  house: number
-  nakshatra: string
+  planet: string;
+  currentSign: string;
+  enteredDate: string;
+  exitDate: string;
+  influence: string;
+  significance: string;
+  impact: 'positive' | 'negative' | 'neutral';
+  house: number;
+  nakshatra: string;
+}
+
+const TRANSIT_GRAHAS = [
+  { key: 'sun', label: 'Sun' },
+  { key: 'moon', label: 'Moon' },
+  { key: 'mars', label: 'Mars' },
+  { key: 'mercury', label: 'Mercury' },
+  { key: 'jupiter', label: 'Jupiter' },
+  { key: 'venus', label: 'Venus' },
+  { key: 'saturn', label: 'Saturn' },
+  { key: 'rahu', label: 'Rahu' },
+  { key: 'ketu', label: 'Ketu' },
+] as const;
+
+const SIGN_NAMES = [
+  'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
+] as const;
+
+type ChartPlanetRow = {
+  signName?: string;
+  sign?: number;
+  house?: number;
+  lonSidereal?: number;
+};
+
+function buildTransitRow(
+  planet: string,
+  signName: string,
+  house: number,
+  lonSidereal: number,
+  now: Date,
+): CurrentTransit {
+  const nk = nakshatraFromLongitude(lonSidereal);
+  const today = now.toISOString().split('T')[0];
+  return {
+    planet,
+    currentSign: signName,
+    enteredDate: today,
+    exitDate: '—',
+    influence: `${planet} currently transits ${signName} (sidereal Lahiri, computed).`,
+    significance: `Nakshatra: ${nk.name} (pada ${nk.pada}). House ${house} in reference whole-sign frame.`,
+    impact: 'neutral',
+    house,
+    nakshatra: nk.name,
+  };
+}
+
+function computeSiderealTransits(now = new Date()): CurrentTransit[] {
+  const chart = getChart(
+    {
+      date: now,
+      latitude: 0,
+      longitude: 0,
+      name: 'Current sky',
+      place: 'Reference',
+      birthDate: undefined,
+    },
+    { ayanamsha: 'lahiri', houseSystem: 'whole-sign' },
+  );
+
+  if (!chart?.planets) return [];
+
+  const planets = chart.planets as Record<string, ChartPlanetRow>;
+
+  const ascSign =
+    typeof chart.ascendant?.sign === 'number'
+      ? chart.ascendant.sign
+      : typeof chart.ascendant?.signName === 'string'
+        ? SIGN_NAMES.indexOf(chart.ascendant.signName as (typeof SIGN_NAMES)[number])
+        : 0;
+
+  return TRANSIT_GRAHAS.flatMap(({ key, label }) => {
+    const data = planets[key];
+    if (!data) return [];
+    const signName =
+      data.signName ??
+      SIGN_NAMES[typeof data.sign === 'number' ? data.sign : 0];
+    const house =
+      typeof data.house === 'number'
+        ? data.house
+        : ((typeof data.sign === 'number' ? data.sign : 0) - ascSign + 12) % 12 + 1;
+    const lon = typeof data.lonSidereal === 'number' ? data.lonSidereal : 0;
+    return [buildTransitRow(label, signName, house, lon, now)];
+  });
 }
 
 export class CurrentTransitService {
-  private static instance: CurrentTransitService
-  
+  private static instance: CurrentTransitService;
+
   static getInstance() {
     if (!CurrentTransitService.instance) {
-      CurrentTransitService.instance = new CurrentTransitService()
+      CurrentTransitService.instance = new CurrentTransitService();
     }
-    return CurrentTransitService.instance
+    return CurrentTransitService.instance;
   }
 
-  /**
-   * Get current planetary transits for 2025
-   */
   async getCurrentTransits(): Promise<CurrentTransit[]> {
     try {
-      devLog.debug('🔮 FutureSeer: Getting CURRENT transits for 2025...')
-      
-      const currentTransits: CurrentTransit[] = [
-        {
-          planet: 'Jupiter',
-          currentSign: 'Taurus',
-          enteredDate: '2024-05-01',
-          exitDate: '2025-05-01',
-          influence: 'Jupiter in Taurus brings material prosperity and stability',
-          significance: 'Focus on financial growth, values, and sensual pleasures',
-          impact: 'positive',
-          house: 2,
-          nakshatra: 'Rohini'
-        },
-        {
-          planet: 'Saturn',
-          currentSign: 'Aquarius',
-          enteredDate: '2023-03-07',
-          exitDate: '2025-03-29',
-          influence: 'Saturn in Aquarius brings innovation and humanitarian focus',
-          significance: 'Time for technological advancement and social responsibility',
-          impact: 'neutral',
-          house: 11,
-          nakshatra: 'Shatabhisha'
-        },
-        {
-          planet: 'Mars',
-          currentSign: 'Cancer',
-          enteredDate: '2025-09-01',
-          exitDate: '2025-11-01',
-          influence: 'Mars in Cancer brings emotional energy and protective instincts',
-          significance: 'Focus on family, home, and emotional security',
-          impact: 'positive',
-          house: 4,
-          nakshatra: 'Pushya'
-        },
-        {
-          planet: 'Mercury',
-          currentSign: 'Virgo',
-          enteredDate: '2025-09-15',
-          exitDate: '2025-10-03',
-          influence: 'Mercury in Virgo brings analytical thinking and attention to detail',
-          significance: 'Excellent time for communication, learning, and organization',
-          impact: 'positive',
-          house: 6,
-          nakshatra: 'Hasta'
-        },
-        {
-          planet: 'Venus',
-          currentSign: 'Libra',
-          enteredDate: '2025-09-20',
-          exitDate: '2025-10-15',
-          influence: 'Venus in Libra brings harmony and relationship focus',
-          significance: 'Perfect time for partnerships, beauty, and artistic pursuits',
-          impact: 'positive',
-          house: 7,
-          nakshatra: 'Swati'
-        }
-      ]
-      
-      devLog.debug('✅ FutureSeer: CURRENT transits retrieved successfully')
-      return currentTransits
+      const rows = computeSiderealTransits(new Date());
+      devLog.debug(`✅ Computed ${rows.length} sidereal transits`);
+      return rows;
     } catch (error) {
-      devLog.error('❌ FutureSeer: Error getting current transits:', error, 'currentTransitService')
-      throw error
+      devLog.error('❌ Error computing current transits:', error, 'currentTransitService');
+      throw error;
     }
   }
 
-  /**
-   * Get upcoming events for the next few months (2025)
-   */
+  /** Major slow-planet sign changes (computed positions only; ingress dates TBD in P2). */
   async getUpcomingEvents(): Promise<CurrentTransit[]> {
     try {
-      devLog.debug('🔮 FutureSeer: Getting UPCOMING events for 2025...')
-      
-      const upcomingEvents: CurrentTransit[] = [
-        {
-          planet: 'Jupiter',
-          currentSign: 'Gemini',
-          enteredDate: '2025-05-01',
-          exitDate: '2026-05-01',
-          influence: 'Jupiter enters Gemini bringing communication and learning opportunities',
-          significance: 'Focus on education, travel, and intellectual pursuits',
-          impact: 'positive',
-          house: 3,
-          nakshatra: 'Ardra'
-        },
-        {
-          planet: 'Saturn',
-          currentSign: 'Pisces',
-          enteredDate: '2025-03-29',
-          exitDate: '2027-09-29',
-          influence: 'Saturn enters Pisces bringing spiritual discipline and compassion',
-          significance: 'Time for spiritual growth, meditation, and helping others',
-          impact: 'neutral',
-          house: 12,
-          nakshatra: 'Revati'
-        },
-        {
-          planet: 'Mars',
-          currentSign: 'Leo',
-          enteredDate: '2025-11-01',
-          exitDate: '2026-01-01',
-          influence: 'Mars enters Leo bringing leadership and creative energy',
-          significance: 'Focus on leadership, creativity, and self-expression',
-          impact: 'positive',
-          house: 5,
-          nakshatra: 'Magha'
-        }
-      ]
-      
-      devLog.debug('✅ FutureSeer: UPCOMING events retrieved successfully')
-      return upcomingEvents
+      const slow = ['Jupiter', 'Saturn', 'Rahu', 'Ketu'];
+      const current = await this.getCurrentTransits();
+      return current.filter((t) => slow.includes(t.planet));
     } catch (error) {
-      devLog.error('❌ FutureSeer: Error getting upcoming events:', error, 'currentTransitService')
-      throw error
+      devLog.error('❌ Error computing upcoming transit events:', error, 'currentTransitService');
+      throw error;
     }
   }
 }
 
-// Export singleton instance
-export const currentTransitService = CurrentTransitService.getInstance()
+export const currentTransitService = CurrentTransitService.getInstance();

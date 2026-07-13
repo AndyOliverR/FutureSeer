@@ -28,6 +28,7 @@ import type { HellenisticAstrologyReading } from '@/lib/hellenisticAstrologyInte
 import HellenisticChartWheel from '@/components/hellenistic/HellenisticChartWheel'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import HellenisticSeerChatInterface from '@/components/hellenistic/HellenisticSeerChatInterface'
+import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge'
 import { DashboardSection } from '@/components/western/DashboardSection'
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 
@@ -184,6 +185,7 @@ export default function HellenisticAstrologyPage() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Hellenistic Astrology</span>
           </h1>
           <p className="text-slate-200 leading-relaxed text-xl font-light">Ancient Greco-Roman astrology system (1st century BCE – 7th century CE)</p>
+          <AstrologyMethodologyBadge variant="hellenistic" className="mt-4 mb-0" />
         </div>
 
         {/* Tabs */}

@@ -90,28 +90,17 @@ export function transformAspectsToAstroChart(aspects: Aspect[]): AstroChartAspec
 }
 
 /**
- * Get current planetary positions for transit overlay
+ * Get current planetary positions for transit overlay (Astronomia tropical).
  */
-export async function getCurrentTransits(): Promise<AstroChartPlanet[]> {
-  // Use current date/time
-  const now = new Date();
-  
-  // This would integrate with our existing calculation engines
-  // For now, return mock data - in production, use Swiss Ephemeris or Astronomia
-  const currentTransits: AstroChartPlanet[] = [
-    { name: 'Sun', longitude: (now.getTime() / 1000 / 86400) % 360, isRetrograde: false },
-    { name: 'Moon', longitude: (now.getTime() / 1000 / 86400 * 13.37) % 360, isRetrograde: false },
-    { name: 'Mercury', longitude: (now.getTime() / 1000 / 86400 * 0.9856) % 360, isRetrograde: Math.random() > 0.8 },
-    { name: 'Venus', longitude: (now.getTime() / 1000 / 86400 * 0.9856) % 360, isRetrograde: false },
-    { name: 'Mars', longitude: (now.getTime() / 1000 / 86400 * 0.5240) % 360, isRetrograde: Math.random() > 0.9 },
-    { name: 'Jupiter', longitude: (now.getTime() / 1000 / 86400 * 0.0831) % 360, isRetrograde: Math.random() > 0.85 },
-    { name: 'Saturn', longitude: (now.getTime() / 1000 / 86400 * 0.0334) % 360, isRetrograde: Math.random() > 0.75 },
-    { name: 'Uranus', longitude: (now.getTime() / 1000 / 86400 * 0.0118) % 360, isRetrograde: Math.random() > 0.9 },
-    { name: 'Neptune', longitude: (now.getTime() / 1000 / 86400 * 0.0060) % 360, isRetrograde: Math.random() > 0.95 },
-    { name: 'Pluto', longitude: (now.getTime() / 1000 / 86400 * 0.0040) % 360, isRetrograde: Math.random() > 0.9 }
-  ];
-
-  return currentTransits;
+export async function getCurrentTransits(date: Date = new Date()): Promise<AstroChartPlanet[]> {
+  const { getTropicalSkyBodies } = await import('@/lib/astrology/computedSkyPositions');
+  return getTropicalSkyBodies(date).map((body) => ({
+    name: body.name,
+    longitude: body.longitude,
+    latitude: body.latitude,
+    speed: body.speed,
+    isRetrograde: body.isRetrograde,
+  }));
 }
 
 /**
