@@ -233,8 +233,7 @@ class PalmistryIntelligence {
 
   async analyzePalm(hand: 'left' | 'right' | 'both', dominantHand: 'left' | 'right', age: number, gender: 'male' | 'female' | 'other', imageUrl?: string): Promise<PalmistryAnalysis> {
     // If image URL is provided, use vision-based AI image analysis
-    // This provides REAL analysis of the actual palm photo using meta-llama/llama-4-scout-17b-16e-instruct (vision model)
-    // (Llama 4 Scout - vision-capable MoE model on Groq)
+    // Vision-based palm photo analysis (Groq multimodal — see lib/groqModels.ts).
     if (imageUrl) {
       try {
         devLog.debug('🤲 Analyzing palm image with vision AI...');

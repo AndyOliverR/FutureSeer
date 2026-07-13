@@ -1,9 +1,13 @@
 # Hobby-safe replacement for Vercel cron `*/5` (not allowed on Vercel Hobby).
 # Scans generationJobs for queued / failed / stale Stage B work and resumes processing.
 #
-# Setup: GitHub repo → Settings → Secrets → Actions → CRON_SECRET
-#        (same value as Vercel production CRON_SECRET)
-# Optional: Settings → Variables → CRON_BASE_URL (default https://futureseer.app)
+# REQUIRED once (stops scheduled failures):
+#   1. Vercel → future-seer → Settings → Environment Variables → CRON_SECRET (Production) → copy value
+#   2. GitHub → AndyOliverR/FutureSeer → Settings → Secrets and variables → Actions
+#      → New repository secret → Name: CRON_SECRET → paste same value
+#   3. Actions → Mystical Stage B recovery → Run workflow (manual test)
+#
+# Optional variable: CRON_BASE_URL (default https://futureseer.app)
 
 name: Mystical Stage B recovery
 
@@ -21,22 +25,30 @@ jobs:
     name: Resume stale Stage B jobs
     runs-on: ubuntu-latest
     timeout-minutes: 6
+    # Scheduled runs skip quietly until CRON_SECRET exists (no red failure spam).
+    # Manual runs still execute so you get a clear setup error when testing.
+    if: github.event_name == 'workflow_dispatch' || secrets.CRON_SECRET != ''
     steps:
+      - name: Verify CRON_SECRET is configured
+        if: secrets.CRON_SECRET == ''
+        run: |
+          echo "::error::Add CRON_SECRET to GitHub Actions secrets (same value as Vercel production CRON_SECRET)."
+          echo "Vercel: Project → Settings → Environment Variables → CRON_SECRET"
+          echo "GitHub: Repository → Settings → Secrets and variables → Actions → New repository secret"
+          exit 1
+
       - name: Call Stage B cron endpoint
+        if: secrets.CRON_SECRET != ''
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           CRON_BASE_URL: ${{ vars.CRON_BASE_URL }}
         run: |
           set -euo pipefail
-          if [ -z "${CRON_SECRET:-}" ]; then
-            echo "::error::Add CRON_SECRET to repository secrets (same as Vercel production)."
-            exit 1
-          fi
           base="${CRON_BASE_URL:-https://futureseer.app}"
           base="${base%/}"
           url="${base}/api/cron/mystical-stage-b"
           echo "GET ${url}"
-          http_code=$(curl -sS -o /tmp/stage-b-cron.json -w "%{http_code}" \
+          http_code=$(curl -sS --max-time 90 -o /tmp/stage-b-cron.json -w "%{http_code}" \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             "${url}")
           cat /tmp/stage-b-cron.json

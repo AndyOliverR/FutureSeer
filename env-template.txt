@@ -128,6 +128,13 @@ RESEND_WEBHOOK_SECRET=whsec_xxxx
 # Optional: forward copies of support emails to this address (e.g. your personal inbox)
 SUPPORT_FORWARD_EMAIL=
 
+# Groq models (https://console.groq.com/docs/deprecations)
+# Palm vision: Llama 4 Scout deprecated 2026-07-17 — default is qwen/qwen3.6-27b
+# GROQ_VISION_MODEL=qwen/qwen3.6-27b
+# Main Seer text overrides (optional — see lib/seerModel.ts)
+# SEER_CHAT_MODEL_FAST=llama-3.1-8b-instant
+# SEER_CHAT_MODEL_FULL=llama-3.3-70b-versatile
+
 # Cron secret (secure the cron route; set in Vercel env and send as Authorization: Bearer CRON_SECRET)
 CRON_SECRET=your-cron-secret
 # Daily insights cron batch size (optional, default 120; response includes nextCursor when hasMore)

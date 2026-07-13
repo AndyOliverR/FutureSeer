@@ -1,19 +1,19 @@
 /**
  * Cron: resume stale or queued mystical profile Stage B jobs (per-tool queue drain).
  * Auth: Authorization: Bearer <CRON_SECRET>
+ *
+ * Must return quickly — each user's work runs in /api/internal/mystical-stage-b/process.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
-import {
-  isStageBWorkerSkipped,
-  runStageBWorkerForUser,
-  scheduleStageBContinuation,
-} from '@/lib/mysticalStageBQueue';
+import { scheduleStageBContinuation } from '@/lib/mysticalStageBQueue';
 
 const STAGE_B_HEARTBEAT_STALE_MS = 45_000;
-const MAX_USERS_PER_RUN = 8;
+/** Max parallel worker kicks per cron tick (each runs in its own serverless invocation). */
+const MAX_USERS_PER_RUN = 6;
 
 function verifyCronSecret(request: NextRequest): boolean {
   const authHeader = request.headers.get('Authorization');
@@ -23,7 +23,7 @@ function verifyCronSecret(request: NextRequest): boolean {
 }
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') {
@@ -37,9 +37,8 @@ export async function GET(request: NextRequest) {
   }
 
   const now = Date.now();
-  let processed = 0;
+  let triggered = 0;
   let skipped = 0;
-  let continued = 0;
 
   try {
     const snap = await adminDb
@@ -80,19 +79,13 @@ export async function GET(request: NextRequest) {
         skipped += 1;
         continue;
       }
-      const outcome = await runStageBWorkerForUser(uid);
-      if (isStageBWorkerSkipped(outcome)) {
-        skipped += 1;
-        continue;
-      }
-      processed += 1;
-      if (!outcome.done) {
-        continued += 1;
-        await scheduleStageBContinuation(uid);
-      }
+      after(() => {
+        void scheduleStageBContinuation(uid);
+      });
+      triggered += 1;
     }
 
-    return NextResponse.json({ processed, skipped, continued, scanned: snap.size });
+    return NextResponse.json({ triggered, skipped, scanned: snap.size });
   } catch (err) {
     devLog.error('[cron/mystical-stage-b] failed', err, 'route');
     return NextResponse.json({ error: 'Cron failed' }, { status: 500 });

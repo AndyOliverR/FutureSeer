@@ -99,8 +99,8 @@ class PalmistryImageAnalyzer {
   /**
    * Analyze palm image using vision-capable AI service
    * 
-   * Sends the palm image to the API endpoint which uses meta-llama/llama-4-scout-17b-16e-instruct
-   * (Llama 4 Maverick with 128 experts, optimized for vision) to perform actual visual analysis of palm features.
+   * Sends the palm image to the API endpoint which uses the configured Groq vision model
+   * (default qwen/qwen3.6-27b — see lib/groqModels.ts).
    * 
    * @param imageUrl - URL of the uploaded palm image
    * @returns Detailed palm analysis based on actual image features
