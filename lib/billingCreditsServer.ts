@@ -195,17 +195,46 @@ export async function addCreditsFromPack(
   if (!pack) throw new Error('Invalid credit pack');
 
   const userRef = adminDb.collection('users').doc(userId);
+  const orderClaimRef = adminDb.collection('_creditPaymentOrders').doc(orderId);
   const ledgerRef = userRef.collection('billingLedger').doc();
 
   return adminDb.runTransaction(async (tx) => {
     const snap = await tx.get(userRef);
     if (!snap.exists) throw new Error('User not found');
+    const claimSnap = await tx.get(orderClaimRef);
 
     const data = snap.data() ?? {};
+    if (claimSnap.exists) {
+      const claim = claimSnap.data() ?? {};
+      if (claim.userId === userId) {
+        return {
+          success: true,
+          creditsAdded: 0,
+          creditBalance: creditBalanceFromProfile(userBillingFromData(data)),
+          duplicate: true,
+        };
+      }
+      throw new Error('Payment order already processed');
+    }
+
     const existingOrders: string[] = Array.isArray(data.creditOrderIds)
       ? data.creditOrderIds.filter((x): x is string => typeof x === 'string')
       : [];
+    const now = Date.now();
     if (existingOrders.includes(orderId)) {
+      tx.set(
+        orderClaimRef,
+        {
+          orderId,
+          userId,
+          packId,
+          paymentId,
+          credits: pack.credits,
+          createdAt: now,
+          recoveredFromUserOrderIds: true,
+        },
+        { merge: true },
+      );
       return {
         success: true,
         creditsAdded: 0,
@@ -216,7 +245,6 @@ export async function addCreditsFromPack(
 
     const balance = creditBalanceFromProfile(userBillingFromData(data));
     const nextBalance = balance + pack.credits;
-    const now = Date.now();
 
     tx.set(
       userRef,
@@ -236,6 +264,14 @@ export async function addCreditsFromPack(
       paymentId,
       delta: pack.credits,
       balanceAfter: nextBalance,
+      createdAt: now,
+    });
+    tx.set(orderClaimRef, {
+      orderId,
+      userId,
+      packId,
+      paymentId,
+      credits: pack.credits,
       createdAt: now,
     });
 

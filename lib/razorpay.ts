@@ -73,6 +73,17 @@ export async function createOrder(params: {
   }
 }
 
+export async function fetchOrder(orderId: string) {
+  const razorpay = getRazorpayClient();
+
+  try {
+    return await razorpay.orders.fetch(orderId);
+  } catch (error: unknown) {
+    devLog.error('Error fetching Razorpay order:', error, 'razorpay');
+    throw new Error(`Failed to fetch order: ${getRazorpayErrorMessage(error)}`);
+  }
+}
+
 /**
  * Create a Razorpay subscription.
  * - immediateStart: true → omit start_at; first charge = plan amount, charged now (checkout shows ₹99 etc.).

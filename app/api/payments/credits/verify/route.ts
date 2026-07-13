@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { devLog } from '@/lib/devLogger';
 import { addCreditsFromPack } from '@/lib/billingCreditsServer';
+import { verifyCreditOrderMetadata } from '@/lib/creditPaymentVerification';
+import { fetchOrder } from '@/lib/razorpay';
 import type { CreditPackId } from '@/lib/billingTypes';
 import { verifyUserRequest } from '@/lib/userApiAuth';
 
@@ -42,13 +44,28 @@ export async function POST(request: NextRequest) {
 
     const text = `${orderId}|${paymentId}`;
     const generatedSignature = crypto.createHmac('sha256', secret).update(text).digest('hex');
-    if (generatedSignature !== signature) {
+    const signatureIsValid =
+      typeof signature === 'string' &&
+      generatedSignature.length === signature.length &&
+      crypto.timingSafeEqual(Buffer.from(generatedSignature), Buffer.from(signature));
+    if (!signatureIsValid) {
       return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
+    }
+
+    const order = await fetchOrder(orderId);
+    const metadata = verifyCreditOrderMetadata({
+      order,
+      expectedOrderId: orderId,
+      authUid: auth.uid,
+      requestedPackId: packId as CreditPackId,
+    });
+    if (!metadata.ok) {
+      return NextResponse.json({ error: metadata.error }, { status: 400 });
     }
 
     const result = await addCreditsFromPack(
       auth.uid,
-      packId as CreditPackId,
+      metadata.packId,
       orderId,
       paymentId,
     );

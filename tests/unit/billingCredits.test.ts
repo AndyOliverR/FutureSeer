@@ -5,6 +5,7 @@ import {
 } from '@/lib/billingFreeUse';
 import { getCreditPackPrice, toolSlugFromSeerRoute } from '@/lib/billingConfig';
 import { hasUnlimitedBillingAccess } from '@/lib/billingAccess';
+import { verifyCreditOrderMetadata } from '@/lib/creditPaymentVerification';
 
 describe('billingFreeUse', () => {
   it('tracks per-tool first free Seer use', () => {
@@ -45,5 +46,49 @@ describe('billingAccess', () => {
       }),
     ).toBe(true);
     expect(creditBalanceFromProfile({ creditBalance: 5 })).toBe(5);
+  });
+});
+
+describe('creditPaymentVerification', () => {
+  const baseOrder = {
+    id: 'order_123',
+    notes: {
+      userId: 'user-1',
+      packId: 'starter',
+      credits: '15',
+    },
+  };
+
+  it('accepts matching Razorpay order metadata', () => {
+    expect(
+      verifyCreditOrderMetadata({
+        order: baseOrder,
+        expectedOrderId: 'order_123',
+        authUid: 'user-1',
+        requestedPackId: 'starter',
+      }),
+    ).toEqual({ ok: true, packId: 'starter' });
+  });
+
+  it('rejects client-side credit pack inflation', () => {
+    expect(
+      verifyCreditOrderMetadata({
+        order: baseOrder,
+        expectedOrderId: 'order_123',
+        authUid: 'user-1',
+        requestedPackId: 'power',
+      }),
+    ).toEqual({ ok: false, error: 'Payment order pack mismatch' });
+  });
+
+  it('rejects orders created for a different user', () => {
+    expect(
+      verifyCreditOrderMetadata({
+        order: baseOrder,
+        expectedOrderId: 'order_123',
+        authUid: 'user-2',
+        requestedPackId: 'starter',
+      }),
+    ).toEqual({ ok: false, error: 'Payment order is not assigned to this user' });
   });
 });
