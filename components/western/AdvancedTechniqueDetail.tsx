@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ToolInterestForm } from './ToolInterestForm'
 import { AdvancedTechnique } from '@/lib/data/advancedTechniques'
+import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge'
 import { Sparkles } from 'lucide-react'
 
 interface AdvancedTechniqueDetailProps {
@@ -31,6 +32,7 @@ export function AdvancedTechniqueDetail({ technique, onSuccess }: AdvancedTechni
       </CardHeader>
 
       <CardContent className="flex flex-col pt-0">
+        <AstrologyMethodologyBadge variant="advanced-educational" className="mb-4" />
         <div className="flex-1 overflow-auto space-y-6">
           <section>
             <h3 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">

@@ -542,34 +542,10 @@ export class FutureSeerAstroService {
       }))
     } catch (error) {
       devLog.error('❌ FutureSeer: Error getting current transits:', error, 'futureSeerAstroService')
-      
-      // Fallback to basic transits
-      return [
-        {
-          planet: 'Jupiter',
-          sign: 'Taurus',
-          house: 2,
-          interpretation: 'Jupiter in Taurus brings material prosperity and stability. Focus on financial growth and values.',
-          impact: 'positive',
-          duration: 'Until May 2025'
-        },
-        {
-          planet: 'Saturn',
-          sign: 'Aquarius',
-          house: 11,
-          interpretation: 'Saturn in Aquarius brings innovation and humanitarian focus. Time for technological advancement.',
-          impact: 'neutral',
-          duration: 'Until March 2025'
-        },
-        {
-          planet: 'Mars',
-          sign: 'Cancer',
-          house: 4,
-          interpretation: 'Mars in Cancer brings emotional energy and protective instincts. Focus on family and home.',
-          impact: 'positive',
-          duration: 'Until November 2025'
-        }
-      ]
+      if (process.env.NODE_ENV === 'production') {
+        return []
+      }
+      return []
     }
   }
 

@@ -3,8 +3,8 @@
  * Calculates current planetary positions and their aspects to natal chart
  */
 
-import { BirthData } from '@/lib/universalOccultService';
-import { Planet } from './astroChartAdapter';
+import { getTropicalSkyBodies } from '@/lib/astrology/computedSkyPositions';
+import type { Planet } from './astroChartAdapter';
 
 export interface TransitPlanet {
   name: string;
@@ -39,117 +39,13 @@ export interface TransitInterpretation {
 }
 
 /**
- * Calculate current planetary positions for transit overlay
+ * Calculate current planetary positions for transit overlay (Astronomia tropical).
  */
-export async function calculateCurrentTransits(): Promise<TransitPlanet[]> {
-  const now = new Date();
-  
-  // In production, this would use Swiss Ephemeris or Astronomia
-  // For now, we'll create realistic mock data based on current time
-  const transits: TransitPlanet[] = [
-    {
-      name: 'Sun',
-      longitude: getSunLongitude(now),
-      latitude: 0,
-      speed: 0.9856, // degrees per day
-      isRetrograde: false,
-      sign: getSignFromLongitude(getSunLongitude(now)),
-      house: 0, // Will be calculated based on house system
-      degree: getDegreeFromLongitude(getSunLongitude(now))
-    },
-    {
-      name: 'Moon',
-      longitude: getMoonLongitude(now),
-      latitude: 0,
-      speed: 13.37, // degrees per day
-      isRetrograde: false,
-      sign: getSignFromLongitude(getMoonLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getMoonLongitude(now))
-    },
-    {
-      name: 'Mercury',
-      longitude: getMercuryLongitude(now),
-      latitude: 0,
-      speed: 1.38,
-      isRetrograde: isMercuryRetrograde(now),
-      sign: getSignFromLongitude(getMercuryLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getMercuryLongitude(now))
-    },
-    {
-      name: 'Venus',
-      longitude: getVenusLongitude(now),
-      latitude: 0,
-      speed: 1.19,
-      isRetrograde: isVenusRetrograde(now),
-      sign: getSignFromLongitude(getVenusLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getVenusLongitude(now))
-    },
-    {
-      name: 'Mars',
-      longitude: getMarsLongitude(now),
-      latitude: 0,
-      speed: 0.524,
-      isRetrograde: isMarsRetrograde(now),
-      sign: getSignFromLongitude(getMarsLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getMarsLongitude(now))
-    },
-    {
-      name: 'Jupiter',
-      longitude: getJupiterLongitude(now),
-      latitude: 0,
-      speed: 0.0831,
-      isRetrograde: isJupiterRetrograde(now),
-      sign: getSignFromLongitude(getJupiterLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getJupiterLongitude(now))
-    },
-    {
-      name: 'Saturn',
-      longitude: getSaturnLongitude(now),
-      latitude: 0,
-      speed: 0.0334,
-      isRetrograde: isSaturnRetrograde(now),
-      sign: getSignFromLongitude(getSaturnLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getSaturnLongitude(now))
-    },
-    {
-      name: 'Uranus',
-      longitude: getUranusLongitude(now),
-      latitude: 0,
-      speed: 0.0118,
-      isRetrograde: isUranusRetrograde(now),
-      sign: getSignFromLongitude(getUranusLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getUranusLongitude(now))
-    },
-    {
-      name: 'Neptune',
-      longitude: getNeptuneLongitude(now),
-      latitude: 0,
-      speed: 0.006,
-      isRetrograde: isNeptuneRetrograde(now),
-      sign: getSignFromLongitude(getNeptuneLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getNeptuneLongitude(now))
-    },
-    {
-      name: 'Pluto',
-      longitude: getPlutoLongitude(now),
-      latitude: 0,
-      speed: 0.004,
-      isRetrograde: isPlutoRetrograde(now),
-      sign: getSignFromLongitude(getPlutoLongitude(now)),
-      house: 0,
-      degree: getDegreeFromLongitude(getPlutoLongitude(now))
-    }
-  ];
-
-  return transits;
+export async function calculateCurrentTransits(date: Date = new Date()): Promise<TransitPlanet[]> {
+  return getTropicalSkyBodies(date).map((body) => ({
+    ...body,
+    house: body.house ?? 0,
+  }));
 }
 
 /**
@@ -196,114 +92,6 @@ export function generateTransitInterpretations(aspects: TransitAspect[]): Transi
     duration: getTransitDuration(aspect.transitPlanet),
     advice: generateTransitAdvice(aspect)
   }));
-}
-
-// Helper functions for planetary positions (mock calculations)
-
-function getSunLongitude(date: Date): number {
-  // Approximate: Sun moves ~0.9856 degrees per day
-  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
-  return (dayOfYear * 0.9856) % 360;
-}
-
-function getMoonLongitude(date: Date): number {
-  // Moon moves ~13.37 degrees per day
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 13.37) % 360;
-}
-
-function getMercuryLongitude(date: Date): number {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 1.38 + Math.sin(daysSinceEpoch * 0.0172) * 30) % 360;
-}
-
-function getVenusLongitude(date: Date): number {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 1.19 + Math.sin(daysSinceEpoch * 0.0137) * 45) % 360;
-}
-
-function getMarsLongitude(date: Date): number {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 0.524 + Math.sin(daysSinceEpoch * 0.0098) * 60) % 360;
-}
-
-function getJupiterLongitude(date: Date): number {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 0.0831 + Math.sin(daysSinceEpoch * 0.0047) * 90) % 360;
-}
-
-function getSaturnLongitude(date: Date): number {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 0.0334 + Math.sin(daysSinceEpoch * 0.0034) * 120) % 360;
-}
-
-function getUranusLongitude(date: Date): number {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 0.0118 + Math.sin(daysSinceEpoch * 0.0024) * 150) % 360;
-}
-
-function getNeptuneLongitude(date: Date): number {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 0.006 + Math.sin(daysSinceEpoch * 0.0017) * 180) % 360;
-}
-
-function getPlutoLongitude(date: Date): number {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return (daysSinceEpoch * 0.004 + Math.sin(daysSinceEpoch * 0.0012) * 200) % 360;
-}
-
-// Retrograde calculations (simplified)
-
-function isMercuryRetrograde(date: Date): boolean {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return Math.sin(daysSinceEpoch * 0.0172) > 0.7;
-}
-
-function isVenusRetrograde(date: Date): boolean {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return Math.sin(daysSinceEpoch * 0.0137) > 0.8;
-}
-
-function isMarsRetrograde(date: Date): boolean {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return Math.sin(daysSinceEpoch * 0.0098) > 0.9;
-}
-
-function isJupiterRetrograde(date: Date): boolean {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return Math.sin(daysSinceEpoch * 0.0047) > 0.95;
-}
-
-function isSaturnRetrograde(date: Date): boolean {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return Math.sin(daysSinceEpoch * 0.0034) > 0.9;
-}
-
-function isUranusRetrograde(date: Date): boolean {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return Math.sin(daysSinceEpoch * 0.0024) > 0.8;
-}
-
-function isNeptuneRetrograde(date: Date): boolean {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return Math.sin(daysSinceEpoch * 0.0017) > 0.7;
-}
-
-function isPlutoRetrograde(date: Date): boolean {
-  const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / 86400000;
-  return Math.sin(daysSinceEpoch * 0.0012) > 0.6;
-}
-
-// Utility functions
-
-function getSignFromLongitude(longitude: number): string {
-  const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
-  return signs[Math.floor(longitude / 30)];
-}
-
-function getDegreeFromLongitude(longitude: number): number {
-  return longitude % 30;
 }
 
 function calculateAspect(longitude1: number, longitude2: number): { type: string; orb: number; maxOrb: number } | null {

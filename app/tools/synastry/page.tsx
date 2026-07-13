@@ -9,6 +9,7 @@ import { SynastryCoachInterface } from "@/components/SynastryCoachInterface"
 import { SynastrySeerChatInterface } from "@/components/SynastrySeerChatInterface"
 import { useSynastry } from "@/hooks/useSynastry"
 import { ToolReportViralShell } from "@/components/report-viral/ToolReportViralShell"
+import { AstrologyMethodologyBadge } from "@/components/astrology/AstrologyMethodologyBadge"
 import { normalizeBirthTime } from "@/lib/birthTimeUtils"
 import { time24To12, time12To24 } from "@/lib/birthTime12h24hLabels"
 
@@ -81,6 +82,7 @@ export default function SynastryPage() {
           <p className="text-slate-200 leading-relaxed text-xl font-light">
             Relationship compatibility analysis through astrological chart comparison
           </p>
+          <AstrologyMethodologyBadge variant="synastry" className="mt-4 mb-0" />
           {hasCompleteDetails && !birthData1.name && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
