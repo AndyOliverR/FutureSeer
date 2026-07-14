@@ -196,16 +196,39 @@ export async function addCreditsFromPack(
 
   const userRef = adminDb.collection('users').doc(userId);
   const ledgerRef = userRef.collection('billingLedger').doc();
+  const redemptionRef = adminDb.collection('creditOrderRedemptions').doc(orderId);
 
   return adminDb.runTransaction(async (tx) => {
+    const redemptionSnap = await tx.get(redemptionRef);
     const snap = await tx.get(userRef);
     if (!snap.exists) throw new Error('User not found');
 
     const data = snap.data() ?? {};
+    if (redemptionSnap.exists) {
+      const redemption = redemptionSnap.data() ?? {};
+      if (redemption.userId !== userId || redemption.paymentId !== paymentId) {
+        throw new Error('Credit order has already been redeemed');
+      }
+      return {
+        success: true,
+        creditsAdded: 0,
+        creditBalance: creditBalanceFromProfile(userBillingFromData(data)),
+        duplicate: true,
+      };
+    }
+
     const existingOrders: string[] = Array.isArray(data.creditOrderIds)
       ? data.creditOrderIds.filter((x): x is string => typeof x === 'string')
       : [];
     if (existingOrders.includes(orderId)) {
+      tx.set(redemptionRef, {
+        userId,
+        paymentId,
+        packId,
+        status: 'redeemed',
+        migratedFromUserRecord: true,
+        redeemedAt: Date.now(),
+      });
       return {
         success: true,
         creditsAdded: 0,
@@ -229,6 +252,13 @@ export async function addCreditsFromPack(
       },
       { merge: true },
     );
+    tx.set(redemptionRef, {
+      userId,
+      paymentId,
+      packId,
+      status: 'redeemed',
+      redeemedAt: now,
+    });
     tx.set(ledgerRef, {
       type: 'credit_purchase',
       packId,

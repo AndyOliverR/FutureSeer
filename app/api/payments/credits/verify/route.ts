@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { devLog } from '@/lib/devLogger';
+import {
+  CreditPaymentValidationError,
+  validateCreditPaymentRecords,
+} from '@/lib/billingCreditPayment';
 import { addCreditsFromPack } from '@/lib/billingCreditsServer';
-import type { CreditPackId } from '@/lib/billingTypes';
+import { getOrder, getPayment } from '@/lib/razorpay';
 import { verifyUserRequest } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-dynamic';
-
-const PACK_IDS: CreditPackId[] = ['starter', 'regular', 'power'];
 
 /**
  * POST /api/payments/credits/verify
@@ -20,19 +22,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      razorpay_payment_id: paymentId,
-      razorpay_order_id: orderId,
-      razorpay_signature: signature,
-      packId,
-    } = body;
+    const paymentId =
+      typeof body.razorpay_payment_id === 'string' ? body.razorpay_payment_id.trim() : '';
+    const orderId =
+      typeof body.razorpay_order_id === 'string' ? body.razorpay_order_id.trim() : '';
+    const signature =
+      typeof body.razorpay_signature === 'string' ? body.razorpay_signature.trim() : '';
 
-    if (!paymentId || !orderId || !signature || !packId) {
+    if (!paymentId || !orderId || !signature) {
       return NextResponse.json({ error: 'Missing payment verification data' }, { status: 400 });
-    }
-
-    if (!PACK_IDS.includes(packId as CreditPackId)) {
-      return NextResponse.json({ error: 'Invalid packId' }, { status: 400 });
     }
 
     const secret = process.env.RAZORPAY_KEY_SECRET || '';
@@ -42,13 +40,24 @@ export async function POST(request: NextRequest) {
 
     const text = `${orderId}|${paymentId}`;
     const generatedSignature = crypto.createHmac('sha256', secret).update(text).digest('hex');
-    if (generatedSignature !== signature) {
+    const expected = Buffer.from(generatedSignature, 'utf8');
+    const received = Buffer.from(signature, 'utf8');
+    if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
       return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
     }
 
+    const [order, payment] = await Promise.all([getOrder(orderId), getPayment(paymentId)]);
+    const packId = validateCreditPaymentRecords({
+      order,
+      payment,
+      orderId,
+      paymentId,
+      userId: auth.uid,
+    });
+
     const result = await addCreditsFromPack(
       auth.uid,
-      packId as CreditPackId,
+      packId,
       orderId,
       paymentId,
     );
@@ -61,6 +70,9 @@ export async function POST(request: NextRequest) {
       transactionId: paymentId,
     });
   } catch (error: unknown) {
+    if (error instanceof CreditPaymentValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     const message = error instanceof Error ? error.message : 'Failed to verify credit payment';
     devLog.error('Error verifying credit payment:', error, 'route');
     return NextResponse.json({ error: message }, { status: 500 });
