@@ -3,23 +3,21 @@
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 
-type DeferredToolReportProps = {
-  loader: () => Promise<{ default: ComponentType<Record<string, unknown>> }>;
-  componentProps?: Record<string, unknown>;
-  /** Accessible label while the report chunk loads */
-  loadingLabel?: string;
-};
+type LazyReportLoader = () => Promise<{ default: ComponentType<Record<string, unknown>> }>;
 
 /**
- * PERFORMANCE ARCHITECTURE — Lazy-mount heavy tool report viewers below the fold.
- * Pass a dynamic import factory so each tool page keeps its report in a separate chunk.
+ * PERFORMANCE ARCHITECTURE — Create a lazy report component at module scope.
+ *
+ * Do NOT call next/dynamic inside a React render body (react-hooks/static-components).
+ * Call this once at the top of a tool page file:
+ *
+ *   const HeavyReport = createDeferredToolReport(lazyComprehensiveVedicReport);
  */
-export function DeferredToolReport({
-  loader,
-  componentProps = {},
-  loadingLabel = "Loading report…",
-}: DeferredToolReportProps) {
-  const Report = dynamic(loader, {
+export function createDeferredToolReport(
+  loader: LazyReportLoader,
+  loadingLabel = "Loading report…"
+) {
+  return dynamic(loader, {
     ssr: false,
     loading: () => (
       <div
@@ -31,6 +29,4 @@ export function DeferredToolReport({
       </div>
     ),
   });
-
-  return <Report {...componentProps} />;
 }

@@ -34,7 +34,6 @@ import { ToolReportStatusChips } from '@/components/tool-status/ToolReportStatus
 import {
   Sparkles, 
   Calendar,
-  Clock,
   RefreshCw,
   AlertTriangle,
   Info,
@@ -45,7 +44,6 @@ import {
   Activity,
   BookOpen,
   Star,
-  Loader2,
   Users,
 } from 'lucide-react'
 import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'

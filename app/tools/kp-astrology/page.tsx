@@ -28,7 +28,6 @@ import {
 import { Button } from '@/components/ui/button'
 import dynamic from "next/dynamic"
 import {
-  lazyKPAstrologyCoachInterface,
   lazyKPSeerChat,
   lazyNorthIndianVedicChart,
   lazyPhase2VisualPanel,
@@ -48,7 +47,7 @@ import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
 import { useViralReportBypass } from '@/hooks/useViralReportBypass'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
-import { getPermanentChart, storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
+import { storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
 import { calculateCurrentDasha } from '@/lib/vedic-core'
 import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge'
 import { adaptKpOverlay } from '@/lib/charts/phase2Adapters'
@@ -57,7 +56,6 @@ import { ToolReportStatusChips } from '@/components/tool-status/ToolReportStatus
 
 const NorthIndianVedicChart = dynamic(lazyNorthIndianVedicChart, { ssr: false, loading: () => null })
 const VedicSouthChart = dynamic(lazyVedicSouthChart, { ssr: false, loading: () => null })
-const KPAstrologyCoachInterface = dynamic(lazyKPAstrologyCoachInterface, { ssr: false, loading: () => null })
 const KPSeerChatInterface = dynamic(lazyKPSeerChat, { ssr: false, loading: () => null })
 const Phase2VisualPanel = dynamic(lazyPhase2VisualPanel, { ssr: false, loading: () => null })
 
