@@ -58,7 +58,7 @@ function buildQueueItem(dayIndex: WeekdayIndex): WeeklyQueueItem {
     scheduler: getSchedulerLink(channel),
     postingNote:
       channel === 'whatsapp'
-        ? 'Download a share card from Mystical Profile or use a brand image; paste status text manually.'
+        ? 'Download a share card from a tool report or use a brand image; paste status text manually.'
         : channel === 'youtube'
           ? 'Upload Short in Studio; paste title/description from generated copy.'
           : undefined,

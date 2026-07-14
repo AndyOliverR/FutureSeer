@@ -19,42 +19,42 @@ const LANDING_COPY: Record<SeoLocale, CopyBlock> = {
   en: {
     title: "FutureSeer - AI Mystical Guidance",
     subtitle: "Astrology, tarot, numerology and 50+ traditions in one account",
-    body: "Generate your mystical profile once and get persistent, tool-specific insights plus one unified Ask the Seer experience.",
+    body: "Generate your tool reports once and get persistent, tool-specific insights plus one unified Ask the Seer experience.",
   },
   es: {
     title: "FutureSeer - Guia Mistica con IA",
     subtitle: "Astrologia, tarot, numerologia y 50+ tradiciones en una sola cuenta",
-    body: "Genera tu perfil mistico una vez y obtiene perspectivas persistentes por herramienta y una experiencia unificada de Ask the Seer.",
+    body: "Genera tus reportes una vez y obtiene perspectivas persistentes por herramienta y una experiencia unificada de Ask the Seer.",
   },
   pt: {
     title: "FutureSeer - Guia Mistico com IA",
     subtitle: "Astrologia, tarot, numerologia e 50+ tradicoes em uma conta",
-    body: "Gere seu perfil mistico uma vez e tenha insights persistentes por ferramenta com uma experiencia unificada do Ask the Seer.",
+    body: "Gere seus relatorios uma vez e tenha insights persistentes por ferramenta com uma experiencia unificada do Ask the Seer.",
   },
   fr: {
     title: "FutureSeer - Guidance Mystique IA",
     subtitle: "Astrologie, tarot, numerologie et 50+ traditions dans un seul compte",
-    body: "Generez votre profil mystique une fois et obtenez des insights persistants par outil avec une experience unifiee Ask the Seer.",
+    body: "Generez vos rapports une fois et obtenez des insights persistants par outil avec une experience unifiee Ask the Seer.",
   },
   de: {
     title: "FutureSeer - Mystische KI-Begleitung",
     subtitle: "Astrologie, Tarot, Numerologie und 50+ Traditionen in einem Konto",
-    body: "Erstelle dein mystisches Profil einmal und erhalte dauerhafte tool-spezifische Einsichten plus ein einheitliches Ask the Seer Erlebnis.",
+    body: "Erstelle deine Tool-Berichte einmal und erhalte dauerhafte tool-spezifische Einsichten plus ein einheitliches Ask the Seer Erlebnis.",
   },
   hi: {
     title: "FutureSeer - AI Mystic Guidance",
     subtitle: "Jyotish, tarot, numerology aur 50+ parampara ek hi account me",
-    body: "Ek baar apna mystical profile banaiye aur har tool ke liye persistent insights ke saath unified Ask the Seer ka anubhav paiye.",
+    body: "Ek baar apne tool reports banaiye aur har tool ke liye persistent insights ke saath unified Ask the Seer ka anubhav paiye.",
   },
   "zh-Hans": {
     title: "FutureSeer - AI 神秘指引",
     subtitle: "占星、塔罗、数字命理等 50+ 体系一站式体验",
-    body: "一次生成你的神秘档案，持续获取各体系专业解读，并使用统一的 Ask the Seer 跨体系咨询。",
+    body: "一次生成各体系报告，持续获取专属解读，并使用统一的 Ask the Seer 跨体系咨询。",
   },
   "zh-Hant": {
     title: "FutureSeer - AI 神秘指引",
     subtitle: "占星、塔羅、數字命理等 50+ 體系一次整合",
-    body: "一次建立你的神秘檔案，持續取得各體系專屬解讀，並使用整合版 Ask the Seer 進行跨體系提問。",
+    body: "一次建立各體系報告，持續取得專屬解讀，並使用整合版 Ask the Seer 進行跨體系提問。",
   },
 };
 
@@ -125,7 +125,7 @@ export default async function LocalizedLandingPage({ params }: { params: Promise
         <p className="mt-6 text-base text-slate-200">{copy.body}</p>
         <div className="mt-10">
           <Link href="/signup" className="inline-flex rounded-full bg-amber-500 px-6 py-3 font-semibold text-slate-950">
-            Start Your Mystical Profile
+            Generate your reports
           </Link>
         </div>
       </div>

@@ -15,8 +15,7 @@ import { CreditBalanceWidget } from "@/components/billing/CreditBalanceWidget";
 const navLinks = [
   { name: "Home", href: "/", icon: "🏠" },
   { name: "Profile", href: "/profile", icon: "👤" },
-  { name: "Mystical Profile", href: "/mystical-profile", icon: "✨" },
-  { name: "Tools", href: "/tools", icon: "🧰" },
+  { name: "Occult / Divination tools", href: "/tools", icon: "🪐" },
   { name: "Ask the Seer", href: "/ask-the-seer", icon: "🔮" },
   { name: "Community", href: "/community/attribution", icon: "🏆" },
   { name: "Remedies", href: "/remedies", icon: "💎" },

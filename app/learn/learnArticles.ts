@@ -198,7 +198,7 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       {
         heading: "Get started",
         body: [
-          "Create an account, complete your profile, **generate your mystical profile**, then explore any tool and **Ask the Seer**.",
+          "Create an account, complete your profile, **generate your reports**, then explore Occult / Divination tools and **Ask the Seer**.",
         ],
       },
     ],
@@ -365,7 +365,7 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       {
         heading: "Try in FutureSeer",
         body: [
-          "Create your profile, generate your **mystical profile**, then open **Angel Numbers** under Tools. Use **Ask the Seer** for questions specific to that tool after sign-in.",
+          "Create your profile, **generate your reports**, then open **Angel Numbers** under Occult / Divination tools. Use **Ask the Seer** for questions specific to that tool after sign-in.",
         ],
       },
     ],
@@ -399,13 +399,13 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       {
         body: [
           "**Vedic** (Jyotish) charts use **sidereal** zodiac positions and a rich set of techniques: houses, nakshatras, dashas, and more. Different teachers emphasise different layers.",
-          "FutureSeer runs **Vedic** analysis from your saved birth time and place. Your **mystical profile** generation includes Vedic alongside other tools so you don’t have to re-enter data.",
+          "FutureSeer runs **Vedic** analysis from your saved birth time and place. Report generation includes Vedic alongside other tools so you don’t have to re-enter data.",
         ],
       },
       {
         heading: "Next step",
         body: [
-          "Sign in, complete **Profile**, **Generate My Mystical Profile**, then visit **Vedic** under Tools.",
+          "Sign in, complete **Profile**, generate your reports, then visit **Vedic** under Occult / Divination tools.",
         ],
       },
     ],
@@ -445,7 +445,7 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       {
         heading: "Open the tool",
         body: [
-          "Sign in, complete your profile, generate your mystical profile, then choose **Vastu** under Mystical Tools.",
+          "Sign in, complete your profile, generate your reports, then choose **Vastu** under Occult / Divination tools.",
         ],
       },
     ],

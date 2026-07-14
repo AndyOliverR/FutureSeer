@@ -5,7 +5,7 @@ import { getMissingFirstGenerationFields } from './subscriptionConfig'
  * and have reports in cache/DB (mysticalProfileGenerated === true).
  * Single constant so switching landing after generation / returning session is one change.
  */
-export const RETURNING_USER_WITH_REPORTS_DESTINATION = '/mystical-profile'
+export const RETURNING_USER_WITH_REPORTS_DESTINATION = '/tools'
 export const NEW_USER_ONBOARDING_DESTINATION = '/profile'
 export const ONBOARDING_FULL_REPORT_BYPASS_KEY = 'futureSeer:onboardingFullReportBypass'
 

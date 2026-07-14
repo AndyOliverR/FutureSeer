@@ -106,7 +106,7 @@ export function buildDailyInsightCardData(
     luckyNumber: stableLuckyNumber(profile?.userId ?? displayName ?? 'guest', now),
     rulingPlanet,
     moonSign,
-    ctaHref: hasProfile ? '/mystical-profile' : '/profile',
-    ctaLabel: hasProfile ? 'Open your library' : 'Complete your profile',
+    ctaHref: hasProfile ? '/tools' : '/profile',
+    ctaLabel: hasProfile ? 'Open Occult / Divination tools' : 'Complete your profile',
   }
 }
