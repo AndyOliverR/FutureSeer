@@ -18,6 +18,7 @@ import {
   isUsableStoredReport,
   resolveToolReportFromProfile,
 } from '@/lib/mysticalProfilePositiveSnippet'
+import { shouldSubscribeMysticalProfile } from '@/lib/mysticalProfileRouteGate'
 
 export interface ComprehensiveMysticalProfile {
   vedic: {
@@ -416,6 +417,8 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     }
 
     const uid = user.uid
+    const subscribe = shouldSubscribeMysticalProfile(pathname)
+
     // When user switched, clear profile immediately so we never show the previous user's data
     if (profileUserIdRef.current !== null && profileUserIdRef.current !== uid) {
       setProfile(null)
@@ -423,6 +426,12 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       profileCache.delete(profileUserIdRef.current)
     }
     profileUserIdRef.current = uid
+
+    if (!subscribe) {
+      // Keep in-memory profile if already loaded; skip Firestore work on marketing/legal routes.
+      setLoading(false)
+      return
+    }
 
     // When stale, only clear in-memory cache so we refetch; keep persistent cache so the last
     // generated report still shows if the refetch fails (e.g. Firestore "Target ID already exists").
@@ -492,7 +501,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         }
       }
     }
-  }, [user?.uid, userProfile, stale, fetchProfile, applyFirestoreProfile])
+  }, [user?.uid, userProfile, stale, fetchProfile, applyFirestoreProfile, pathname])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !user?.uid) return

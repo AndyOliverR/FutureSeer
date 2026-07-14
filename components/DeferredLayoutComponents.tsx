@@ -2,8 +2,10 @@
 
 import dynamic from "next/dynamic";
 
-// Defer non-critical components so they don't block first paint.
-// ssr: false is only allowed in Client Components (Next.js 16+).
+/**
+ * PERFORMANCE ARCHITECTURE — Deferred shell components
+ * Non-critical UI loads after first paint (ssr: false). Keep imports here, not in app/layout.tsx.
+ */
 export const DeferredAnalyticsInitializer = dynamic(
   () => import("@/components/AnalyticsInitializer").then((mod) => ({ default: mod.AnalyticsInitializer })),
   { ssr: false }
@@ -21,6 +23,16 @@ export const DeferredMysticalFeedback = dynamic(
 
 export const DeferredFloatingTipJar = dynamic(
   () => import("@/components/FloatingTipJar").then((mod) => ({ default: mod.FloatingTipJar })),
+  { ssr: false, loading: () => null }
+);
+
+export const DeferredOnboardingTour = dynamic(
+  () => import("@/components/OnboardingTour").then((mod) => ({ default: mod.OnboardingTour })),
+  { ssr: false, loading: () => null }
+);
+
+export const DeferredBottomNavBar = dynamic(
+  () => import("@/components/BottomNavBar").then((mod) => ({ default: mod.BottomNavBar })),
   { ssr: false, loading: () => null }
 );
 

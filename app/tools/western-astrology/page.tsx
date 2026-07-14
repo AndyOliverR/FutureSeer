@@ -11,24 +11,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { convertObjectToWestern } from '@/lib/western/westernTerminology'
-import WesternSeerChatInterface from '@/components/WesternSeerChatInterface'
+import dynamic from 'next/dynamic'
+import {
+  lazyAspectPatternDiagram,
+  lazyAstroNumerologyTab,
+  lazyHouseDashboard,
+  lazyLifeJourneyMap,
+  lazyPlanetaryDashboard,
+  lazyTransitTimeline,
+  lazyWesternCelebritySampleSection,
+  lazyWesternSeerChat,
+  lazyWesternSpecialFeatures,
+} from '@/lib/lazyToolImports'
 import { getAllAdvancedTechniques } from '@/lib/data/advancedTechniques';
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab';
 import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab';
-import AstroNumerologyTab from '@/components/western/AstroNumerologyTab';
 import { WesternDashboardHero } from '@/components/western/WesternDashboardHero';
 import { WesternNatalReferenceTables } from '@/components/western/WesternNatalReferenceTables';
 import { DashboardSection } from '@/components/western/DashboardSection';
 import { AspectLegendPanel } from '@/components/western/AspectLegendPanel';
-import { PlanetaryDashboard } from '@/components/western/PlanetaryDashboard';
-import { HouseDashboard } from '@/components/western/HouseDashboard';
-import { TransitTimeline } from '@/components/western/TransitTimeline';
-import { LifeJourneyMap } from '@/components/western/LifeJourneyMap';
-import { AspectPatternDiagram } from '@/components/western/AspectPatternDiagram';
 import { ChartBirthSummaryCard } from '@/components/western/ChartBirthSummaryCard';
 import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge';
-import { WesternSpecialFeatures } from '@/components/western/WesternSpecialFeatures';
-import { WesternCelebritySampleSection } from '@/components/western/WesternCelebritySampleSection';
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGate'
 import { useViralReportBypass } from '@/hooks/useViralReportBypass'
@@ -45,6 +48,16 @@ import {
   TrendingUp,
   Sparkles
 } from 'lucide-react'
+
+const WesternSeerChatInterface = dynamic(lazyWesternSeerChat, { ssr: false, loading: () => null })
+const AstroNumerologyTab = dynamic(lazyAstroNumerologyTab, { ssr: false, loading: () => null })
+const PlanetaryDashboard = dynamic(lazyPlanetaryDashboard, { ssr: false, loading: () => null })
+const HouseDashboard = dynamic(lazyHouseDashboard, { ssr: false, loading: () => null })
+const TransitTimeline = dynamic(lazyTransitTimeline, { ssr: false, loading: () => null })
+const LifeJourneyMap = dynamic(lazyLifeJourneyMap, { ssr: false, loading: () => null })
+const AspectPatternDiagram = dynamic(lazyAspectPatternDiagram, { ssr: false, loading: () => null })
+const WesternSpecialFeatures = dynamic(lazyWesternSpecialFeatures, { ssr: false, loading: () => null })
+const WesternCelebritySampleSection = dynamic(lazyWesternCelebritySampleSection, { ssr: false, loading: () => null })
 
 type WesternToolTab =
   | 'introduction'

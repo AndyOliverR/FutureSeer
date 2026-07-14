@@ -17,15 +17,18 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab'
-import TarotSeerChatInterface from '@/components/TarotSeerChatInterface'
+import dynamic from 'next/dynamic'
+import {
+  lazyArcanaDistributionChart,
+  lazyElementalBalanceWheel,
+  lazyTarotLifePathMap,
+  lazyTarotNumerologyIntegration,
+  lazyTarotProfileDiagram,
+  lazyTarotSeerChat,
+} from '@/lib/lazyToolImports'
 import { TarotCard } from '@/lib/tarotIntelligence'
 import { SpreadType, CombinedSystemData, ProfileCardsData } from '@/types/tarot'
 import { TarotDashboardHero } from '@/components/tarot/TarotDashboardHero'
-import { TarotProfileDiagram } from '@/components/tarot/TarotProfileDiagram'
-import { TarotLifePathMap } from '@/components/tarot/TarotLifePathMap'
-import { ElementalBalanceWheel } from '@/components/tarot/ElementalBalanceWheel'
-import { ArcanaDistributionChart } from '@/components/tarot/ArcanaDistributionChart'
-import { TarotNumerologyIntegration } from '@/components/tarot/TarotNumerologyIntegration'
 import { DashboardSection } from '@/components/western/DashboardSection'
 import { ToolReportStatusChips } from '@/components/tool-status/ToolReportStatusChips'
 import {
@@ -60,6 +63,13 @@ import {
   calculateSoulNumber,
   calculatePersonalityNumber,
 } from '@/lib/numerologyCalculations'
+
+const TarotSeerChatInterface = dynamic(lazyTarotSeerChat, { ssr: false, loading: () => null })
+const TarotProfileDiagram = dynamic(lazyTarotProfileDiagram, { ssr: false, loading: () => null })
+const TarotLifePathMap = dynamic(lazyTarotLifePathMap, { ssr: false, loading: () => null })
+const ElementalBalanceWheel = dynamic(lazyElementalBalanceWheel, { ssr: false, loading: () => null })
+const ArcanaDistributionChart = dynamic(lazyArcanaDistributionChart, { ssr: false, loading: () => null })
+const TarotNumerologyIntegration = dynamic(lazyTarotNumerologyIntegration, { ssr: false, loading: () => null })
 
 function TarotPage() {
   const router = useRouter()

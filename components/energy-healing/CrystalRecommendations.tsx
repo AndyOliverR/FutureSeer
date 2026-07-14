@@ -7,6 +7,37 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Gem, Star, Sparkles, Zap } from 'lucide-react';
 import { getCrystalPhotoPath } from '@/lib/crystalImageMap';
+import { publicImageSources } from '@/lib/publicImagePath';
+
+function CrystalPhoto({
+  crystalName,
+  className,
+}: {
+  crystalName: string;
+  className: string;
+}) {
+  const pngPath = getCrystalPhotoPath(crystalName);
+  if (!pngPath) return null;
+  const { webp, png } = publicImageSources(pngPath);
+
+  return (
+    <picture className={className}>
+      <source srcSet={webp} type="image/webp" />
+      <img
+        src={png}
+        alt={crystalName}
+        className="w-full h-full object-cover"
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          const el = e.currentTarget as HTMLImageElement;
+          el.style.display = 'none';
+          el.parentElement?.nextElementSibling?.classList.remove('hidden');
+        }}
+      />
+    </picture>
+  );
+}
 
 interface CrystalRecommendationsProps {
   recommendation: CrystalRecommendation;
@@ -29,15 +60,9 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
             <div className="flex items-center gap-4">
               {getCrystalPhotoPath(recommendation.primaryCrystal) ? (
                 <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-transparent border border-amber-300/20 flex-shrink-0">
-                  <img
-                    src={getCrystalPhotoPath(recommendation.primaryCrystal)!}
-                    alt={recommendation.primaryCrystal}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const el = e.currentTarget as HTMLImageElement;
-                      el.style.display = 'none';
-                      el.nextElementSibling?.classList.remove('hidden');
-                    }}
+                  <CrystalPhoto
+                    crystalName={recommendation.primaryCrystal}
+                    className="block w-full h-full"
                   />
                   <div className="hidden absolute inset-0 flex items-center justify-center rounded-xl bg-amber-100/80 border border-amber-300/30">
                     <Gem className="w-10 h-10 text-amber-700" />
@@ -92,15 +117,9 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
                       <div className="flex items-start gap-3 mb-3">
                         {getCrystalPhotoPath(crystalName) ? (
                           <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-transparent border border-amber-300/20 flex-shrink-0">
-                            <img
-                              src={getCrystalPhotoPath(crystalName)!}
-                              alt={crystalName}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const el = e.currentTarget as HTMLImageElement;
-                                el.style.display = 'none';
-                                el.nextElementSibling?.classList.remove('hidden');
-                              }}
+                            <CrystalPhoto
+                              crystalName={crystalName}
+                              className="block w-full h-full"
                             />
                             <div className="hidden absolute inset-0 flex items-center justify-center rounded-lg bg-amber-100/80 border border-amber-300/30">
                               <Gem className="w-8 h-8 text-amber-800" />
