@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Fonts: self-hosted via next/font — see lib/fonts.ts (no blocking @import) */
 
 @tailwind base;
 @tailwind components;
@@ -83,7 +83,7 @@
   body {
     background-color: var(--bg-deep-space);
     @apply text-white antialiased overflow-x-hidden;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
     width: 100%;
     max-width: 100%;
   }
@@ -99,15 +99,15 @@
 
   /* Headlines: Consistent Sophistication */
   h1, h2, h3, h4 {
-    font-family: 'Cinzel', serif;
+    font-family: var(--font-cinzel), serif;
     color: var(--gold-primary);
     @apply uppercase tracking-[0.15em] transition-all;
     text-shadow: 0 0 15px rgba(251, 191, 36, 0.25);
   }
 
-  /* Web headlines are light and airy */
+  /* Web headlines: Cinzel has no weight 300 — use 400 */
   .platform-web h1, .platform-web h2 {
-    @apply font-light tracking-[0.2em];
+    @apply font-normal tracking-[0.2em];
   }
 
   /* Android headlines are slightly bolder for mobile legibility */
@@ -175,13 +175,11 @@ main {
 .platform-android [data-tip-jar-widget="true"] { bottom: 160px !important; left: 16px !important; }
 .platform-android [data-feedback-widget="true"] { bottom: 100px !important; left: 16px !important; }
 
-/* iOS mobile: tab bar styling (Apple HIG – translucent, blur, safe area) */
+/* iOS mobile: solid tab bar (no backdrop-blur — mobile GPU savings) */
 [data-mobile-os="ios"] .bottom-nav-ios {
   display: flex !important;
   flex-direction: column;
-  background: rgba(28, 28, 30, 0.72);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+  background: #1c1c1e;
   border-top: 0.5px solid rgba(255, 255, 255, 0.08);
 }
 [data-mobile-os="ios"] .bottom-nav-ios .flex.w-full {
@@ -224,7 +222,7 @@ main {
 /* FutureSeer logotype — Inter + gold gradient (standard across nav, footer, landing) */
 .futureseer-wordmark,
 .futureseer-logo {
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   font-weight: 600;
   letter-spacing: -0.02em;
   text-transform: none;
@@ -241,11 +239,56 @@ main {
 
 /* Shared UI quality utilities for consistent rhythm and touch targets */
 .fs-heading-hero {
-  @apply text-3xl md:text-5xl font-heading uppercase;
+  @apply text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-heading uppercase leading-tight;
+  letter-spacing: 0.06em;
+}
+
+.platform-web .fs-heading-hero {
+  /* Cinzel has no 300; use 400 (normal) for airy desktop headlines */
+  @apply font-normal;
+  letter-spacing: 0.12em;
+}
+
+.platform-android .fs-heading-hero {
+  @apply font-medium;
+  letter-spacing: 0.04em;
 }
 
 .fs-heading-section {
   @apply text-lg md:text-2xl font-heading uppercase;
+}
+
+.font-quote,
+.font-sacred-body {
+  font-family: var(--font-cormorant), Georgia, serif;
+}
+
+/* Below-fold landing sections: skip layout/paint until near viewport */
+.fs-below-fold-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
+}
+
+/* Mobile shell: solid surfaces instead of GPU-heavy blur */
+@media (max-width: 767px) {
+  .platform-android nav[role="navigation"],
+  .platform-android .fs-mobile-solid-nav {
+    background-color: var(--m3-surface-container-high) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .platform-android .fs-mobile-solid-card {
+    background-color: var(--m3-surface-container-high) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: var(--m3-outline-variant) !important;
+    box-shadow: none !important;
+  }
+
+  .platform-android .fs-mobile-solid-card:hover {
+    transform: none;
+  }
 }
 
 .fs-meta-text {

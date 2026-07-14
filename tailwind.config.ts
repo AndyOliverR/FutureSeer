@@ -107,11 +107,11 @@ const config: Config = {
         "2xl": "32px",
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        heading: ["Cinzel", "serif"],
-        'sacred-heading': ["Cinzel", "serif"],
-        'sacred-body': ["Cormorant Garamond", "serif"],
-        quote: ["Didot", "Didot LT STD", "Bodoni MT", "Cormorant Garamond", "Georgia", "serif"],
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        heading: ["var(--font-cinzel)", "serif"],
+        'sacred-heading': ["var(--font-cinzel)", "serif"],
+        'sacred-body': ["var(--font-cormorant)", "serif"],
+        quote: ["var(--font-cormorant)", "Didot", "Georgia", "serif"],
         // Konsta UI theme fonts (required by konsta/react/theme.css)
         ios: ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF UI Text", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
         material: ["Roboto", "system-ui", "Noto Sans", "Helvetica", "Arial", "sans-serif"],

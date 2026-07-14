@@ -26,10 +26,14 @@ import {
   Users,
 } from "lucide-react"
 import { Button } from '@/components/ui/button'
-import NorthIndianVedicChart from "@/components/NorthIndianVedicChart"
-import VedicSouthChart from "@/components/VedicSouthChart"
-import { KPAstrologyCoachInterface } from "@/components/KPAstrologyCoachInterface"
-import KPSeerChatInterface from "@/components/KPSeerChatInterface"
+import dynamic from "next/dynamic"
+import {
+  lazyKPAstrologyCoachInterface,
+  lazyKPSeerChat,
+  lazyNorthIndianVedicChart,
+  lazyPhase2VisualPanel,
+  lazyVedicSouthChart,
+} from "@/lib/lazyToolImports"
 import { KPAnalysis as KPIntelligenceAnalysis } from "@/lib/kpAstrologyIntelligence"
 import { useAuth } from "@/hooks/use-auth"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
@@ -47,10 +51,15 @@ import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import { getPermanentChart, storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
 import { calculateCurrentDasha } from '@/lib/vedic-core'
 import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge'
-import { Phase2VisualPanel } from '@/components/charts/Phase2VisualPanel'
 import { adaptKpOverlay } from '@/lib/charts/phase2Adapters'
 import { isKpChartsV2Enabled } from '@/lib/charts/featureFlags'
 import { ToolReportStatusChips } from '@/components/tool-status/ToolReportStatusChips'
+
+const NorthIndianVedicChart = dynamic(lazyNorthIndianVedicChart, { ssr: false, loading: () => null })
+const VedicSouthChart = dynamic(lazyVedicSouthChart, { ssr: false, loading: () => null })
+const KPAstrologyCoachInterface = dynamic(lazyKPAstrologyCoachInterface, { ssr: false, loading: () => null })
+const KPSeerChatInterface = dynamic(lazyKPSeerChat, { ssr: false, loading: () => null })
+const Phase2VisualPanel = dynamic(lazyPhase2VisualPanel, { ssr: false, loading: () => null })
 
 const CHART_CANVAS_W = 450
 const CHART_CANVAS_H = 333

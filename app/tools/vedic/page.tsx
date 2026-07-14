@@ -21,30 +21,46 @@ import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMetho
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToolIntroductionTab } from "@/components/ToolIntroductionTab";
 import { CompatibilityTab } from "@/components/compatibility/CompatibilityTab";
-import ComprehensiveVedicReport, { type ComprehensiveAnalysis } from "@/components/vedic/ComprehensiveVedicReport";
-import { DashaPanelSimplified } from "@/components/vedic/DashaPanelSimplified";
-import { GotraTab } from "@/components/vedic/GotraTab";
-import VedicSeerChatInterface, { type VedicSeerFocusLens } from "@/components/VedicSeerChatInterface";
-import { VedicCareerReportPanel } from "@/components/vedic/VedicCareerReportPanel";
-import { VedicRelationshipReportPanel } from "@/components/vedic/VedicRelationshipReportPanel";
-import { ProfileList } from "@/components/profiles/ProfileList";
+import dynamic from "next/dynamic";
+import type { ComprehensiveAnalysis } from "@/components/vedic/ComprehensiveVedicReport";
+import type { VedicSeerFocusLens } from "@/components/VedicSeerChatInterface";
+import {
+  lazyComprehensiveVedicReport,
+  lazyDashaPanelSimplified,
+  lazyEastIndianVedicChart,
+  lazyGotraTab,
+  lazyNorthIndianVedicChart,
+  lazyProfileList,
+  lazySouthIndianVedicChart,
+  lazyVedicCareerReportPanel,
+  lazyVedicChartCircular,
+  lazyVedicKarmaAwarenessPanel,
+  lazyVedicRelationshipReportPanel,
+  lazyVedicSeerChat,
+} from "@/lib/lazyToolImports";
 import type { AdditionalProfile } from "@/lib/types/profileTypes";
 import { extractPersistedCareerAnalysis } from "@/lib/vedic/vedicCareerReport";
 import { extractPersistedRelationshipAnalysis } from "@/lib/vedic/vedicRelationshipReport";
-import { VedicKarmaAwarenessPanel } from "@/components/vedic/VedicKarmaAwarenessPanel";
 import { DevotionistStyleCard } from "@/components/western/DevotionistStyleCard";
 import { ToolReportStatusChips } from "@/components/tool-status/ToolReportStatusChips";
 import {
   Sparkles, ChevronRight, Loader2, MessageCircle, RefreshCw, Users, Briefcase, Heart
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-
-// Optimized Chart Renderers
-import NorthIndianVedicChart from "@/components/NorthIndianVedicChart";
-import SouthIndianVedicChart from "@/components/SouthIndianVedicChart";
-import VedicChartEast from "@/components/EastIndianVedicChart";
-import VedicChartCircular from "@/components/VedicChartCircular";
 import { getDivisionalCharts } from "@/lib/astronomia-vedic";
+
+const ComprehensiveVedicReport = dynamic(lazyComprehensiveVedicReport, { ssr: false, loading: () => null })
+const DashaPanelSimplified = dynamic(lazyDashaPanelSimplified, { ssr: false, loading: () => null })
+const GotraTab = dynamic(lazyGotraTab, { ssr: false, loading: () => null })
+const VedicSeerChatInterface = dynamic(lazyVedicSeerChat, { ssr: false, loading: () => null })
+const VedicCareerReportPanel = dynamic(lazyVedicCareerReportPanel, { ssr: false, loading: () => null })
+const VedicRelationshipReportPanel = dynamic(lazyVedicRelationshipReportPanel, { ssr: false, loading: () => null })
+const ProfileList = dynamic(lazyProfileList, { ssr: false, loading: () => null })
+const VedicKarmaAwarenessPanel = dynamic(lazyVedicKarmaAwarenessPanel, { ssr: false, loading: () => null })
+const NorthIndianVedicChart = dynamic(lazyNorthIndianVedicChart, { ssr: false, loading: () => null })
+const SouthIndianVedicChart = dynamic(lazySouthIndianVedicChart, { ssr: false, loading: () => null })
+const VedicChartEast = dynamic(lazyEastIndianVedicChart, { ssr: false, loading: () => null })
+const VedicChartCircular = dynamic(lazyVedicChartCircular, { ssr: false, loading: () => null })
 
 const SIGN_NAMES = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 const SIGN_LORDS: Record<number, string> = { 0: 'Mars', 1: 'Venus', 2: 'Mercury', 3: 'Moon', 4: 'Sun', 5: 'Mercury', 6: 'Venus', 7: 'Mars', 8: 'Jupiter', 9: 'Saturn', 10: 'Saturn', 11: 'Jupiter' };

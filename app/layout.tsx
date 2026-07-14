@@ -8,17 +8,18 @@ import ErrorBoundary from "@/components/ErrorBoundary"
 import { FeedbackProvider } from "@/components/FeedbackContext"
 import { SchemaMarkup } from "@/components/schema-markup"
 import { Header } from "@/components/header"
-import { BottomNavBar } from "@/components/BottomNavBar"
-import { FloatingTipJar } from "@/components/FloatingTipJar"
-import { MysticalFeedback } from "@/components/MysticalFeedback"
 import {
   DeferredAnalyticsInitializer,
+  DeferredBottomNavBar,
   DeferredFirestoreErrorSuppressor,
+  DeferredFloatingTipJar,
+  DeferredMysticalFeedback,
+  DeferredOnboardingTour,
   DeferredViewportHeightSync,
 } from "@/components/DeferredLayoutComponents"
 import { PlatformClassProvider } from "@/components/PlatformClassProvider"
-import { OnboardingTour } from "@/components/OnboardingTour"
 import { buildLocaleAlternates, localizedOgImagePath, normalizeSeoBaseUrl } from "@/lib/seo/locales"
+import { fontClassNames } from "@/lib/fonts"
 
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim()
 const siteBase = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
@@ -105,7 +106,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang="en" className={`dark ${fontClassNames}`} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         {/* Patch console before any other script so COOP/window.closed from Firebase popup is suppressed */}
         <script
@@ -121,6 +122,7 @@ export default function RootLayout({
         />
       </head>
       <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans" suppressHydrationWarning>
+        {/* PERFORMANCE: first-paint platform class only; design system refined in DesignSystemSync after auth */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var ua=(typeof navigator!=='undefined'&&navigator.userAgent)?navigator.userAgent:'';var width=(typeof window!=='undefined'&&window.innerWidth)?window.innerWidth:0;var isMobile=width>0&&width<768;var platformClass=isMobile?'platform-android':'platform-web';var dataPlatform=isMobile?'android':'web';var mobileOS='desktop';if(isMobile){if(/iPhone|iPad|iPod/i.test(ua))mobileOS='ios';else if(/Android/i.test(ua))mobileOS='android';}document.body.classList.remove('platform-android','platform-web');document.body.classList.add(platformClass);document.documentElement.setAttribute('data-platform',dataPlatform);document.documentElement.setAttribute('data-mobile-os',mobileOS);var isMac=!/iPhone|iPad|iPod/i.test(ua)&&/Macintosh|Mac OS X/i.test(ua);var designSystem=isMobile?(mobileOS==='ios'?'konsta-ios':'material'):(isMac?'konsta-ios':'devotionist');document.documentElement.setAttribute('data-design-system',designSystem);document.body.classList.remove('k-ios','k-material');if(designSystem==='konsta-ios')document.body.classList.add('k-ios');if(designSystem==='material')document.body.classList.add('k-material');})();`,
@@ -147,15 +149,14 @@ export default function RootLayout({
                   <div className="fs-main-content min-w-0 pl-0">
                     {children}
                   </div>
-                  <OnboardingTour />
-                  {/* BottomNavBar handles its own platform visibility internally */}
-                  <BottomNavBar />
+                  <DeferredOnboardingTour />
+                  <DeferredBottomNavBar />
                   <Toaster />
                 </I18nProvider>
               </ErrorBoundary>
             </main>
-            <FloatingTipJar />
-            <MysticalFeedback />
+            <DeferredFloatingTipJar />
+            <DeferredMysticalFeedback />
           </FeedbackProvider>
         </ClientProviders>
       </body>

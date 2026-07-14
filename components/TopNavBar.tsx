@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Info, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTipJar } from "@/components/TipJarContext";
@@ -86,7 +85,7 @@ export function TopNavBar() {
   return (
     <>
     <TooltipProvider>
-      <nav className="w-full min-w-0 max-w-full overflow-x-clip bg-[var(--m3-surface)]/95 backdrop-blur-xl border-b border-[var(--m3-outline-variant)] pt-[env(safe-area-inset-top)] px-4 flex items-center justify-between z-[100] sticky top-0 left-0 right-0 box-border select-none" role="navigation">
+      <nav className="fs-mobile-solid-nav w-full min-w-0 max-w-full overflow-x-clip bg-[var(--m3-surface)] md:bg-[var(--m3-surface)]/95 md:backdrop-blur-xl border-b border-[var(--m3-outline-variant)] pt-[env(safe-area-inset-top)] px-4 flex items-center justify-between z-[100] sticky top-0 left-0 right-0 box-border select-none" role="navigation">
         <FutureSeerWordmark href="/" size="md" className="flex items-center h-14" />
 
         <div className="flex items-center gap-1">
@@ -144,14 +143,10 @@ export function TopNavBar() {
             <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
           </button>
 
-        <AnimatePresence>
-          {showMenu && (
-            <motion.div
+        {showMenu && (
+            <div
               ref={menuRef}
-              className="absolute right-0 top-full z-[10000] mt-2 flex flex-col items-end w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-1rem)] sm:w-[min(20rem,calc(100vw-2.5rem))] md:w-auto bg-surface-container-high border border-outline-variant rounded-2xl p-2 shadow-2xl"
-              initial={{ opacity: 0, y: 8, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              className="fs-nav-menu-panel absolute right-0 top-full z-[10000] mt-2 flex flex-col items-end w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-1rem)] sm:w-[min(20rem,calc(100vw-2.5rem))] md:w-auto bg-surface-container-high border border-outline-variant rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-200"
             >
               {visibleNavLinks.map((link) =>
                 link.isModal && link.name === "Tip Jar" ? (
@@ -202,9 +197,8 @@ export function TopNavBar() {
                 <LogOut className="w-5 h-5 shrink-0" />
                 <span className="text-sm font-bold">Sign out</span>
               </button>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
           </div>
       </div>
       </nav>

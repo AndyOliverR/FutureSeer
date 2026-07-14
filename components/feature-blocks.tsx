@@ -38,7 +38,7 @@ export function FeatureBlocks() {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="group relative p-6 sm:p-8 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md transition-all duration-500 hover:bg-white/10 hover:border-amber-500/40 hover:shadow-[0_0_40px_rgba(245,158,11,0.2)] hover:-translate-y-1 cursor-default animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
+              className="group relative p-6 sm:p-8 rounded-3xl border border-white/10 bg-white/5 md:backdrop-blur-md fs-mobile-solid-card transition-all duration-300 md:duration-500 md:hover:bg-white/10 md:hover:border-amber-500/40 md:hover:shadow-[0_0_40px_rgba(245,158,11,0.2)] md:hover:-translate-y-1 cursor-default animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
               style={{ animationDelay: `${index * 75}ms` }}
             >
               <div className="absolute inset-0 rounded-3xl bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
