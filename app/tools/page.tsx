@@ -41,6 +41,18 @@ function ToolsPageContent() {
   const allReportsReady = Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady)
   const generationHasPendingTools =
     Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && readiness.pendingToolSlugs.length > 0
+  const generatingParam = searchParams.get("generating") === "1"
+  const [sessionGeneratingInitial] = useState(() => {
+    if (typeof window === "undefined") return false
+    try {
+      return sessionStorage.getItem("futureSeer:generationStatus") === "in_progress"
+    } catch {
+      return false
+    }
+  })
+  const sessionGenerating = sessionGeneratingInitial && !allReportsReady
+  const showGeneratingBanner =
+    generatingParam || sessionGenerating || generationHasPendingTools
   const pendingToolsSet = useMemo(
     () => new Set(readiness.pendingToolSlugs.map((slug) => toolPathForSlug(slug))),
     [readiness.pendingToolSlugs],
@@ -143,38 +155,72 @@ function ToolsPageContent() {
     return () => window.clearInterval(timer)
   }, [])
 
-  /** While Stage B is still filling tools, nudge Firestore in case the snapshot is slow—keeps list in sync with mystical profile cards. */
+  /** Clear session generating flag when reports finish. */
+  useEffect(() => {
+    if (!allReportsReady) return
+    try {
+      if (sessionStorage.getItem("futureSeer:generationStatus") === "in_progress") {
+        sessionStorage.setItem("futureSeer:generationStatus", "completed")
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [allReportsReady])
+
+  /** Drop ?generating=1 once generation is done (or idle with nothing pending). */
+  useEffect(() => {
+    if (!generatingParam) return
+    const idle =
+      allReportsReady ||
+      (!sessionGenerating &&
+        !generationHasPendingTools &&
+        Boolean(userProfile?.mysticalProfileGenerated))
+    if (!idle) return
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("generating")
+    const q = params.toString()
+    router.replace(q ? `/tools?${q}` : "/tools")
+  }, [
+    generatingParam,
+    generationHasPendingTools,
+    sessionGenerating,
+    allReportsReady,
+    userProfile?.mysticalProfileGenerated,
+    router,
+    searchParams,
+  ])
+
+  /** While Stage B is still filling tools, gently refresh profile (Firestore snapshot may lag). One interval — no GET spam. */
   useEffect(() => {
     if (!user?.uid || !generationHasPendingTools) return
+    void refreshMysticalProfile()
     const id = window.setInterval(() => {
       void refreshMysticalProfile()
-    }, 8000)
+    }, 12_000)
     return () => window.clearInterval(id)
   }, [user?.uid, generationHasPendingTools, refreshMysticalProfile])
 
-  /**
-   * Resume bridge for production: tools page may be the only active surface.
-   * Triggering status GET periodically helps recover stalled queued/failed jobs.
-   */
+  /** One-shot resume bridge when landing with pending tools (queued Stage B). */
   useEffect(() => {
     if (!user || !generationHasPendingTools) return
+    let cancelled = false
     const run = async () => {
       try {
         const idToken = await user.getIdToken()
-        await fetch('/api/profile/generate-mystical', {
-          method: 'GET',
+        if (cancelled) return
+        await fetch("/api/profile/generate-mystical", {
+          method: "GET",
           headers: { Authorization: `Bearer ${idToken}` },
-          cache: 'no-store',
+          cache: "no-store",
         })
       } catch {
-        // best-effort bridge; rely on existing polling and snapshots
+        // best-effort; Firestore listener + soft refresh handle the rest
       }
     }
     void run()
-    const id = window.setInterval(() => {
-      void run()
-    }, 15_000)
-    return () => window.clearInterval(id)
+    return () => {
+      cancelled = true
+    }
   }, [user, generationHasPendingTools])
 
   useEffect(() => {
@@ -224,8 +270,8 @@ function ToolsPageContent() {
     () =>
       buildItemListSchema({
         url: `${site}/tools`,
-        name: "FutureSeer Mystical Tools",
-        description: "Browse FutureSeer mystical tools across astrology, divination, numerology, and more.",
+        name: "FutureSeer Occult / Divination tools",
+        description: "Browse FutureSeer occult and divination tools across astrology, numerology, and more.",
         items: displayedTools.map((tool) => ({
           name: tool.name,
           url: `${site}/tools/${tool.slug}`,
@@ -263,7 +309,7 @@ function ToolsPageContent() {
         />
         <div className="px-4 py-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-heading font-bold text-amber-400 uppercase tracking-tight">Mystical Tools</h1>
+            <h1 className="text-3xl font-heading font-bold text-amber-400 uppercase tracking-tight">Occult / Divination tools</h1>
             <div className="p-2 bg-primary-container rounded-full text-primary-on-container animate-pulse">
               <Sparkles className="w-6 h-6" />
             </div>
@@ -295,9 +341,12 @@ function ToolsPageContent() {
         </div>
 
         <div className="px-4 space-y-8 pb-6">
-          {generationHasPendingTools ? (
-            <div className="mb-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200 text-sm">
-              Reports are still processing. Ready tools are unlocked now ({readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready).
+          {showGeneratingBanner ? (
+            <div className="mb-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200 text-sm">
+              Reports are generating — open a tool when its card unlocks
+              {readiness.readyToolsCount > 0
+                ? ` (${readiness.readyToolsCount}/${ALL_TOOL_SLUGS.length} ready).`
+                : "."}
             </div>
           ) : null}
           {toolsByCategoryOrdered ? (
@@ -310,7 +359,14 @@ function ToolsPageContent() {
                       key={tool.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
                       onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
-                      className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
+                      className={cn(
+                        "relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all",
+                        !canOpenTool(tool.slug, tool.isComingSoon)
+                          ? "bg-surface-container-low opacity-50 border-outline-variant/30"
+                          : showGeneratingBanner && !isToolPending(tool.slug)
+                            ? "bg-surface-container-high border-amber-500/50 shadow-md shadow-amber-500/10"
+                            : "bg-surface-container-high border-outline-variant shadow-md",
+                      )}
                     >
                       <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
                       <div className="flex-1 min-w-0 pr-6">
@@ -350,7 +406,14 @@ function ToolsPageContent() {
                 <motion.div
                   key={tool.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
-                  className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
+                  className={cn(
+                    "relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all",
+                    !canOpenTool(tool.slug, tool.isComingSoon)
+                      ? "bg-surface-container-low opacity-50 border-outline-variant/30"
+                      : showGeneratingBanner && !isToolPending(tool.slug)
+                        ? "bg-surface-container-high border-amber-500/50 shadow-md shadow-amber-500/10"
+                        : "bg-surface-container-high border-outline-variant shadow-md",
+                  )}
                 >
                   <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
                   <div className="flex-1 min-w-0 pr-6">
@@ -397,9 +460,18 @@ function ToolsPageContent() {
       />
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-heading font-light text-amber-400 mb-4 tracking-widest uppercase">Mystical Tools</h1>
-          <p className="text-surface-on-variant text-lg max-w-2xl mx-auto font-light italic">Choose your path to cosmic wisdom through ancient traditions</p>
+          <h1 className="text-5xl font-heading font-normal text-amber-400 mb-4 tracking-widest uppercase">Occult / Divination tools</h1>
+          <p className="text-surface-on-variant text-lg max-w-2xl mx-auto font-light italic">Choose your path through ancient traditions</p>
         </div>
+
+        {showGeneratingBanner ? (
+          <div className="mb-10 mx-auto max-w-2xl rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200/90 text-sm">
+            Reports are generating — open a tool when its card unlocks
+            {readiness.readyToolsCount > 0
+              ? ` (${readiness.readyToolsCount}/${ALL_TOOL_SLUGS.length} ready).`
+              : "."}
+          </div>
+        ) : null}
 
         <div className="mb-12 relative max-w-2xl mx-auto">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
@@ -431,7 +503,14 @@ function ToolsPageContent() {
                     <motion.div
                       key={tool.slug} whileHover={{}}
                       onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
-                      className={cn("group relative h-[320px] bg-gradient-to-br from-surface-container-high via-surface-container-low to-surface-container-high border border-outline-variant rounded-3xl p-8 overflow-hidden transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-amber-500/60")}
+                      className={cn(
+                        "group relative h-[320px] bg-gradient-to-br from-surface-container-high via-surface-container-low to-surface-container-high border rounded-3xl p-8 overflow-hidden transition-all",
+                        !canOpenTool(tool.slug, tool.isComingSoon)
+                          ? "opacity-60 cursor-not-allowed border-outline-variant"
+                          : showGeneratingBanner && !isToolPending(tool.slug)
+                            ? "cursor-pointer border-amber-500/60"
+                            : "cursor-pointer border-outline-variant hover:border-amber-500/60",
+                      )}
                     >
                       <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="relative z-10 h-full flex flex-col items-center text-center">
@@ -473,7 +552,14 @@ function ToolsPageContent() {
             <motion.div
               key={tool.slug} whileHover={{}}
               onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
-              className={cn("group relative h-[320px] bg-gradient-to-br from-surface-container-high via-surface-container-low to-surface-container-high border border-outline-variant rounded-3xl p-8 overflow-hidden transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-amber-500/60")}
+              className={cn(
+                "group relative h-[320px] bg-gradient-to-br from-surface-container-high via-surface-container-low to-surface-container-high border rounded-3xl p-8 overflow-hidden transition-all",
+                !canOpenTool(tool.slug, tool.isComingSoon)
+                  ? "opacity-60 cursor-not-allowed border-outline-variant"
+                  : showGeneratingBanner && !isToolPending(tool.slug)
+                    ? "cursor-pointer border-amber-500/60"
+                    : "cursor-pointer border-outline-variant hover:border-amber-500/60",
+              )}
             >
               <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10 h-full flex flex-col items-center text-center">

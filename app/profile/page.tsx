@@ -851,7 +851,7 @@ export default function ProfilePage() {
             sessionStorage.setItem(ONBOARDING_FULL_REPORT_BYPASS_KEY, "1")
             window.dispatchEvent(new CustomEvent("futureSeer:onboardingBypassChanged"))
           }
-          router.push("/mystical-profile?generating=1")
+          router.push("/tools?generating=1")
         }
         return
       }
@@ -874,7 +874,7 @@ export default function ProfilePage() {
         sessionStorage.setItem(ONBOARDING_FULL_REPORT_BYPASS_KEY, "1")
         window.dispatchEvent(new CustomEvent("futureSeer:onboardingBypassChanged"))
       }
-      router.push("/mystical-profile?generating=1")
+      router.push("/tools?generating=1")
       if ((data as { inProgress?: boolean }).inProgress) {
         if (typeof window !== "undefined") {
           sessionStorage.setItem("futureSeer:generationStatus", "in_progress")

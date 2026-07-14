@@ -55,7 +55,7 @@ export function buildAuthPageMetadata(kind: "signin" | "signup"): Metadata {
     title: isSignUp ? "Sign Up | FutureSeer" : "Sign In | FutureSeer",
     description: isSignUp
       ? "Create your FutureSeer account for AI-powered mystical insights and persistent readings."
-      : "Sign in to FutureSeer to access your mystical profile, saved reports, and Ask the Seer.",
+      : "Sign in to FutureSeer to access Occult / Divination tools, saved reports, and Ask the Seer.",
     noindex: true,
   })
 }

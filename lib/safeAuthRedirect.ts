@@ -84,6 +84,8 @@ export function getSafeAuthRedirectAfterSignIn(redirect: string | null): string 
     return "/community/attribution"
   }
 
+  if (path === "/mystical-profile") return "/tools"
+
   if (EXACT_ALLOWED.has(path)) return path
   if (isPrefixAllowed(path)) return path
 

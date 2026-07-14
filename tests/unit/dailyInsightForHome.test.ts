@@ -66,7 +66,7 @@ describe('buildDailyInsightCardData', () => {
     expect(data.headline).toBe('Today for Ananya')
     expect(data.moonSign).toBe('Libra')
     expect(data.summary).toContain('calm intuition')
-    expect(data.ctaHref).toBe('/mystical-profile')
+    expect(data.ctaHref).toBe('/tools')
     expect(data.luckyNumber).toBeGreaterThanOrEqual(1)
     expect(data.luckyNumber).toBeLessThanOrEqual(9)
   })

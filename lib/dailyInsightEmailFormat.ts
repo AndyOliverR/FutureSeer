@@ -41,7 +41,7 @@ export function formatDailyInsightEmailHtml(params: {
     <p>${summary}</p>
     ${detailHtml}
     <p>${stageCopy}</p>
-    <p><a href="https://futureseer.app/mystical-profile">Open your mystical library</a> or <a href="https://futureseer.app/seer">Ask the Seer</a>.</p>
+    <p><a href="https://futureseer.app/tools">Open Occult / Divination tools</a> or <a href="https://futureseer.app/seer">Ask the Seer</a>.</p>
     <p>— FutureSeer</p>
   `;
   return { subject, html };

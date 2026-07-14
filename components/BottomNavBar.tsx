@@ -3,15 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Wrench, Sparkles, Users } from "lucide-react";
+import { Home, User, Orbit, Sparkles, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const mobileNavItems = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Tools", href: "/tools", icon: Wrench },
-  { name: "Seer", href: "/ask-the-seer", icon: Sparkles },
-  { name: "Community", href: "/community/attribution", icon: Users },
-  { name: "Profile", href: "/profile", icon: User },
+  { name: "Home", href: "/", icon: Home, ariaLabel: "Home" },
+  {
+    name: "Occult",
+    href: "/tools",
+    icon: Orbit,
+    ariaLabel: "Occult / Divination tools",
+  },
+  { name: "Seer", href: "/ask-the-seer", icon: Sparkles, ariaLabel: "Ask the Seer" },
+  { name: "Community", href: "/community/attribution", icon: Users, ariaLabel: "Community" },
+  { name: "Profile", href: "/profile", icon: User, ariaLabel: "Profile" },
 ];
 
 function getDataMobileOS(): string {
@@ -60,6 +65,8 @@ export function BottomNavBar() {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.ariaLabel}
+              title={item.ariaLabel}
               data-onboarding={
                 item.href === "/tools"
                   ? "tools"
