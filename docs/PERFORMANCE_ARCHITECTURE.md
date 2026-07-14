@@ -75,7 +75,7 @@ CSS utilities in `app/globals.css`:
 | File | Role |
 |------|------|
 | `lib/lazyToolImports.ts` | Dynamic import factories for heavy report viewers |
-| `components/tools/DeferredToolReport.tsx` | Wrapper for lazy report sections |
+| `components/tools/DeferredToolReport.tsx` | `createDeferredToolReport(loader)` — call at **module scope** only |
 | `app/tools/ToolsLayoutShell.tsx` | Shared M3 mobile overrides via `data-tools-layout="true"` |
 
 **Pattern for tool pages:**

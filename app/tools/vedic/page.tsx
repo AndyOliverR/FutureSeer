@@ -44,7 +44,7 @@ import { extractPersistedRelationshipAnalysis } from "@/lib/vedic/vedicRelations
 import { DevotionistStyleCard } from "@/components/western/DevotionistStyleCard";
 import { ToolReportStatusChips } from "@/components/tool-status/ToolReportStatusChips";
 import {
-  Sparkles, ChevronRight, Loader2, MessageCircle, RefreshCw, Users, Briefcase, Heart
+  Sparkles, Loader2, MessageCircle, RefreshCw, Users, Briefcase, Heart
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getDivisionalCharts } from "@/lib/astronomia-vedic";
