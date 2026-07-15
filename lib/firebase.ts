@@ -51,7 +51,7 @@ import {
 /** Thrown after signInWithRedirect so callers can skip error UI; page navigates away. */
 export const AUTH_REDIRECT_INITIATED_MESSAGE = 'Redirect initiated';
 /** After OAuth popup-dismiss errors, wait this long for auth state (custom domain + proxy latency). */
-export const AUTH_DISMISS_RECOVERY_WINDOW_MS = 12000;
+export const AUTH_DISMISS_RECOVERY_WINDOW_MS = 15000;
 
 export function isAuthRedirectInitiatedError(error: unknown): boolean {
   return error instanceof Error && error.message === AUTH_REDIRECT_INITIATED_MESSAGE;
@@ -469,17 +469,42 @@ async function signInWithOAuthWeb(
       );
       throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
     }
-    if (isFirebaseAuthInternalAssertionError(error) || isTransientAuthNetworkError(error)) {
+
+    // Firebase often throws popup-closed-by-user / cancelled-popup-request *after*
+    // a successful Google account pick (COOP / window.closed race). Wait for the
+    // session here so callers never show the false-error banner.
+    const shouldWaitForSession =
+      isUserDismissedAuthError(error as { code?: string }) ||
+      isFirebaseAuthInternalAssertionError(error) ||
+      isTransientAuthNetworkError(error);
+
+    if (shouldWaitForSession) {
       devLog.debug(
-        `OAuth ${label}: transient popup error — checking session`,
+        `OAuth ${label}: recoverable popup race — waiting for session`,
         { attemptId, mode: 'popup', code },
         'firebase'
       );
-      const sessionOk = await waitForAuthenticatedSession(8000);
+      try {
+        if (typeof auth.authStateReady === 'function') {
+          await Promise.race([
+            auth.authStateReady(),
+            new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+          ]);
+        }
+      } catch {
+        /* authStateReady can throw in rare SDK states */
+      }
+      if (auth.currentUser) return auth.currentUser;
+
+      const waitMs = isUserDismissedAuthError(error as { code?: string })
+        ? AUTH_DISMISS_RECOVERY_WINDOW_MS
+        : 8000;
+      const sessionOk = await waitForAuthenticatedSession(waitMs);
       if (sessionOk && auth.currentUser) {
         return auth.currentUser;
       }
     }
+
     devLog.debug(
       `OAuth ${label}: popup/redirect flow failed`,
       { attemptId, mode: 'popup', code },
@@ -822,10 +847,10 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection and try again. If you use a VPN or ad blocker, try turning it off for this site or switch networks.';
     case 'auth/popup-closed-by-user':
-      return 'Sign-in may still be completing, or the window was closed. Wait a few seconds; if you are not signed in, tap Sign in with Google again.';
+      return 'If the Google window closed before finish, wait a moment—sign-in often still completes. Otherwise tap Sign in with Google again.';
     case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
     case 'auth/cancelled-popup-request':
-      return 'Sign-in was briefly interrupted. Please wait a moment; if nothing happens, tap Sign in with Google again.';
+      return 'Sign-in was briefly interrupted. Wait a moment; if nothing happens, tap Sign in with Google again.';
     case 'auth/unauthorized-domain':
       return 'Google or Apple sign-in is not available from this web address. Try email and password, or open the app from the main FutureSeer website.';
     case 'auth/account-exists-with-different-credential':

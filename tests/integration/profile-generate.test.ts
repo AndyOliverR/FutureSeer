@@ -8,6 +8,35 @@ import { NextRequest } from 'next/server';
 import { calculateProfileDataHash } from '@/lib/firebase';
 import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
 
+/** Fixture report that passes displayable readiness for each slug. */
+function displayableReportForSlug(slug: string): Record<string, unknown> {
+  switch (slug) {
+    case 'vedic':
+    case 'western':
+    case 'hellenistic':
+    case 'kp':
+      return { planets: [{ name: 'Sun' }], placeholder: false };
+    case 'tarot':
+      return { profile: { birthCard: { name: 'The Fool' } }, placeholder: false };
+    case 'numerology':
+      return { lifePathNumber: 7, placeholder: false };
+    case 'iching':
+      return { hexagram: 1, placeholder: false };
+    case 'runes':
+      return { runes: [{ name: 'Fehu' }], placeholder: false };
+    case 'bazi':
+      return { pillars: { year: 'Jia Zi' }, placeholder: false };
+    case 'humanDesign':
+      return { type: 'Generator', placeholder: false };
+    default:
+      return { reading: 'ok', placeholder: false };
+  }
+}
+
+function allToolsDisplayableProfile(): Record<string, unknown> {
+  return Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, displayableReportForSlug(slug)]));
+}
+
 const mockVerifyIdToken = jest.fn();
 const mockGetDocument = jest.fn();
 const mockSetDocument = jest.fn();
@@ -174,9 +203,7 @@ describe('Profile generate-mystical API', () => {
     it('returns alreadyGenerated when profile is generated and hash matches', async () => {
       const profile = { ...baseProfile };
       const hash = calculateProfileDataHash(profile);
-      const storedProfileWithAllTools = Object.fromEntries(
-        ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }])
-      );
+      const storedProfileWithAllTools = allToolsDisplayableProfile();
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') {
           return Promise.resolve({
@@ -219,9 +246,7 @@ describe('Profile generate-mystical API', () => {
         palmPhotoUrl: 'https://example.com/palm.jpg',
       };
       const hash = calculateProfileDataHash(profile);
-      const storedProfileWithAllTools = Object.fromEntries(
-        ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }])
-      );
+      const storedProfileWithAllTools = allToolsDisplayableProfile();
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...profile, profileDataHash: hash });
         if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve(storedProfileWithAllTools);
@@ -313,7 +338,7 @@ describe('Profile generate-mystical API', () => {
         if (collection === 'generationLocks') return Promise.resolve(null);
         if (collection === 'comprehensiveMysticalProfiles') {
           return Promise.resolve({
-            western: { placeholder: false },
+            western: displayableReportForSlug('western'),
           });
         }
         return Promise.resolve(undefined);
@@ -420,7 +445,7 @@ describe('Profile generate-mystical API', () => {
 
   describe('Generation status semantics (GET)', () => {
     it('returns completed when profile is fully ready even without lock/job docs', async () => {
-      const allReadyProfile = Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }]));
+      const allReadyProfile = allToolsDisplayableProfile();
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: true });
         if (collection === 'generationLocks') return Promise.resolve(null);
@@ -441,7 +466,7 @@ describe('Profile generate-mystical API', () => {
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true });
         if (collection === 'generationLocks') return Promise.resolve({ status: 'running', phase: 'stageB', updatedAt: Date.now() });
-        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: { placeholder: false } });
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: displayableReportForSlug('vedic') });
         return Promise.resolve(undefined);
       });
 
@@ -456,7 +481,7 @@ describe('Profile generate-mystical API', () => {
     });
 
     it('returns completed state when all reports are ready', async () => {
-      const allReadyProfile = Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }]));
+      const allReadyProfile = allToolsDisplayableProfile();
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: true });
         if (collection === 'generationLocks') return Promise.resolve({ status: 'completed', phase: 'completed', updatedAt: Date.now() });
@@ -479,7 +504,7 @@ describe('Profile generate-mystical API', () => {
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
         if (collection === 'generationLocks') return Promise.resolve({ status: 'failed', phase: 'failed', updatedAt: Date.now() });
-        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: { placeholder: false } });
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: displayableReportForSlug('vedic') });
         return Promise.resolve(undefined);
       });
 
@@ -544,7 +569,10 @@ describe('Profile generate-mystical API', () => {
           });
         }
         if (collection === 'comprehensiveMysticalProfiles') {
-          return Promise.resolve({ vedic: { placeholder: false }, numerology: { placeholder: false } });
+          return Promise.resolve({
+            vedic: displayableReportForSlug('vedic'),
+            numerology: displayableReportForSlug('numerology'),
+          });
         }
         return Promise.resolve(undefined);
       });
@@ -579,7 +607,7 @@ describe('Profile generate-mystical API', () => {
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
         if (collection === 'generationLocks') return Promise.resolve({ status: 'failed', phase: 'failed', updatedAt: Date.now() });
-        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: { placeholder: false } });
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: displayableReportForSlug('vedic') });
         if (collection === 'generationJobs') {
           return Promise.resolve({
             status: 'queued',
@@ -605,7 +633,10 @@ describe('Profile generate-mystical API', () => {
           return Promise.resolve({ status: 'running', phase: 'stageB', updatedAt: Date.now(), currentToolSlug: 'financialAstrology' });
         }
         if (collection === 'comprehensiveMysticalProfiles') {
-          return Promise.resolve({ vedic: { placeholder: false }, western: { placeholder: false } });
+          return Promise.resolve({
+            vedic: displayableReportForSlug('vedic'),
+            western: displayableReportForSlug('western'),
+          });
         }
         if (collection === 'generationJobs') {
           return Promise.resolve({
@@ -636,7 +667,7 @@ describe('Profile generate-mystical API', () => {
           return Promise.resolve({ status: 'running', phase: 'stageB', updatedAt: Date.now(), lockedAt: Date.now() });
         }
         if (collection === 'comprehensiveMysticalProfiles') {
-          return Promise.resolve({ western: { placeholder: false } });
+          return Promise.resolve({ western: displayableReportForSlug('western') });
         }
         if (collection === 'generationJobs') {
           return Promise.resolve({
@@ -671,7 +702,7 @@ describe('Profile generate-mystical API', () => {
     });
 
     it('reconciles user allReportsReady false when profile shows all tools ready', async () => {
-      const allReadyProfile = Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }]));
+      const allReadyProfile = allToolsDisplayableProfile();
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') {
           return Promise.resolve({

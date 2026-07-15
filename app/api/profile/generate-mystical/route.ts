@@ -536,10 +536,10 @@ export async function GET(request: NextRequest) {
     const allReportsReady = readiness.allReportsReady;
     const pendingToolSlugs = readiness.pendingToolSlugs;
     const lastHeartbeatAt = typeof generationJob?.lastHeartbeatAt === 'number' ? generationJob.lastHeartbeatAt : null;
+    // Missing heartbeat (crashed worker) counts as stale — same as generation job claim.
     const runningHeartbeatStale =
       generationJobStatus === 'running' &&
-      lastHeartbeatAt != null &&
-      Date.now() - lastHeartbeatAt > HEARTBEAT_STALE_MS;
+      (lastHeartbeatAt == null || Date.now() - lastHeartbeatAt > HEARTBEAT_STALE_MS);
     const inProgress = lockRuntime.isRunning && !lockRuntime.isStale && !runningHeartbeatStale;
     const partialReady = readiness.readyToolsCount > 0 && !allReportsReady;
     const completed = generated && allReportsReady;
