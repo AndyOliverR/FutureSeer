@@ -40,6 +40,12 @@ import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadl
 import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
 import { getMissingFirstGenerationFields, isTrialActive } from "@/lib/subscriptionConfig"
 import { ProfilePhotoCaptureButtons } from "@/components/profile/ProfilePhotoCaptureButtons"
+import {
+  GENERATION_ETA_IN_PROGRESS,
+  GENERATION_ETA_PRE_GENERATE,
+  GENERATION_ETA_PREPARING,
+  GENERATION_SUCCESS_ALERT,
+} from "@/lib/generationEtaCopy"
 
 type BirthTimeAmPm = "AM" | "PM"
 
@@ -810,7 +816,8 @@ export default function ProfilePage() {
     }
     setIsGeneratingProfile(true)
     setError(null)
-    setGenerationStatus("Preparing your cosmic reading...")
+    // Show ETA immediately on click (users often redirect before IN_PROGRESS can paint).
+    setGenerationStatus(GENERATION_ETA_PREPARING)
     const abort = new AbortController()
     generationAbortRef.current = abort
     try {
@@ -869,7 +876,7 @@ export default function ProfilePage() {
         }
         throw new Error(payload.error || "Profile generation failed. Please try again.")
       }
-      setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+      setGenerationStatus(GENERATION_ETA_IN_PROGRESS)
       if (typeof window !== "undefined" && mode === "full") {
         sessionStorage.setItem(ONBOARDING_FULL_REPORT_BYPASS_KEY, "1")
         window.dispatchEvent(new CustomEvent("futureSeer:onboardingBypassChanged"))
@@ -916,7 +923,7 @@ export default function ProfilePage() {
       if (user?.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
       if (isMountedRef.current) {
         setSuccess(
-          "Generation is running—open Mystical profile to watch cards appear, then Ask the Seer for the cross-tool read.",
+          GENERATION_SUCCESS_ALERT,
         )
       }
       try {
@@ -1520,7 +1527,11 @@ export default function ProfilePage() {
                 {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
                 )}
-                {canGenerateFromOnboarding && !isGeneratingProfile && <p className="text-center text-emerald-300/70 text-xs mt-2">Ready to generate.</p>}
+                {canGenerateFromOnboarding && !isGeneratingProfile && (
+                  <p className="text-center text-emerald-300/70 text-xs mt-2 max-w-md mx-auto leading-relaxed">
+                    {GENERATION_ETA_PRE_GENERATE}
+                  </p>
+                )}
             </div>
             </>
             )}
@@ -1929,7 +1940,11 @@ export default function ProfilePage() {
                   {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
                   )}
-                  {canGenerateFromOnboarding && !isGeneratingProfile && <p className="text-center text-emerald-300/70 text-xs mt-2">Ready to generate.</p>}
+                  {canGenerateFromOnboarding && !isGeneratingProfile && (
+                  <p className="text-center text-emerald-300/70 text-xs mt-2 max-w-md mx-auto leading-relaxed">
+                    {GENERATION_ETA_PRE_GENERATE}
+                  </p>
+                )}
               </div>
               </>
               )}
