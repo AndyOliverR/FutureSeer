@@ -25,8 +25,12 @@ export function useToolReport(toolSlug: string) {
       : undefined
   const toolStatusMap = (p != null ? (p.toolStatus as Record<string, PersistedToolStatus> | undefined) : undefined) ?? {}
   const persistedStatus = toolStatusMap[toolSlug]
-  const reportState = classifyToolReportState(report)
-  const state = persistedStatus?.state ?? reportState
+  const reportState = classifyToolReportState(report, toolSlug)
+  // Prefer live classification — stale toolStatus "ready" must not unlock blank shells.
+  let state = persistedStatus?.state ?? reportState
+  if (state === 'ready' && reportState !== 'ready') {
+    state = reportState
+  }
   const updatedAt = persistedStatus?.updatedAt ?? persistedStatus?.generatedAt
   const generatedAt = persistedStatus?.generatedAt
   return {

@@ -43,8 +43,15 @@ export async function GET(request: NextRequest) {
   try {
     const snap = await adminDb
       .collection('generationJobs')
-      .where('status', 'in', ['queued', 'failed', 'stale_running'])
+      .where('status', 'in', ['queued', 'failed', 'stale_running', 'failed_terminal'])
       .limit(40)
+      .get();
+
+    // Also surface workers stuck in `running` with a dead/missing heartbeat.
+    const runningSnap = await adminDb
+      .collection('generationJobs')
+      .where('status', '==', 'running')
+      .limit(20)
       .get();
 
     const candidates: string[] = [];
@@ -55,7 +62,7 @@ export async function GET(request: NextRequest) {
         status?: string;
       };
       if (typeof data.nextRetryAt === 'number' && data.nextRetryAt > now) continue;
-      if (data.status === 'stale_running') {
+      if (data.status === 'stale_running' || data.status === 'failed_terminal') {
         candidates.push(doc.id);
         continue;
       }
@@ -63,6 +70,15 @@ export async function GET(request: NextRequest) {
         data.status === 'queued' ||
         (data.status === 'failed' && (data.nextRetryAt == null || data.nextRetryAt <= now))
       ) {
+        candidates.push(doc.id);
+      }
+    }
+    for (const doc of runningSnap.docs) {
+      const data = doc.data() as { lastHeartbeatAt?: number };
+      const lastHeartbeatAt = Number(data.lastHeartbeatAt ?? 0);
+      const stale =
+        lastHeartbeatAt <= 0 || now - lastHeartbeatAt > STAGE_B_HEARTBEAT_STALE_MS;
+      if (stale && !candidates.includes(doc.id)) {
         candidates.push(doc.id);
       }
     }
@@ -85,7 +101,11 @@ export async function GET(request: NextRequest) {
       triggered += 1;
     }
 
-    return NextResponse.json({ triggered, skipped, scanned: snap.size });
+    return NextResponse.json({
+      triggered,
+      skipped,
+      scanned: snap.size + runningSnap.size,
+    });
   } catch (err) {
     devLog.error('[cron/mystical-stage-b] failed', err, 'route');
     return NextResponse.json({ error: 'Cron failed' }, { status: 500 });

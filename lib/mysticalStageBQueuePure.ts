@@ -22,8 +22,12 @@ export function buildToolIdempotencyKey(profileHash: string, toolSlug: string): 
   return `${profileHash}:${toolSlug}`;
 }
 
-export function isToolReportReadyForHash(report: unknown, profileHash: string): boolean {
-  if (classifyToolReportState(report) !== 'ready') return false;
+export function isToolReportReadyForHash(
+  report: unknown,
+  profileHash: string,
+  toolSlug?: string,
+): boolean {
+  if (classifyToolReportState(report, toolSlug) !== 'ready') return false;
   if (!report || typeof report !== 'object') return false;
   const key = (report as { generationIdempotencyKey?: string }).generationIdempotencyKey;
   return key === profileHash;
@@ -37,7 +41,7 @@ export function buildInitialToolQueue(
   const queue: ToolQueueMap = {};
   for (const slug of ALL_TOOL_SLUGS) {
     const report = profile[slug];
-    const ready = isToolReportReadyForHash(report, profileHash);
+    const ready = isToolReportReadyForHash(report, profileHash, slug);
     queue[slug] = {
       toolSlug: slug,
       idempotencyKey: buildToolIdempotencyKey(profileHash, slug),
@@ -69,11 +73,17 @@ export function selectRunnableToolSlugs(
       runnable.push(slug);
       continue;
     }
-    if (task.status === 'ready' || task.status === 'skipped') continue;
-    if (task.status === 'running') continue;
-    if (task.status === 'failed' && task.attempts >= task.maxAttempts) continue;
+    if (task.status === 'skipped') continue;
+    // Task marked ready but payload fails displayable readiness → re-run (tightened contract / thin shells).
+    if (task.status === 'ready') {
+      if (isToolReportReadyForHash(profile[slug], profileHash, slug)) continue;
+    } else if (task.status === 'running') {
+      continue;
+    } else if (task.status === 'failed' && task.attempts >= task.maxAttempts) {
+      continue;
+    }
     if (task.nextRetryAt != null && task.nextRetryAt > nowMs) continue;
-    if (isToolReportReadyForHash(profile[slug], profileHash)) continue;
+    if (isToolReportReadyForHash(profile[slug], profileHash, slug)) continue;
     runnable.push(slug);
   }
   return runnable;

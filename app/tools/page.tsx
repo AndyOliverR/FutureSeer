@@ -125,11 +125,11 @@ function ToolsPageContent() {
   const isToolPending = (listSlug: string) => {
     if (!Boolean(userProfile?.mysticalProfileGenerated)) return false
     const pathKey = toolListSlugToProfilePathKey(listSlug)
-    const state = toolStateByPath[pathKey]
-    if (state === 'ready') return false
-    if (state === 'running' || state === 'pending' || state === 'placeholder') return true
     const report = profileByPath[pathKey]
-    if (isReadyToolReport(report)) return false
+    // Displayable payload unlocks the card — do not trust stale toolStatus "ready" alone.
+    if (isReadyToolReport(report, pathKey)) return false
+    const state = toolStateByPath[pathKey]
+    if (state === 'running' || state === 'pending' || state === 'placeholder') return true
     return pendingToolsSet.has(pathKey)
   }
   const isBaselineNextStepReady = (listSlug: string) => {
@@ -191,7 +191,7 @@ function ToolsPageContent() {
     searchParams,
   ])
 
-  /** While Stage B is still filling tools, gently refresh profile (Firestore snapshot may lag). One interval — no GET spam. */
+  /** While generation is still filling tools, gently refresh profile (Firestore snapshot may lag). */
   useEffect(() => {
     if (!user?.uid || !generationHasPendingTools) return
     void refreshMysticalProfile()
@@ -201,7 +201,10 @@ function ToolsPageContent() {
     return () => window.clearInterval(id)
   }, [user?.uid, generationHasPendingTools, refreshMysticalProfile])
 
-  /** One-shot resume bridge when landing with pending tools (queued Stage B). */
+  /**
+   * Resume stalled generation while the user stays on /tools (GET promotes stale jobs).
+   * Interval is deliberately slow — not the old mystical-profile poll storm.
+   */
   useEffect(() => {
     if (!user || !generationHasPendingTools) return
     let cancelled = false
@@ -214,15 +217,20 @@ function ToolsPageContent() {
           headers: { Authorization: `Bearer ${idToken}` },
           cache: "no-store",
         })
+        if (!cancelled) void refreshMysticalProfile()
       } catch {
         // best-effort; Firestore listener + soft refresh handle the rest
       }
     }
     void run()
+    const id = window.setInterval(() => {
+      void run()
+    }, 60_000)
     return () => {
       cancelled = true
+      window.clearInterval(id)
     }
-  }, [user, generationHasPendingTools])
+  }, [user, generationHasPendingTools, refreshMysticalProfile])
 
   useEffect(() => {
     if (
@@ -347,9 +355,11 @@ function ToolsPageContent() {
               <p>{GENERATION_ETA_TOOLS_BANNER}</p>
               {readiness.readyToolsCount > 0 ? (
                 <p className="text-amber-200/80 text-xs">
-                  {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open unlocked tools anytime.
+                  {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open unlocked cards; locked tools are still generating.
                 </p>
-              ) : null}
+              ) : (
+                <p className="text-amber-200/80 text-xs">Waiting for the first tools to unlock…</p>
+              )}
             </div>
           ) : null}
           {toolsByCategoryOrdered ? (
@@ -472,9 +482,11 @@ function ToolsPageContent() {
             <p>{GENERATION_ETA_TOOLS_BANNER}</p>
             {readiness.readyToolsCount > 0 ? (
               <p className="text-amber-200/80 text-xs">
-                {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open unlocked tools anytime.
+                {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open unlocked cards; locked tools are still generating.
               </p>
-            ) : null}
+            ) : (
+              <p className="text-amber-200/80 text-xs">Waiting for the first tools to unlock…</p>
+            )}
           </div>
         ) : null}
 

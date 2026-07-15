@@ -154,7 +154,12 @@ function buildChips(
       label: 'Generating',
       detail: `Generation lock: ${lockStatus}`,
     };
-  } else if (profileStatus === 'running' || profileStatus === 'stageA_complete_stageB_running') {
+  } else if (
+    profileStatus === 'running' ||
+    profileStatus === 'partial_ready' ||
+    // Legacy Firestore values from the retired Stage A/B split.
+    profileStatus === 'stageA_complete_stageB_running'
+  ) {
     mysticalChip = {
       state: 'running',
       label: 'In progress',
@@ -164,7 +169,7 @@ function buildChips(
     mysticalChip = {
       state: 'no',
       label: 'Failed',
-      detail: 'profileStatus: stageA_failed',
+      detail: 'profileStatus: failed (legacy)',
     };
   } else {
     mysticalChip = {

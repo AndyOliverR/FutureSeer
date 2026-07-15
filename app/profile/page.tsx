@@ -894,15 +894,17 @@ export default function ProfilePage() {
         await refreshComprehensiveProfile()
       }
       const generationState = (data as { generationState?: string }).generationState
-      const isBackgroundStageRunning = generationState === "stageA_complete_stageB_running"
+      const allReportsReady = Boolean((data as { allReportsReady?: boolean }).allReportsReady)
+      // Unified queue: keep generating flag until every tool report is ready (no Stage A/B).
+      const isStillGenerating = !allReportsReady && generationState !== "completed"
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("futureSeer:generationStatus", isBackgroundStageRunning ? "in_progress" : "completed")
+        sessionStorage.setItem("futureSeer:generationStatus", isStillGenerating ? "in_progress" : "completed")
       }
       window.dispatchEvent(
         new CustomEvent("futureSeer:profileGenerationCompleted", {
           detail: {
             success: true,
-            pending: isBackgroundStageRunning,
+            pending: isStillGenerating,
             phase: (data as { phase?: string }).phase,
             completedTools: (data as { completedTools?: number }).completedTools,
             totalTools: (data as { totalTools?: number }).totalTools,

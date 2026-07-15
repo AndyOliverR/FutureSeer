@@ -33,7 +33,7 @@ function buildToolStatusMap(
   const next: PersistedToolStatusMap = {};
   for (const slug of ALL_TOOL_SLUGS) {
     const report = profile[slug];
-    const derived = { state: classifyToolReportState(report) };
+    const derived = { state: classifyToolReportState(report, slug) };
     const prev = existingToolStatus[slug];
     next[slug] = {
       state: derived.state,

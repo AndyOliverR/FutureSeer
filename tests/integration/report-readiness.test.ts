@@ -21,6 +21,30 @@ describe('Report readiness contract', () => {
     expect(isReadyToolReport({ placeholder: true })).toBe(false);
   });
 
+  it('rejects meta-only and reason-only shells as pending', () => {
+    expect(
+      classifyToolReportState({
+        generationIdempotencyKey: 'abc',
+        generatedAt: '2026-01-01',
+      }),
+    ).toBe('pending');
+    expect(classifyToolReportState({ reason: 'unavailable' })).toBe('pending');
+    expect(classifyToolReportState({ error: 'boom', message: 'x' })).toBe('pending');
+  });
+
+  it('requires display markers for core tools (vedic / tarot / western)', () => {
+    expect(classifyToolReportState({ note: 'thin shell' }, 'vedic')).toBe('pending');
+    expect(classifyToolReportState({ planets: [{ name: 'Sun' }] }, 'vedic')).toBe('ready');
+    expect(
+      classifyToolReportState({ comprehensiveAnalysis: { overview: 'ok' } }, 'vedic'),
+    ).toBe('ready');
+    expect(classifyToolReportState({ note: 'thin' }, 'tarot')).toBe('pending');
+    expect(classifyToolReportState({ profile: { birthCard: { name: 'Fool' } } }, 'tarot')).toBe(
+      'ready',
+    );
+    expect(classifyToolReportState({ sunSign: 'Aries' }, 'western')).toBe('ready');
+  });
+
   it('summarizes pending slugs and ready count', () => {
     const profile = {
       vedic: { reading: 'ready' },
@@ -30,7 +54,9 @@ describe('Report readiness contract', () => {
       },
     } as Record<string, unknown>;
     const summary = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
-    expect(summary.readyToolsCount).toBe(1);
+    // vedic with only `reading` fails vedic display markers → pending
+    expect(summary.readyToolsCount).toBe(0);
+    expect(summary.pendingToolSlugs).toContain('vedic');
     expect(summary.pendingToolSlugs).toContain('western');
     expect(summary.pendingToolSlugs).toContain('numerology');
     expect(summary.allReportsReady).toBe(false);
@@ -38,7 +64,7 @@ describe('Report readiness contract', () => {
 
   it('treats top-level ready report as ready even when legacy toolReports fallback is pending', () => {
     const profile = {
-      western: { reading: 'ready' },
+      western: { planets: [{ name: 'Sun' }] },
       toolReports: {
         western: { data: { placeholder: true } },
       },

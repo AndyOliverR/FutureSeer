@@ -9,7 +9,11 @@ import { type ReportReadinessState } from '@/lib/profileGenerationOrchestrator';
 import { devLog } from '@/lib/devLogger';
 import type { UserProfile } from '@/lib/firebase';
 
-const STAGE_B_MAX_ATTEMPTS = 3;
+/**
+ * Failure attempts only (hard worker crashes). Successful time-budget chunks
+ * requeue without burning this budget — otherwise ~3×240s ends with 30/42 ready forever.
+ */
+const STAGE_B_MAX_ATTEMPTS = 24;
 const STAGE_B_BASE_RETRY_MS = 30_000;
 const STAGE_B_HEARTBEAT_STALE_MS = 45_000;
 
@@ -58,7 +62,13 @@ function computeNextRetryAt(attempt: number, nowMs = Date.now()): number {
 
 export async function claimMysticalStageBJob(
   uid: string,
-  allowedStatuses: ReadonlyArray<string> = ['queued', 'failed', 'stale_running'],
+  allowedStatuses: ReadonlyArray<string> = [
+    'queued',
+    'failed',
+    'stale_running',
+    // Resume after prior attempt-exhaustion when tools still remain pending.
+    'failed_terminal',
+  ],
 ): Promise<
   | {
       status: StageBClaimStatus;
@@ -98,7 +108,9 @@ export async function claimMysticalStageBJob(
     const lastHeartbeatAt = Number(job.lastHeartbeatAt ?? 0);
     const now = Date.now();
     if (status === 'running') {
-      const staleRunning = lastHeartbeatAt > 0 && now - lastHeartbeatAt > STAGE_B_HEARTBEAT_STALE_MS;
+      // Missing heartbeat = crashed worker; treat as stale so resume can claim.
+      const staleRunning =
+        lastHeartbeatAt <= 0 || now - lastHeartbeatAt > STAGE_B_HEARTBEAT_STALE_MS;
       if (!staleRunning) {
         return { status: 'not_claimed' as const, reason: 'status_running' };
       }
@@ -108,7 +120,9 @@ export async function claimMysticalStageBJob(
     if (nextRetryAt > now) {
       return { status: 'retry_wait' as const, reason: 'backoff_active' };
     }
-    if (attempts >= STAGE_B_MAX_ATTEMPTS) {
+    // Failure budget applies only to hard `failed` retries — not time-budget `queued` chunks.
+    // `failed_terminal` is claimable so leftover tools can still finish after prior exhaustion.
+    if (status === 'failed' && attempts >= STAGE_B_MAX_ATTEMPTS) {
       return { status: 'max_attempts' as const, reason: 'max_attempts_reached' };
     }
     const profileWithUid = job.profileSnapshot;
@@ -118,7 +132,13 @@ export async function claimMysticalStageBJob(
     if (!profileWithUid || !profileHash) {
       return { status: 'not_claimed' as const, reason: 'missing_profile_snapshot' };
     }
-    const nextAttempt = attempts + 1;
+    // Only bump attempts on hard failures; continuation claims keep/reset the counter.
+    const claimAttempt =
+      status === 'failed'
+        ? attempts + 1
+        : status === 'failed_terminal'
+          ? 1
+          : Math.max(1, attempts || 1);
     transaction.set(
       ref,
       {
@@ -127,18 +147,19 @@ export async function claimMysticalStageBJob(
         phase: 'stageB',
         claimId,
         claimedAt: now,
-        attempts: nextAttempt,
+        attempts: claimAttempt,
         updatedAt: now,
         startedAt: typeof job.startedAt === 'number' ? job.startedAt : now,
         nextRetryAt: null,
         lastError: null,
+        lastHeartbeatAt: now,
       },
       { merge: true },
     );
     return {
       status: 'claimed' as const,
       claimId,
-      attempt: nextAttempt,
+      attempt: claimAttempt,
       profileWithUid,
       profileHash,
       pipelineMode,

@@ -11,6 +11,7 @@ import { getServerBaseUrl } from '@/lib/serverBaseUrl';
 import {
   ALL_TOOL_SLUGS,
   classifyToolReportState,
+  isReadyToolReport,
   summarizeToolReadiness,
   toolReportsFromComprehensiveProfile,
   runProfileGenerationToolSlugs,
@@ -165,7 +166,7 @@ export async function processMysticalStageBQueue(params: {
 
     const existingToolStatus = (existingProfile.toolStatus as PersistedToolStatusMap | undefined) ?? {};
     const nextState =
-      entry.status === 'failed' ? 'failed' : classifyToolReportState(entry.data);
+      entry.status === 'failed' ? 'failed' : classifyToolReportState(entry.data, toolSlug);
     const nextToolStatus: PersistedToolStatusMap = {
       ...existingToolStatus,
       [toolSlug]: {
@@ -249,13 +250,29 @@ export async function processMysticalStageBQueue(params: {
       const prevAttempts = tasks[slug]?.attempts ?? 0;
       const nextAttempts = prevAttempts + 1;
       if (entry.status === 'success') {
-        await persistToolPatch(
-          slug,
-          { status: 'success', data: entry.data as Record<string, unknown> },
-          'ready',
-          null,
-          nextAttempts,
-        );
+        const data = entry.data as Record<string, unknown> | undefined;
+        const displayReady = isReadyToolReport(data, slug);
+        if (displayReady) {
+          await persistToolPatch(
+            slug,
+            { status: 'success', data },
+            'ready',
+            null,
+            nextAttempts,
+          );
+        } else {
+          const terminal = nextAttempts >= TOOL_MAX_ATTEMPTS;
+          await persistToolPatch(
+            slug,
+            {
+              status: 'failed',
+              error: 'Incomplete report — not enough content for the tool UI',
+            },
+            terminal ? 'failed' : 'pending',
+            'Incomplete report — not enough content for the tool UI',
+            nextAttempts,
+          );
+        }
       } else {
         const terminal = nextAttempts >= TOOL_MAX_ATTEMPTS;
         await persistToolPatch(
@@ -293,8 +310,11 @@ export async function processMysticalStageBQueue(params: {
     await setDocument('generationJobs', uid, {
       status: 'queued',
       phase: pipelineMode === 'unified' ? 'running' : 'stageB',
+      // Successful chunk progress — reset failure attempts so drain can continue.
+      attempts: 0,
       nextRetryAt: Date.now() + 5_000,
       updatedAt: Date.now(),
+      lastHeartbeatAt: Date.now(),
       claimId,
     });
     return { done: false, processedTools, remainingTools, finalized: false };
