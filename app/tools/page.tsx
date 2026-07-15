@@ -23,6 +23,7 @@ import { isNumerologyChartsV2Enabled } from "@/lib/charts/featureFlags"
 import { buildItemListSchema } from "@/components/schema-markup"
 import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
 import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { GENERATION_ETA_TOOLS_BANNER } from "@/lib/generationEtaCopy"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
 const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
@@ -342,11 +343,13 @@ function ToolsPageContent() {
 
         <div className="px-4 space-y-8 pb-6">
           {showGeneratingBanner ? (
-            <div className="mb-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200 text-sm">
-              Reports are generating — open a tool when its card unlocks
-              {readiness.readyToolsCount > 0
-                ? ` (${readiness.readyToolsCount}/${ALL_TOOL_SLUGS.length} ready).`
-                : "."}
+            <div className="mb-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200 text-sm space-y-1">
+              <p>{GENERATION_ETA_TOOLS_BANNER}</p>
+              {readiness.readyToolsCount > 0 ? (
+                <p className="text-amber-200/80 text-xs">
+                  {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open unlocked tools anytime.
+                </p>
+              ) : null}
             </div>
           ) : null}
           {toolsByCategoryOrdered ? (
@@ -465,11 +468,13 @@ function ToolsPageContent() {
         </div>
 
         {showGeneratingBanner ? (
-          <div className="mb-10 mx-auto max-w-2xl rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200/90 text-sm">
-            Reports are generating — open a tool when its card unlocks
-            {readiness.readyToolsCount > 0
-              ? ` (${readiness.readyToolsCount}/${ALL_TOOL_SLUGS.length} ready).`
-              : "."}
+          <div className="mb-10 mx-auto max-w-2xl rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200/90 text-sm space-y-1">
+            <p>{GENERATION_ETA_TOOLS_BANNER}</p>
+            {readiness.readyToolsCount > 0 ? (
+              <p className="text-amber-200/80 text-xs">
+                {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open unlocked tools anytime.
+              </p>
+            ) : null}
           </div>
         ) : null}
 
