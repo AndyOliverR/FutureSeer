@@ -1,6 +1,9 @@
 /**
  * Runs dependency audit and targeted security lint checks.
  * Exits with code 1 if either step fails.
+ *
+ * Audit uses scripts/audit-deps-bulk.mjs (npm bulk advisory API) because
+ * npm retired the legacy audit endpoints that pnpm 10 still calls (HTTP 410).
  */
 import { spawnSync } from 'node:child_process';
 
@@ -25,10 +28,10 @@ function runShell(command) {
 }
 
 console.log('\n=== Dependency audit (high/critical) ===\n');
-const auditExit = runShell('pnpm audit --audit-level=high');
+const auditExit = runShell('node scripts/audit-deps-bulk.mjs high');
 if (auditExit !== 0) {
   console.error('\n[security] FAILED: dependency audit reported high/critical issues.');
-  console.error('Try: pnpm audit --audit-level=high   then: pnpm run audit:fix\n');
+  console.error('Try: pnpm run security:audit   then: pnpm run audit:fix\n');
 } else {
   console.log('\n[security] Dependency audit passed.\n');
 }

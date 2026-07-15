@@ -12,6 +12,6 @@ test('Tools page loads or redirects to sign-in', async ({ page }) => {
   if (url.includes('/signin')) {
     await expect(page.getByText(/Welcome Back|Sign in with Google|or email/i)).toBeVisible();
   } else {
-    await expect(page.getByRole('heading', { name: /Mystical Tools/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Occult\s*\/\s*Divination tools/i })).toBeVisible();
   }
 });
