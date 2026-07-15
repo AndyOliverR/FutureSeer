@@ -9,9 +9,8 @@ For recurring operations, route-level examples, and incident workflow, see the [
 | Command | What it does |
 |--------|----------------|
 | `pnpm run security` | Runs dependency audit (high/critical), **then always runs lint** (even if audit fails). Exits non-zero if **either** step fails. Implemented by [`scripts/run-security.mjs`](../scripts/run-security.mjs). |
-| `pnpm audit` | Checks dependencies for known vulnerabilities (npm advisory DB). |
-| `pnpm run security:audit` | Same as `pnpm audit` but fails only on high/critical (`--audit-level=high`). |
-| `pnpm run audit:fix` | Runs `pnpm audit --fix` to apply automatic fixes where possible. |
+| `pnpm run audit` / `pnpm run security:audit` | Dependency check via [`scripts/audit-deps-bulk.mjs`](../scripts/audit-deps-bulk.mjs) (npm `/security/advisories/bulk`). Needed because npm retired the legacy audit API that pnpm 10 still calls (HTTP 410). |
+| `pnpm run audit:fix` | Currently unavailable (legacy `pnpm audit --fix` path is broken); upgrade flagged packages manually from `security:audit` output. |
 | `pnpm run lint` | Runs ESLint including security rules (risky patterns like `eval`, unsafe regex, child_process, etc.). |
 | `pnpm run security:audit:skill` | Prints quarterly AI audit scope, cadence, and Cloudflare [security-audit-skill](https://github.com/cloudflare/security-audit-skill) setup (no LLM call). See § Security audit harness (lite) below. |
 
@@ -21,7 +20,7 @@ For recurring operations, route-level examples, and incident workflow, see the [
 
 ## What’s included
 
-- **Dependency audit**: `pnpm audit` uses the built-in npm advisory database. No signup or external service.
+- **Dependency audit**: [`scripts/audit-deps-bulk.mjs`](../scripts/audit-deps-bulk.mjs) posts lockfile packages to npm’s bulk advisory API. No signup or external service.
 - **Code security lint**: `eslint-plugin-security` flags risky patterns (eval, non-literal regex, unsafe buffer, etc.). Configured in `eslint.config.mjs`; runs with `pnpm run lint`.
 
 No GitLab, Snyk, or other paid scanning. Optional: you can add a GitHub Actions workflow that runs `pnpm run security` on push.
