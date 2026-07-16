@@ -119,6 +119,8 @@ function ToolsPageContent() {
         toolPathForSlug('kabbalisticNumerology'),
         toolPathForSlug('nameAnalysis'),
         toolPathForSlug('vastu'),
+        toolPathForSlug('faceReading'),
+        toolPathForSlug('palmistry'),
       ]),
     []
   )

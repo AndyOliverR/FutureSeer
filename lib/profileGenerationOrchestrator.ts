@@ -813,7 +813,10 @@ async function runTool(
           return {
             status: 'success',
             data: {
-              placeholder: true,
+              baselineReady: true,
+              requiresNextStep: true,
+              nextStepLabel: 'Complete Next Step',
+              nextStepCta: 'Upload a face photo to generate your face reading.',
               reason: 'Upload a face photo to generate a face reading.',
             },
             generatedAt,
@@ -855,7 +858,10 @@ async function runTool(
           return {
             status: 'success',
             data: {
-              placeholder: true,
+              baselineReady: true,
+              requiresNextStep: true,
+              nextStepLabel: 'Complete Next Step',
+              nextStepCta: 'Upload hand images to generate your palmistry reading.',
               reason: 'Upload hand images to generate a palmistry reading.',
             },
             generatedAt,
