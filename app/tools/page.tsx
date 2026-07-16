@@ -355,7 +355,7 @@ function ToolsPageContent() {
               <p>{GENERATION_ETA_TOOLS_BANNER}</p>
               {readiness.readyToolsCount > 0 ? (
                 <p className="text-amber-200/80 text-xs">
-                  {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open unlocked cards; locked tools are still generating.
+              {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open a tool when its card unlocks.
                 </p>
               ) : (
                 <p className="text-amber-200/80 text-xs">Waiting for the first tools to unlock…</p>
@@ -392,11 +392,6 @@ function ToolsPageContent() {
                           ) : isBaselineNextStepReady(tool.slug) ? (
                             <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
                               Complete Next Step
-                            </span>
-                          ) : null}
-                          {toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.unchanged ? (
-                            <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
-                              No new data yet
                             </span>
                           ) : null}
                         </div>
@@ -441,11 +436,6 @@ function ToolsPageContent() {
                           Complete Next Step
                         </span>
                       ) : null}
-                      {toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.unchanged ? (
-                        <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
-                          No new data yet
-                        </span>
-                      ) : null}
                     </div>
                     <p className="text-xs text-surface-on-variant uppercase font-bold opacity-70 tracking-wide mt-1">{tool.category}</p>
                     {isToolPending(tool.slug) ? (
@@ -482,7 +472,7 @@ function ToolsPageContent() {
             <p>{GENERATION_ETA_TOOLS_BANNER}</p>
             {readiness.readyToolsCount > 0 ? (
               <p className="text-amber-200/80 text-xs">
-                {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open unlocked cards; locked tools are still generating.
+                {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open a tool when its card unlocks.
               </p>
             ) : (
               <p className="text-amber-200/80 text-xs">Waiting for the first tools to unlock…</p>
@@ -542,11 +532,6 @@ function ToolsPageContent() {
                             Complete Next Step
                           </span>
                         ) : null}
-                        {toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.unchanged ? (
-                          <span className="mb-2 rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
-                            No new data yet
-                          </span>
-                        ) : null}
                         <p className="text-surface-on-variant text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                         {isToolPending(tool.slug) ? (
                           <p className="mt-2 text-xs text-surface-on-variant">
@@ -589,11 +574,6 @@ function ToolsPageContent() {
                 ) : isBaselineNextStepReady(tool.slug) ? (
                   <span className="mb-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
                     Complete Next Step
-                  </span>
-                ) : null}
-                {toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.unchanged ? (
-                  <span className="mb-2 rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
-                    No new data yet
                   </span>
                 ) : null}
                 <p className="text-surface-on-variant text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
