@@ -4,6 +4,8 @@ import { EnhancedFooter } from "@/components/enhanced-footer";
 import { PersonalNote } from "@/components/about/PersonalNote";
 import { AboutFAQ } from "@/components/about/AboutFAQ";
 import { Button } from "@/components/ui/button";
+import { buildFaqPageSchema } from "@/components/schema-markup";
+import { PRODUCT_FAQ } from "@/lib/seo/faqCatalog";
 import { buildLocalizedKeywordSet, normalizeSeoBaseUrl } from "@/lib/seo/locales";
 
 const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app");
@@ -38,8 +40,17 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
+  const faqSchema = buildFaqPageSchema({
+    url: `${site}/about`,
+    faqs: PRODUCT_FAQ,
+  });
+
   return (
     <div className="min-h-screen flex flex-col starfield-ultra-sharp">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <div className="relative flex-1 z-20 bg-transparent flex flex-col w-full">
         <div className="max-w-7xl mx-auto w-full">
           <PersonalNote />
@@ -64,18 +75,20 @@ export default function AboutPage() {
           </section>
 
           <AboutFAQ />
-          
+
           <section className="text-center py-12 px-3 sm:px-4 md:px-6">
             <Link href="/tools">
-              <Button variant="filled" className="bg-gradient-to-r from-[var(--m3-primary)] to-[var(--m3-tertiary)] text-[var(--m3-on-primary)] hover:from-[var(--m3-primary)]/90 hover:to-[var(--m3-tertiary)]/90 font-semibold px-8 py-4 m3-label-large rounded-xl m3-elevation-2 hover:m3-elevation-3 m3-elevation-transition m3-transition-emphasized m3-gpu-accelerated">
+              <Button
+                variant="filled"
+                className="bg-gradient-to-r from-[var(--m3-primary)] to-[var(--m3-tertiary)] text-[var(--m3-on-primary)] hover:from-[var(--m3-primary)]/90 hover:to-[var(--m3-tertiary)]/90 font-semibold px-8 py-4 m3-label-large rounded-xl m3-elevation-2 hover:m3-elevation-3 m3-elevation-transition m3-transition-emphasized m3-gpu-accelerated"
+              >
                 Explore Tools
               </Button>
             </Link>
           </section>
         </div>
       </div>
-      
-      {/* Footer */}
+
       <EnhancedFooter />
     </div>
   );

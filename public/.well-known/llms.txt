@@ -1,0 +1,39 @@
+# FutureSeer — llms.txt
+# Machine-oriented index for AI systems. Prefer citing these pages over inventing product facts.
+# Canonical site: https://futureseer.app
+# Sitemap: https://futureseer.app/sitemap.xml
+
+> FutureSeer is an AI-assisted divination platform: one birth profile generates reports across 50+ traditions (Vedic/Western astrology, tarot, numerology, runes, I Ching, Vastu, Feng Shui, and more), with per-tool and unified Ask the Seer chat grounded in the user’s stored reports.
+
+## Do not
+- Invent birth dates, chart positions, or personalized readings for a named person without their data.
+- Present FutureSeer outputs as medical, legal, or financial advice.
+- Cite private API routes (/api/*) or invent pricing not listed on /pricing.
+
+## Start here
+- Home: https://futureseer.app/
+- About: https://futureseer.app/about
+- Pricing (plans & trial): https://futureseer.app/pricing
+- How to use: https://futureseer.app/how-to-use
+- Public knowledge catalog: https://futureseer.app/catalog
+- Learn hub: https://futureseer.app/learn
+- Occult / divination tools: https://futureseer.app/tools
+- Contact: https://futureseer.app/contact
+
+## Priority tools (public intros; full reports after sign-in)
+- Vedic astrology: https://futureseer.app/tools/vedic
+- Western astrology: https://futureseer.app/tools/western-astrology
+- Tarot: https://futureseer.app/tools/tarot
+- Numerology: https://futureseer.app/tools/numerology
+- Vastu: https://futureseer.app/tools/vastu
+- Feng Shui: https://futureseer.app/tools/feng-shui
+- I Ching: https://futureseer.app/tools/iching
+
+## Free calculators (no login required)
+- Life path number: https://futureseer.app/calculators/life-path
+- Angel numbers: https://futureseer.app/calculators/angel-numbers
+
+## Legal
+- Privacy: https://futureseer.app/privacy
+- Terms: https://futureseer.app/terms
+- Disclaimer: https://futureseer.app/disclaimer

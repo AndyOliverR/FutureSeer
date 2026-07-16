@@ -1,35 +1,44 @@
-"use client"
-
-import { useState, useEffect } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import { ContributionTiers } from '@/components/ContributionTiers'
-import { TipJarCard } from '@/components/TipJarCard'
 import { FutureSeerWordmark } from '@/components/brand/FutureSeerWordmark'
+import { PricingPublicSummary } from '@/components/pricing/PricingPublicSummary'
+import { PricingPageClient } from '@/components/pricing/PricingPageClient'
+import { buildFaqPageSchema } from '@/components/schema-markup'
+import { buildSoftwareApplicationOffers } from '@/lib/seo/publicPricingCatalog'
+import { PRICING_FAQ } from '@/lib/seo/faqCatalog'
+import { normalizeSeoBaseUrl } from '@/lib/seo/locales'
+
+const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? 'https://futureseer.app')
+
 export default function PricingPage() {
-  const { userProfile } = useAuth()
-  const [isMounted, setIsMounted] = useState(false)
-  // Use country from user profile or default to India (no UI selector)
-  const selectedCountry = userProfile?.country || 'IN'
-
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setIsMounted(true))
-    return () => cancelAnimationFrame(id)
-  }, [])
-
-  const handleContribute = (tierId: string) => {
-    // Redirect to signup with plan pre-selected
-    // ContributionTiers already sends correct IDs: 'power-user-trial', 'buy-coffee', 'treat-me', 'festive-hamper'
-    // These match SignupFlow's expected plan IDs, so pass directly
-    window.location.href = `/signup?plan=${tierId}`;
+  const pricingUrl = `${site}/pricing`
+  const faqSchema = buildFaqPageSchema({ url: pricingUrl, faqs: PRICING_FAQ })
+  const offersSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'FutureSeer Pricing',
+    url: pricingUrl,
+    description:
+      'FutureSeer membership plans: 30-day trial, then Coffee (monthly), Treat (quarterly), or Hamper (annual).',
+    mainEntity: {
+      '@type': 'SoftwareApplication',
+      name: 'FutureSeer',
+      applicationCategory: 'LifestyleApplication',
+      operatingSystem: 'Web',
+      offers: buildSoftwareApplicationOffers(),
+    },
   }
-
-  if (!isMounted) return null
 
   return (
     <div className="starfield-ultra-sharp min-h-screen py-12 px-3 sm:px-4 md:px-6 pb-32 md:pb-12 overflow-x-hidden relative">
-      {/* Logo - Top Left */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(offersSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <FutureSeerWordmark href="/" size="lg" className="absolute top-4 left-4 z-50" />
-      
+
       <div className="max-w-7xl mx-auto pt-8" data-onboarding="pricing">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
@@ -45,22 +54,9 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Contribution Tiers */}
-        <div className="space-y-8">
-          <ContributionTiers 
-            selectedCountry={selectedCountry}
-            onContribute={handleContribute}
-          />
-          
-          {/* Tip Jar Section */}
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-serif text-amber-400 mb-3">Tip Jar</h3>
-            <div className="max-w-md mx-auto">
-              <TipJarCard countryCode={selectedCountry} />
-            </div>
-          </div>
-        </div>
+        <PricingPublicSummary />
+        <PricingPageClient />
       </div>
     </div>
   )
-} 
+}
