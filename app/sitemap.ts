@@ -69,6 +69,7 @@ const TOOL_PATHS = [
 const STATIC_PATHS = [
   "/",
   "/about",
+  "/catalog",
   "/community/attribution",
   "/contact",
   "/pricing",
@@ -84,6 +85,8 @@ const STATIC_PATHS = [
   "/remedies",
   "/tools",
   "/learn",
+  "/calculators/life-path",
+  "/calculators/angel-numbers",
 ] as const
 
 export default function sitemap(): MetadataRoute.Sitemap {

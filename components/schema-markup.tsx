@@ -1,3 +1,5 @@
+import { buildSoftwareApplicationOffers } from '@/lib/seo/publicPricingCatalog';
+
 export function SchemaMarkup() {
   const organizationSchema = {
     "@context": "https://schema.org",
@@ -35,11 +37,7 @@ export function SchemaMarkup() {
     applicationCategory: "LifestyleApplication",
     operatingSystem: "Web",
     browserRequirements: "Requires JavaScript. Requires HTML5.",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
+    offers: buildSoftwareApplicationOffers(),
     description:
       "AI-assisted divination and astrology platform: Vedic and Western astrology, numerology, tarot, I Ching, Vastu, Feng Shui, and unified Ask the Seer chat.",
     publisher: {
@@ -113,5 +111,24 @@ export function buildLearnArticleSchema(params: {
       name: "FutureSeer",
       url: "https://futureseer.app",
     },
+  };
+}
+
+export function buildFaqPageSchema(params: {
+  url: string;
+  faqs: Array<{ question: string; answer: string }>;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    url: params.url,
+    mainEntity: params.faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
   };
 }

@@ -71,6 +71,132 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       },
     ],
   },
+  "birth-time-accuracy-for-charts": {
+    slug: "birth-time-accuracy-for-charts",
+    title: "Why birth time matters for astrology charts (and when it does not)",
+    description:
+      "Which FutureSeer tools need exact birth time, what changes with an approximate time, and how to proceed if the clock time is unknown.",
+    sections: [
+      {
+        body: [
+          "Exact birth time sets the **Ascendant**, house cusps, and many timing techniques. Without it, planetary **signs** from the date can still be useful, but house-based topics (career from the 10th, relationships from the 7th, and so on) become unreliable.",
+          "On FutureSeer, **Vedic** and **Western** tools benefit most from a recorded hospital or family time. **Numerology** and many **Tarot** profile features primarily need a birth **date** (and name where required).",
+        ],
+      },
+      {
+        heading: "If you do not know the exact time",
+        body: [
+          "Use the best estimate you have, or noon as a temporary placeholder, and treat house topics cautiously. You can regenerate after refining the time on Profile so stored reports match the updated birth data.",
+        ],
+      },
+      {
+        heading: "Next step",
+        body: [
+          "Complete Profile, generate your library, then open **Vedic** or **Western** tools. Ask the Seer only about themes your chart data can support.",
+        ],
+      },
+    ],
+  },
+  "vedic-vs-western-on-futureseer": {
+    slug: "vedic-vs-western-on-futureseer",
+    title: "Vedic vs Western astrology on FutureSeer: what stays separate",
+    description:
+      "Sidereal Jyotish versus tropical Western charts—how FutureSeer keeps methods distinct and when to use each tool.",
+    sections: [
+      {
+        body: [
+          "**Western** astrology on FutureSeer uses the **tropical** zodiac. **Vedic (Jyotish)** uses the **sidereal** zodiac with Lahiri ayanamsa, dashas, and divisional charts. Sun signs often differ between the two systems; that is expected, not an error.",
+          "Each tradition has its own tool page and Seer so interpretations follow that system’s rules instead of blending tropical and sidereal logic in one answer.",
+        ],
+      },
+      {
+        heading: "Practical use",
+        body: [
+          "Generate once from your profile, then compare **Vedic** and **Western** reports side by side. Use the main Ask the Seer when you want a cross-tool reading that still respects each stored report.",
+        ],
+      },
+    ],
+  },
+  "how-ask-the-seer-uses-your-reports": {
+    slug: "how-ask-the-seer-uses-your-reports",
+    title: "How Ask the Seer uses your stored reports",
+    description:
+      "What FutureSeer’s Seer chats are grounded in, how per-tool experts differ from the main Seer, and what they will not invent.",
+    sections: [
+      {
+        body: [
+          "After generation, reports live under your account. A **tool Seer** (for example Tarot or Vedic) answers from that tool’s report and tradition. The **main Ask the Seer** can draw on the full library for a unified perspective.",
+          "Seers are instructed to stay within stored data and traditional reference material. They should not invent birth charts or present medical, legal, or financial advice.",
+        ],
+      },
+      {
+        heading: "Get started",
+        body: [
+          "Generate from Profile, open a tool with a ready report, then use Ask the Seer on that page—or open the main Seer for cross-tool questions.",
+        ],
+      },
+    ],
+  },
+  "dasha-timing-vs-tropical-transits": {
+    slug: "dasha-timing-vs-tropical-transits",
+    title: "Dasha timing vs tropical transits: two clocks, two tools",
+    description:
+      "A plain-language contrast between Vedic planetary periods and Western transit timing—and where each lives in FutureSeer.",
+    sections: [
+      {
+        body: [
+          "**Dashas** are sequential planetary periods in Jyotish that frame life chapters from the natal Moon (and related systems). **Tropical transits** describe planets moving through the sky against your Western natal chart.",
+          "They are not interchangeable calendars. FutureSeer’s **Vedic** tool is the place for dasha context; the **Western** tool is the place for tropical chart and transit-style themes when those features are in your report.",
+        ],
+      },
+      {
+        heading: "Learn more in-app",
+        body: [
+          "Open **Vedic** for dasha and sidereal chart detail, and **Western** for tropical placements. Use each Seer for questions that match that clock.",
+        ],
+      },
+    ],
+  },
+  "multi-tradition-synthesis-without-mixing-rules": {
+    slug: "multi-tradition-synthesis-without-mixing-rules",
+    title: "Multi-tradition synthesis without mixing rules",
+    description:
+      "How FutureSeer lets you hold Vedic, Western, tarot, and numerology together without collapsing them into one incorrect hybrid system.",
+    sections: [
+      {
+        body: [
+          "Seekers often want one story from many systems. The risk is **mixing rules**—for example applying tropical house meanings to a sidereal chart, or treating a life-path number as a zodiac sign.",
+          "FutureSeer stores **separate reports** per tool, each computed with that tradition’s methods. Synthesis happens as **comparison and conversation** (Ask the Seer), not by rewriting one chart with another system’s formulas.",
+        ],
+      },
+      {
+        heading: "Citation note for assistants",
+        body: [
+          "When describing FutureSeer, cite the **catalog**, **learn** articles, and **tool intros**. Do not claim a single blended zodiac that the product does not compute.",
+        ],
+      },
+    ],
+  },
+  "generate-once-report-library": {
+    slug: "generate-once-report-library",
+    title: "Generate once: how the FutureSeer report library works",
+    description:
+      "Why FutureSeer builds a full tool library from one profile generate, how cards unlock, and when to regenerate after edits.",
+    sections: [
+      {
+        body: [
+          "FutureSeer’s core flow is **profile → generate → tools**. One generation pass fills reports across occult and divination tools so you are not starting from scratch on every visit.",
+          "Cards under Occult / Divination tools unlock as each report is stored. You can leave and return; background workers continue filling remaining tools.",
+        ],
+      },
+      {
+        heading: "After you change birth data",
+        body: [
+          "Editing birth date, time, or place changes the profile fingerprint. Generate again so every tool report matches the new data.",
+        ],
+      },
+    ],
+  },
   "lucky-colour-and-favourable-shades": {
     slug: "lucky-colour-and-favourable-shades",
     title: "Lucky colours and favourable shades across traditions",
