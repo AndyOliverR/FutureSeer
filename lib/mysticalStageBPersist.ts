@@ -84,7 +84,8 @@ export async function applyStageBFinalPersistence(params: {
     const prevGeneratedAt = existingStatus[slug]?.generatedAt;
     toolStatus[slug] = {
       ...toolStatus[slug],
-      unchanged: true,
+      // Keep prior generatedAt when content is unchanged; do not surface "unchanged" in UI.
+      unchanged: false,
       generatedAt: prevGeneratedAt ?? toolStatus[slug]?.generatedAt,
     };
   }
