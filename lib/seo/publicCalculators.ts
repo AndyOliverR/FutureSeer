@@ -17,7 +17,9 @@ export function lifePathFromIsoDate(isoDate: string): { number: number; blurb: s
   if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null
   const [y, m, d] = isoDate.split('-').map(Number)
   if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 31) return null
-  const number = calculateLifePathNumber(isoDate)
+  // Date-only strings parse as UTC, while the shared calculator reads local
+  // fields. Use local noon so the selected calendar date cannot shift by zone.
+  const number = calculateLifePathNumber(`${isoDate}T12:00:00`)
   return { number, blurb: LIFE_PATH_BLURBS[number] ?? 'Explore your full numerology report in FutureSeer.' }
 }
 

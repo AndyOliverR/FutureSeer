@@ -9,11 +9,23 @@ import { buildFaqPageSchema } from '@/components/schema-markup'
 import { LEARN_ARTICLES } from '@/app/learn/learnArticles'
 
 describe('AI citation helpers', () => {
-  it('computes life path from ISO date', () => {
-    const result = lifePathFromIsoDate('1990-01-15')
-    expect(result).not.toBeNull()
-    expect(result!.number).toBeGreaterThanOrEqual(1)
-    expect(result!.number).toBeLessThanOrEqual(9)
+  it('computes life path from the selected calendar date in every timezone', () => {
+    const previousTimezone = process.env.TZ
+
+    try {
+      process.env.TZ = 'UTC'
+      expect(lifePathFromIsoDate('2023-11-11')?.number).toBe(11)
+
+      process.env.TZ = 'America/Los_Angeles'
+      expect(lifePathFromIsoDate('2023-11-11')?.number).toBe(11)
+      expect(lifePathFromIsoDate('1990-01-15')?.number).toBe(8)
+    } finally {
+      if (previousTimezone === undefined) {
+        delete process.env.TZ
+      } else {
+        process.env.TZ = previousTimezone
+      }
+    }
   })
 
   it('looks up angel number sequences', () => {
