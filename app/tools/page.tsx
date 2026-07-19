@@ -24,6 +24,10 @@ import { buildItemListSchema } from "@/components/schema-markup"
 import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
 import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
 import { GENERATION_ETA_TOOLS_BANNER } from "@/lib/generationEtaCopy"
+import {
+  getToolsGenerationState,
+  isGenerationToolPending,
+} from "@/lib/toolsGenerationState"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
 const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
@@ -39,9 +43,6 @@ function ToolsPageContent() {
     () => summarizeToolReadiness((comprehensiveProfile as Record<string, unknown> | null) ?? null, ALL_TOOL_SLUGS),
     [comprehensiveProfile],
   )
-  const allReportsReady = Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady)
-  const generationHasPendingTools =
-    Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && readiness.pendingToolSlugs.length > 0
   const generatingParam = searchParams.get("generating") === "1"
   const [sessionGeneratingInitial] = useState(() => {
     if (typeof window === "undefined") return false
@@ -51,9 +52,20 @@ function ToolsPageContent() {
       return false
     }
   })
-  const sessionGenerating = sessionGeneratingInitial && !allReportsReady
-  const showGeneratingBanner =
-    generatingParam || sessionGenerating || generationHasPendingTools
+  const {
+    reportsComplete,
+    generationHasPendingTools,
+    showGeneratingBanner,
+    shouldRefreshGeneration,
+  } = getToolsGenerationState({
+    authGenerated: Boolean(userProfile?.mysticalProfileGenerated),
+    authAllReportsReady: Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady),
+    liveAllReportsReady: readiness.allReportsReady,
+    livePendingToolsCount: readiness.pendingToolSlugs.length,
+    generatingParam,
+    sessionGenerationInProgress: sessionGeneratingInitial,
+  })
+  const sessionGenerating = sessionGeneratingInitial && !reportsComplete
   const pendingToolsSet = useMemo(
     () => new Set(readiness.pendingToolSlugs.map((slug) => toolPathForSlug(slug))),
     [readiness.pendingToolSlugs],
@@ -123,14 +135,16 @@ function ToolsPageContent() {
     []
   )
   const isToolPending = (listSlug: string) => {
-    if (!Boolean(userProfile?.mysticalProfileGenerated)) return false
     const pathKey = toolListSlugToProfilePathKey(listSlug)
     const report = profileByPath[pathKey]
-    // Displayable payload unlocks the card — do not trust stale toolStatus "ready" alone.
-    if (isReadyToolReport(report, pathKey)) return false
-    const state = toolStateByPath[pathKey]
-    if (state === 'running' || state === 'pending' || state === 'placeholder') return true
-    return pendingToolsSet.has(pathKey)
+    return isGenerationToolPending({
+      authGenerated: Boolean(userProfile?.mysticalProfileGenerated),
+      generationInProgress: showGeneratingBanner,
+      // Displayable payload unlocks the card — do not trust stale toolStatus "ready" alone.
+      reportReady: isReadyToolReport(report, pathKey),
+      taskState: toolStateByPath[pathKey],
+      listedPending: pendingToolsSet.has(pathKey),
+    })
   }
   const isBaselineNextStepReady = (listSlug: string) => {
     if (isToolPending(listSlug)) return false
@@ -158,7 +172,7 @@ function ToolsPageContent() {
 
   /** Clear session generating flag when reports finish. */
   useEffect(() => {
-    if (!allReportsReady) return
+    if (!reportsComplete) return
     try {
       if (sessionStorage.getItem("futureSeer:generationStatus") === "in_progress") {
         sessionStorage.setItem("futureSeer:generationStatus", "completed")
@@ -166,13 +180,13 @@ function ToolsPageContent() {
     } catch {
       /* ignore */
     }
-  }, [allReportsReady])
+  }, [reportsComplete])
 
   /** Drop ?generating=1 once generation is done (or idle with nothing pending). */
   useEffect(() => {
     if (!generatingParam) return
     const idle =
-      allReportsReady ||
+      reportsComplete ||
       (!sessionGenerating &&
         !generationHasPendingTools &&
         Boolean(userProfile?.mysticalProfileGenerated))
@@ -185,7 +199,7 @@ function ToolsPageContent() {
     generatingParam,
     generationHasPendingTools,
     sessionGenerating,
-    allReportsReady,
+    reportsComplete,
     userProfile?.mysticalProfileGenerated,
     router,
     searchParams,
@@ -193,20 +207,20 @@ function ToolsPageContent() {
 
   /** While generation is still filling tools, gently refresh profile (Firestore snapshot may lag). */
   useEffect(() => {
-    if (!user?.uid || !generationHasPendingTools) return
+    if (!user?.uid || !shouldRefreshGeneration) return
     void refreshMysticalProfile()
     const id = window.setInterval(() => {
       void refreshMysticalProfile()
     }, 12_000)
     return () => window.clearInterval(id)
-  }, [user?.uid, generationHasPendingTools, refreshMysticalProfile])
+  }, [user?.uid, shouldRefreshGeneration, refreshMysticalProfile])
 
   /**
    * Resume stalled generation while the user stays on /tools (GET promotes stale jobs).
    * Interval is deliberately slow — not the old mystical-profile poll storm.
    */
   useEffect(() => {
-    if (!user || !generationHasPendingTools) return
+    if (!user || !shouldRefreshGeneration) return
     let cancelled = false
     const run = async () => {
       try {
@@ -230,7 +244,7 @@ function ToolsPageContent() {
       cancelled = true
       window.clearInterval(id)
     }
-  }, [user, generationHasPendingTools, refreshMysticalProfile])
+  }, [user, shouldRefreshGeneration, refreshMysticalProfile])
 
   useEffect(() => {
     if (
