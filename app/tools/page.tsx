@@ -24,6 +24,12 @@ import { buildItemListSchema } from "@/components/schema-markup"
 import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
 import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
 import { GENERATION_ETA_TOOLS_BANNER } from "@/lib/generationEtaCopy"
+import { GenerationPartialFailureBanner } from "@/components/mystical/GenerationPartialFailureBanner"
+import {
+  completeTerminalFailureSummaries,
+  extractFailedToolSummaries,
+  resolveTerminalGenerationFailureState,
+} from "@/lib/generationFailureUx"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
 const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
@@ -39,9 +45,43 @@ function ToolsPageContent() {
     () => summarizeToolReadiness((comprehensiveProfile as Record<string, unknown> | null) ?? null, ALL_TOOL_SLUGS),
     [comprehensiveProfile],
   )
+  const persistedFailedToolSummaries = useMemo(
+    () => extractFailedToolSummaries((comprehensiveProfile as Record<string, unknown> | null) ?? null),
+    [comprehensiveProfile],
+  )
+  const generationFailureState = useMemo(
+    () =>
+      resolveTerminalGenerationFailureState({
+        profileStatus: comprehensiveProfile ? userProfile?.profileStatus : undefined,
+        pendingToolSlugs: readiness.pendingToolSlugs,
+        failedToolSlugs: persistedFailedToolSummaries.map((tool) => tool.slug),
+        toolTasks: (comprehensiveProfile as Record<string, unknown> | null)?.toolTasks as
+          | Record<
+              string,
+              { status?: unknown; attempts?: unknown; maxAttempts?: unknown } | undefined
+            >
+          | undefined,
+      }),
+    [
+      comprehensiveProfile,
+      persistedFailedToolSummaries,
+      readiness.pendingToolSlugs,
+      userProfile?.profileStatus,
+    ],
+  )
+  const terminalFailureSummaries = useMemo(
+    () =>
+      completeTerminalFailureSummaries(
+        persistedFailedToolSummaries,
+        generationFailureState.terminalFailedToolSlugs,
+      ),
+    [generationFailureState.terminalFailedToolSlugs, persistedFailedToolSummaries],
+  )
   const allReportsReady = Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady)
   const generationHasPendingTools =
-    Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && readiness.pendingToolSlugs.length > 0
+    Boolean(userProfile?.mysticalProfileGenerated) &&
+    !allReportsReady &&
+    generationFailureState.activePendingToolSlugs.length > 0
   const generatingParam = searchParams.get("generating") === "1"
   const [sessionGeneratingInitial] = useState(() => {
     if (typeof window === "undefined") return false
@@ -51,12 +91,19 @@ function ToolsPageContent() {
       return false
     }
   })
-  const sessionGenerating = sessionGeneratingInitial && !allReportsReady
+  const sessionGenerating =
+    sessionGeneratingInitial && !allReportsReady && !generationFailureState.isTerminalFailure
   const showGeneratingBanner =
-    generatingParam || sessionGenerating || generationHasPendingTools
+    (generatingParam && !generationFailureState.isTerminalFailure) ||
+    sessionGenerating ||
+    generationHasPendingTools
   const pendingToolsSet = useMemo(
-    () => new Set(readiness.pendingToolSlugs.map((slug) => toolPathForSlug(slug))),
-    [readiness.pendingToolSlugs],
+    () => new Set(generationFailureState.activePendingToolSlugs.map((slug) => toolPathForSlug(slug))),
+    [generationFailureState.activePendingToolSlugs],
+  )
+  const terminalFailedToolsSet = useMemo(
+    () => new Set(generationFailureState.terminalFailedToolSlugs.map((slug) => toolPathForSlug(slug))),
+    [generationFailureState.terminalFailedToolSlugs],
   )
   const [nowMs, setNowMs] = useState(() => Date.now())
   const toolStatusMap = useMemo(
@@ -123,8 +170,9 @@ function ToolsPageContent() {
     []
   )
   const isToolPending = (listSlug: string) => {
-    if (!Boolean(userProfile?.mysticalProfileGenerated)) return false
     const pathKey = toolListSlugToProfilePathKey(listSlug)
+    if (terminalFailedToolsSet.has(pathKey)) return false
+    if (!Boolean(userProfile?.mysticalProfileGenerated)) return false
     const report = profileByPath[pathKey]
     // Displayable payload unlocks the card — do not trust stale toolStatus "ready" alone.
     if (isReadyToolReport(report, pathKey)) return false
@@ -156,23 +204,27 @@ function ToolsPageContent() {
     return () => window.clearInterval(timer)
   }, [])
 
-  /** Clear session generating flag when reports finish. */
+  /** Clear session generating flag when reports finish or generation stops with failures. */
   useEffect(() => {
-    if (!allReportsReady) return
+    if (!allReportsReady && !generationFailureState.isTerminalFailure) return
     try {
       if (sessionStorage.getItem("futureSeer:generationStatus") === "in_progress") {
-        sessionStorage.setItem("futureSeer:generationStatus", "completed")
+        sessionStorage.setItem(
+          "futureSeer:generationStatus",
+          generationFailureState.isTerminalFailure ? "failed" : "completed",
+        )
       }
     } catch {
       /* ignore */
     }
-  }, [allReportsReady])
+  }, [allReportsReady, generationFailureState.isTerminalFailure])
 
   /** Drop ?generating=1 once generation is done (or idle with nothing pending). */
   useEffect(() => {
     if (!generatingParam) return
     const idle =
       allReportsReady ||
+      generationFailureState.isTerminalFailure ||
       (!sessionGenerating &&
         !generationHasPendingTools &&
         Boolean(userProfile?.mysticalProfileGenerated))
@@ -186,6 +238,7 @@ function ToolsPageContent() {
     generationHasPendingTools,
     sessionGenerating,
     allReportsReady,
+    generationFailureState.isTerminalFailure,
     userProfile?.mysticalProfileGenerated,
     router,
     searchParams,
@@ -350,6 +403,9 @@ function ToolsPageContent() {
         </div>
 
         <div className="px-4 space-y-8 pb-6">
+          {generationFailureState.isTerminalFailure ? (
+            <GenerationPartialFailureBanner failedTools={terminalFailureSummaries} variant="m3" />
+          ) : null}
           {showGeneratingBanner ? (
             <div className="mb-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200 text-sm space-y-1">
               <p>{GENERATION_ETA_TOOLS_BANNER}</p>
@@ -466,6 +522,12 @@ function ToolsPageContent() {
           <h1 className="text-5xl font-heading font-normal text-amber-400 mb-4 tracking-widest uppercase">Occult / Divination tools</h1>
           <p className="text-surface-on-variant text-lg max-w-2xl mx-auto font-light italic">Choose your path through ancient traditions</p>
         </div>
+
+        {generationFailureState.isTerminalFailure ? (
+          <div className="mx-auto max-w-2xl">
+            <GenerationPartialFailureBanner failedTools={terminalFailureSummaries} variant="web" />
+          </div>
+        ) : null}
 
         {showGeneratingBanner ? (
           <div className="mb-10 mx-auto max-w-2xl rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200/90 text-sm space-y-1">

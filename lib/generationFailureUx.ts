@@ -12,6 +12,65 @@ export type FailedToolSummary = {
   error?: string | null;
 };
 
+export type TerminalGenerationFailureState = {
+  isTerminalFailure: boolean;
+  activePendingToolSlugs: string[];
+  terminalFailedToolSlugs: string[];
+};
+
+/**
+ * A tool-level failure can be transient while Stage B is retrying. Only treat
+ * failed reports as terminal once the profile pipeline itself has stopped.
+ */
+export function resolveTerminalGenerationFailureState(params: {
+  profileStatus?: unknown;
+  pendingToolSlugs: readonly string[];
+  failedToolSlugs: readonly string[];
+  toolTasks?: Record<
+    string,
+    { status?: unknown; attempts?: unknown; maxAttempts?: unknown } | undefined
+  >;
+}): TerminalGenerationFailureState {
+  const hasRetryableToolTasks = Object.values(params.toolTasks ?? {}).some((task) => {
+    if (!task) return false;
+    if (task.status === 'pending' || task.status === 'running') return true;
+    if (task.status !== 'failed') return false;
+    const attempts = typeof task.attempts === 'number' ? task.attempts : 0;
+    const maxAttempts = typeof task.maxAttempts === 'number' ? task.maxAttempts : 3;
+    return attempts < maxAttempts;
+  });
+  const pipelineStopped =
+    !hasRetryableToolTasks &&
+    (params.profileStatus === 'completed' || params.profileStatus === 'failed');
+  const isTerminalFailure =
+    pipelineStopped && (params.failedToolSlugs.length > 0 || params.pendingToolSlugs.length > 0);
+  const terminalFailedToolSlugs = isTerminalFailure
+    ? [...new Set([...params.failedToolSlugs, ...params.pendingToolSlugs])]
+    : [];
+  const terminalFailedSet = new Set(terminalFailedToolSlugs);
+
+  return {
+    isTerminalFailure,
+    activePendingToolSlugs: params.pendingToolSlugs.filter((slug) => !terminalFailedSet.has(slug)),
+    terminalFailedToolSlugs,
+  };
+}
+
+export function completeTerminalFailureSummaries(
+  failedTools: readonly FailedToolSummary[],
+  terminalFailedToolSlugs: readonly string[],
+): FailedToolSummary[] {
+  const failedBySlug = new Map(failedTools.map((tool) => [tool.slug, tool]));
+  return terminalFailedToolSlugs.map(
+    (slug) =>
+      failedBySlug.get(slug) ?? {
+        slug,
+        label: humanizePipelineSlug(slug),
+        error: null,
+      },
+  );
+}
+
 function resolveReportForSlug(
   profile: Record<string, unknown>,
   slug: string,
