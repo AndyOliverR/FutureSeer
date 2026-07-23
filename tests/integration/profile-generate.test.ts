@@ -48,27 +48,29 @@ const mockEnsureAdminAvailable = jest.fn();
 
 /** User doc snapshot returned inside adminDb.runTransaction (billing credits). */
 let mockBillingTransactionUserData: Record<string, unknown> = {};
-const mockRunTransaction = jest.fn(
-  async (callback: (tx: { get: jest.Mock; set: jest.Mock }) => Promise<unknown>) => {
-    const tx = {
-      get: jest.fn(async (ref: { path?: string }) => {
-        const path = ref?.path ?? '';
-        if (path.startsWith('users/') && !path.includes('/billingLedger/')) {
-          return {
-            exists: true,
-            data: () => mockBillingTransactionUserData,
-          };
-        }
+let mockRunTransactionCallCount = 0;
+async function mockRunTransaction(
+  callback: (tx: { get: jest.Mock; set: jest.Mock }) => Promise<unknown>,
+): Promise<unknown> {
+  mockRunTransactionCallCount += 1;
+  const tx = {
+    get: jest.fn(async (ref: { path?: string }) => {
+      const path = ref?.path ?? '';
+      if (path.startsWith('users/') && !path.includes('/billingLedger/')) {
         return {
-          exists: false,
-          data: () => undefined,
+          exists: true,
+          data: () => mockBillingTransactionUserData,
         };
-      }),
-      set: jest.fn(),
-    };
-    return callback(tx);
-  },
-);
+      }
+      return {
+        exists: false,
+        data: () => undefined,
+      };
+    }),
+    set: jest.fn(),
+  };
+  return callback(tx);
+}
 
 jest.mock('firebase-admin/auth', () => ({
   getAuth: () => ({ verifyIdToken: mockVerifyIdToken }),
@@ -155,6 +157,7 @@ describe('Profile generate-mystical API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockBillingTransactionUserData = {};
+    mockRunTransactionCallCount = 0;
     consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined);
     mockVerifyIdToken.mockResolvedValue({ uid });
     mockSetDocument.mockResolvedValue(true);
@@ -480,7 +483,7 @@ describe('Profile generate-mystical API', () => {
 
       expect(res.status).toBe(200);
       expect(data.alreadyGenerated).toBe(true);
-      expect(mockRunTransaction).not.toHaveBeenCalled();
+      expect(mockRunTransactionCallCount).toBe(0);
     });
 
     it('allows first onboarding full generation without payment setup', async () => {
