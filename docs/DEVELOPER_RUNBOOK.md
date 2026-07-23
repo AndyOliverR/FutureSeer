@@ -33,6 +33,27 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 - Google OAuth branding verification (Search Console + consent screen): [GOOGLE_OAUTH_BRANDING_VERIFICATION.md](./GOOGLE_OAUTH_BRANDING_VERIFICATION.md)
 - AI control layer (gateway, fallback, prompt assembly, Phase 4 hardening): [AGENTS.md](../AGENTS.md) — `buildToolSeerMessages`, optional `AI_CIRCUIT_STORE=firestore`, semantic injection tuning ([AI_INJECTION_TUNING.md](./AI_INJECTION_TUNING.md)), tool Seer Q&A cache via `cacheQuestion` + `cacheToolSeerAnswer`.
 
+## Local env from Vercel (`vercel env pull`)
+
+Do **not** rely on a restored or hand-copied `.env.local` long-term. Pull from the Vercel project (source of truth for production secrets).
+
+| Command | Writes | Source environment |
+|---------|--------|--------------------|
+| `pnpm run env:pull` | `.env.local` | Development (Vercel default) |
+| `pnpm run env:pull:development` | `.env.local` | Development |
+| `pnpm run env:pull:preview` | `.env.preview.local` | Preview |
+| `pnpm run env:pull:production` | `.env.local` | Production |
+
+Prerequisites:
+
+1. `npx vercel login` (once per machine)
+2. Linked project under `.vercel/` — already present for this repo’s maintainers; otherwise `pnpm run vercel:link`
+3. `.env*` is gitignored — confirm `git check-ignore -v .env.local` before committing anything
+
+**After a production pull for local Next.js:** set `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=<projectId>.firebaseapp.com` and usually `NEXT_PUBLIC_APP_URL=http://localhost:3000` / `NEXT_PUBLIC_BASE_URL=http://localhost:3000` so Google/Apple popup auth and local API base URLs work (see next section).
+
+Optional sanity checks: `pnpm run check:firebase-admin`, `pnpm run check:distributed-controls`.
+
 ## Firebase Auth domain: local dev vs production
 
 `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` is passed to the Firebase client ([`lib/firebase.ts`](../lib/firebase.ts)). If it is your **custom domain** (e.g. `futureseer.app`), the Google **popup** loads `https://<authDomain>/__/auth/handler`—which is **not** served by `next dev` on localhost. The production site must **rewrite** `/__/auth/*` to `https://<projectId>.firebaseapp.com/__/auth/*` ([`next.config.mjs`](../next.config.mjs)).

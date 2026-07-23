@@ -20,6 +20,12 @@
     "security:audit:skill": "node scripts/security-audit-skill.mjs",
     "check:firebase-admin": "node scripts/check-firebase-admin-env.mjs",
     "check:distributed-controls": "node scripts/verify-distributed-controls-env.mjs",
+    "env:pull": "npx --yes vercel env pull .env.local --yes",
+    "env:pull:development": "npx --yes vercel env pull .env.local --environment=development --yes",
+    "env:pull:preview": "npx --yes vercel env pull .env.preview.local --environment=preview --yes",
+    "env:pull:production": "npx --yes vercel env pull .env.local --environment=production --yes",
+    "vercel:link": "npx --yes vercel link",
+
     "setup-users": "node scripts/setup-user-modes.js",
     "test": "jest",
     "test:watch": "jest --watch",

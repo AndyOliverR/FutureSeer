@@ -58,46 +58,30 @@ Security baseline and incident workflow live in **[docs/SECURITY_BASELINE_RUNBOO
    \`\`\`
 
 3. **Set up environment variables**
-   \`\`\`bash
+
+   **Preferred (maintainers with Vercel access):** pull secrets from the linked Vercel project — never commit the result.
+
+   ```bash
+   npx vercel login
+   pnpm run vercel:link   # once per clone, if .vercel is missing
+   pnpm run env:pull:production   # or: pnpm run env:pull:development
+   ```
+
+   `.env.local` is gitignored (`.env*`). Do **not** commit it or paste live keys into the repo.
+
+   **Contributors without Vercel access:** copy the placeholder template and fill your own keys:
+
+   ```bash
    cp env-template.txt .env.local
-   \`\`\`
-   
-   Edit `.env.local` with your API keys:
-   \`\`\`env
-   # OpenAI API Configuration (Server-side only)
-   OPENAI_API_KEY=your_openai_api_key_here
-   
-   # AstroApp API for astrological data (Server-side only)
-   ASTROAPP_API_KEY=your_astroapp_api_key_here
-   
-   # Stability AI for symbolic image generation (Server-side only)
-   STABILITY_API_KEY=your_stability_api_key_here
-   
-   # PostHog Analytics (Server-side only)
-   POSTHOG_API_KEY=your_posthog_api_key_here
-   
-   # Firebase Configuration (Client-side public keys)
-   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key_here
-   # Local dev: use your_project.firebaseapp.com so Google sign-in popup hits Firebase's /__/auth.
-   # Production (custom domain): you may use your custom domain if /__/auth/* is rewritten (see next.config.mjs + docs/DEVELOPER_RUNBOOK.md).
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-   
-   
-   
-   # App Configuration
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   NEXT_PUBLIC_APP_NAME=FutureSeer
-   \`\`\`
+   ```
+
+   See [docs/DEVELOPER_RUNBOOK.md](docs/DEVELOPER_RUNBOOK.md) (§ Local env from Vercel) for auth-domain overrides after a production pull.
 
 4. **Set up Firebase**
-   - Create a Firebase project
+   - Create a Firebase project (or use the shared project if you are a maintainer)
    - Enable Authentication (Email/Password)
    - Create Firestore database
-   - Add your Firebase config to `.env.local`
+   - Ensure Firebase config is in `.env.local` (via `env:pull` or the template)
 
 5. **Run the development server**
    \`\`\`bash
