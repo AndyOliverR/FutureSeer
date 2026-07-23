@@ -29,12 +29,20 @@ function toDateSafe(value: CommunityMemberDoc['joinDate']): Date {
   return new Date(value as string | number);
 }
 
-/** Emails for which Karma/Level/Streak are hidden on the community UI (God mode, Mary mode, special user) */
-const HIDE_STATS_EMAILS = new Set([
-  'andyrozario@hotmail.com',
-  'andyoliverrozario2@gmail.com',
-  'andyrozario7@gmail.com',
-]);
+/** Emails for which Karma/Level/Streak are hidden (env only — no hardcoded PII). */
+function getHideStatsEmails(): Set<string> {
+  const raw =
+    process.env.COMMUNITY_HIDE_STATS_EMAILS ||
+    process.env.NO_CHARGE_SUBSCRIPTION_EMAILS ||
+    process.env.ADMIN_EMAILS ||
+    '';
+  return new Set(
+    raw
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
 
 // GET - Fetch member list with stats
 export async function GET(request: NextRequest) {
@@ -89,7 +97,7 @@ export async function GET(request: NextRequest) {
         const isFounderByUid = founderUid && (userId === founderUid || doc.id === founderUid);
         const isFounderByEmail = founderEmail && memberEmail && memberEmail === founderEmail;
         const isFounder = isFounderByUid || isFounderByEmail;
-        const hideStats = HIDE_STATS_EMAILS.has(memberEmail);
+        const hideStats = getHideStatsEmails().has(memberEmail);
 
         if (isFounder) {
           const existingBadges = Array.isArray(data.badges) ? data.badges : [];
@@ -144,7 +152,7 @@ export async function GET(request: NextRequest) {
           if (founderDoc.exists) {
             const data = founderDoc.data() as CommunityMemberDoc;
             const founderEmailFromDoc = String(data.email ?? '').trim().toLowerCase();
-            const hideStats = HIDE_STATS_EMAILS.has(founderEmailFromDoc);
+            const hideStats = getHideStatsEmails().has(founderEmailFromDoc);
             const joinDate = toDateSafe(data.joinDate);
             const existingBadges = Array.isArray(data.badges) ? data.badges : [];
             const badges = existingBadges.includes('Creator') ? existingBadges : [...existingBadges, 'Creator'];

@@ -1,27 +1,36 @@
 /**
- * Subscription configuration: no-charge emails (god mode, mary mode, special test admin).
+ * Subscription configuration: no-charge emails (god / mary / special test admin).
  * Used by create-subscription, admin cancel-user-subscription, and client access checks.
+ * Emails come from env only — never hardcode personal addresses in source.
  */
 import type { UserProfile } from './firebase';
 
-const DEFAULT_NO_CHARGE_EMAILS = [
-  'andyrozario@hotmail.com',
-  'andyoliverrozario2@gmail.com',
-  'andyrozario7@gmail.com',
-];
-
-/** Lowercase set for fast lookup. Override via env NO_CHARGE_SUBSCRIPTION_EMAILS (comma-separated). */
-export function getNoChargeSubscriptionEmails(): Set<string> {
-  const env = process.env.NO_CHARGE_SUBSCRIPTION_EMAILS;
-  if (env && typeof env === 'string' && env.trim()) {
-    const list = env.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-    return new Set(list);
-  }
-  return new Set(DEFAULT_NO_CHARGE_EMAILS.map((e) => e.toLowerCase()));
+function parseEmailList(raw: string | undefined): string[] {
+  if (!raw || typeof raw !== 'string' || !raw.trim()) return [];
+  return raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
 }
 
-/** For client: same list so access checks can treat these emails as premium. Not secret. */
-export const NO_CHARGE_SUBSCRIPTION_EMAILS_CLIENT = DEFAULT_NO_CHARGE_EMAILS.map((e) => e.toLowerCase());
+/** Lowercase set for fast lookup. Set NO_CHARGE_SUBSCRIPTION_EMAILS (comma-separated) on the server. */
+export function getNoChargeSubscriptionEmails(): Set<string> {
+  return new Set(parseEmailList(process.env.NO_CHARGE_SUBSCRIPTION_EMAILS));
+}
+
+/**
+ * Client allowlist (build-time public env). Prefer NEXT_PUBLIC_NO_CHARGE_SUBSCRIPTION_EMAILS;
+ * otherwise unions role email envs used for UI gating.
+ */
+export function getNoChargeSubscriptionEmailsClient(): string[] {
+  const explicit = parseEmailList(process.env.NEXT_PUBLIC_NO_CHARGE_SUBSCRIPTION_EMAILS);
+  if (explicit.length > 0) return explicit;
+  return [
+    ...parseEmailList(process.env.NEXT_PUBLIC_SUPERADMIN_EMAILS),
+    ...parseEmailList(process.env.NEXT_PUBLIC_ADMIN_EMAILS),
+    ...parseEmailList(process.env.NEXT_PUBLIC_SPECIAL_USER_EMAILS),
+  ];
+}
+
+/** @deprecated Use getNoChargeSubscriptionEmailsClient() — kept for older imports. */
+export const NO_CHARGE_SUBSCRIPTION_EMAILS_CLIENT: string[] = [];
 
 /** Server-side: check against env-aware set. */
 export function isNoChargeSubscriptionEmail(email: string | null | undefined): boolean {
@@ -29,10 +38,10 @@ export function isNoChargeSubscriptionEmail(email: string | null | undefined): b
   return getNoChargeSubscriptionEmails().has(email.trim().toLowerCase());
 }
 
-/** Client-side: check against static list (no process.env). */
+/** Client-side: check against public env allowlists. */
 export function isNoChargeSubscriptionEmailClient(email: string | null | undefined): boolean {
   if (!email || typeof email !== 'string') return false;
-  return NO_CHARGE_SUBSCRIPTION_EMAILS_CLIENT.includes(email.trim().toLowerCase());
+  return getNoChargeSubscriptionEmailsClient().includes(email.trim().toLowerCase());
 }
 
 const FULL_REPORT_REQUIRED_FIELDS: Array<keyof UserProfile> = [

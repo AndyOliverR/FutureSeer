@@ -14,8 +14,12 @@ async function fixBirthTime() {
   try {
     console.log('🔧 Starting birth time fix...');
     
-    // User ID from the logs
-    const userId = '5bkccyY14NSU4ykMwOV3xcAcN5t1';
+    // User ID from env — never hardcode personal UIDs in the repo
+    const userId = process.env.FOUNDER_UID || process.env.FIX_BIRTH_TIME_UID;
+    if (!userId) {
+      console.error('Set FOUNDER_UID or FIX_BIRTH_TIME_UID in the environment.');
+      process.exit(1);
+    }
     
     // Get current user document
     const userRef = db.collection('users').doc(userId);

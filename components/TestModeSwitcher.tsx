@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { devLog } from '@/lib/devLogger';
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,51 +14,68 @@ interface UserMode {
   email: string
   description: string
   icon: React.ReactNode
-  claims: any
+  claims: Record<string, boolean>
   color: string
 }
 
-const userModes: UserMode[] = [
-  {
-    name: 'God Mode',
-    email: 'andyrozario@hotmail.com',
-    description: 'Full superadmin access to everything',
-    icon: <Crown className="w-5 h-5" />,
-    claims: {
-      superadmin: true, admin: true, support: true, userManagement: true, logs: true,
-      codeEditor: true, billing: true, featureFlags: true, dataExport: true,
-      impersonate: true, deleteUser: true, testMode: true
-    },
-    color: 'bg-gradient-to-r from-amber-500 to-yellow-500'
-  },
-  {
-    name: 'Mary Mode',
-    email: 'andyoliverrozario2@gmail.com',
-    description: 'Limited admin access for support',
-    icon: <Shield className="w-5 h-5" />,
-    claims: {
-      admin: true, support: true, userManagement: false, logs: true,
-      codeEditor: false, billing: false, featureFlags: false, dataExport: false,
-      impersonate: false, deleteUser: false, testMode: true
-    },
-    color: 'bg-gradient-to-r from-blue-500 to-purple-500'
-  },
-  {
-    name: 'Normal User',
-    email: 'andyrozario7@gmail.com',
-    description: 'Regular user with no admin access',
-    icon: <User className="w-5 h-5" />,
-    claims: {
-      admin: false, support: false, userManagement: false, logs: false,
-      codeEditor: false, billing: false, featureFlags: false, dataExport: false,
-      impersonate: false, deleteUser: false, testMode: false
-    },
-    color: 'bg-gradient-to-r from-green-500 to-emerald-500'
-  },
-  {
+function firstEmail(raw: string | undefined): string {
+  if (!raw?.trim()) return ''
+  return raw.split(',')[0]?.trim() || ''
+}
+
+function buildUserModes(): UserMode[] {
+  const god = firstEmail(process.env.NEXT_PUBLIC_SUPERADMIN_EMAILS)
+  const mary = firstEmail(process.env.NEXT_PUBLIC_ADMIN_EMAILS)
+  const normal = firstEmail(process.env.NEXT_PUBLIC_SPECIAL_USER_EMAILS)
+  const test = firstEmail(process.env.NEXT_PUBLIC_TEST_MODE_EMAIL) || 'test@example.com'
+
+  const modes: UserMode[] = []
+  if (god) {
+    modes.push({
+      name: 'God Mode',
+      email: god,
+      description: 'Full superadmin access to everything',
+      icon: <Crown className="w-5 h-5" />,
+      claims: {
+        superadmin: true, admin: true, support: true, userManagement: true, logs: true,
+        codeEditor: true, billing: true, featureFlags: true, dataExport: true,
+        impersonate: true, deleteUser: true, testMode: true
+      },
+      color: 'bg-gradient-to-r from-amber-500 to-yellow-500'
+    })
+  }
+  if (mary) {
+    modes.push({
+      name: 'Mary Mode',
+      email: mary,
+      description: 'Limited admin access for support',
+      icon: <Shield className="w-5 h-5" />,
+      claims: {
+        admin: true, support: true, userManagement: false, logs: true,
+        codeEditor: false, billing: false, featureFlags: false, dataExport: false,
+        impersonate: false, deleteUser: false, testMode: true
+      },
+      color: 'bg-gradient-to-r from-blue-500 to-purple-500'
+    })
+  }
+  if (normal) {
+    modes.push({
+      name: 'Normal User',
+      email: normal,
+      description: 'Regular user with no admin access',
+      icon: <User className="w-5 h-5" />,
+      claims: {
+        admin: false, support: false, userManagement: false, logs: false,
+        codeEditor: false, billing: false, featureFlags: false, dataExport: false,
+        impersonate: false, deleteUser: false, testMode: false
+      },
+      color: 'bg-gradient-to-r from-green-500 to-emerald-500'
+    })
+  }
+  modes.push({
     name: 'Test Mode',
-    email: 'test@futureseer.com',
-    description: 'Quick testing access (will be removed on launch)',
+    email: test,
+    description: 'Quick testing access (dev only)',
     icon: <Zap className="w-5 h-5" />,
     claims: {
       superadmin: true, admin: true, support: true, userManagement: true, logs: true,
@@ -66,8 +83,9 @@ const userModes: UserMode[] = [
       impersonate: true, deleteUser: true, testMode: true
     },
     color: 'bg-gradient-to-r from-red-500 to-pink-500'
-  }
-]
+  })
+  return modes
+}
 
 export function TestModeSwitcher() {
   const { user, isSuperadmin } = useAuth()
@@ -77,6 +95,7 @@ export function TestModeSwitcher() {
   const [testModeEmail, setTestModeEmail] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
   const { toast } = useToast()
+  const userModes = useMemo(() => buildUserModes(), [])
 
   useEffect(() => {
     // Handle SSR - only run on client

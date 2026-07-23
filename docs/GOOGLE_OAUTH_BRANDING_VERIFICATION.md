@@ -75,7 +75,7 @@ In Search Console, click **Verify**. When the property shows **Verified**, both 
 
 ### 1e. Two-Gmail fix (cross-account Owner)
 
-If Search Console was verified under one Gmail (e.g. `andyrozario7@gmail.com`) but Firebase **Owner** is another (e.g. `andyoliverrozario2@gmail.com`):
+If Search Console was verified under one Google account but Firebase **Owner** is another:
 
 1. In Search Console, select the **`futureseer.app`** property.
 2. **Settings** (gear) → **Users and permissions** → **Add user**.

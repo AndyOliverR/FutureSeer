@@ -3,8 +3,12 @@
 const { ensureAdminInitialized } = require('../scripts/firebase-admin-env');
 const admin = ensureAdminInitialized();
 
-// 2. Replace with your actual UID
-const uid = '5bkccyY14NSU4ykMwOV3xcAcN5t1'; // <-- paste your full UID here
+// 2. UID from env (FOUNDER_UID) — never hardcode personal UIDs in the repo
+const uid = process.env.FOUNDER_UID || process.env.ADMIN_UID;
+if (!uid) {
+  console.error('Set FOUNDER_UID (or ADMIN_UID) in the environment before running.');
+  process.exit(1);
+}
 
 // 3. Set the custom claim
 admin.auth().setCustomUserClaims(uid, { admin: true })

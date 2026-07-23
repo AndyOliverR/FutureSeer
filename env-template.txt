@@ -20,10 +20,24 @@ GOOGLE_PLACES_API_KEY=your-google-places-api-key
 # Timezone API (Optional) - For accurate timezone resolution
 TIMEZONE_API_KEY=your-timezone-api-key
 
-# Consultant client workspace (God / Mary): optional comma-separated email overrides.
-# Defaults match admin accounts; server uses CLIENT_WORKSPACE_EMAILS, UI uses NEXT_PUBLIC_*.
-# CLIENT_WORKSPACE_EMAILS=
-# NEXT_PUBLIC_CLIENT_WORKSPACE_EMAILS=
+# Consultant client workspace (God / Mary): comma-separated emails. No defaults in source.
+# CLIENT_WORKSPACE_EMAILS=you@example.com,partner@example.com
+# NEXT_PUBLIC_CLIENT_WORKSPACE_EMAILS=you@example.com,partner@example.com
+
+# Admin / role email allowlists (optional if you use Firebase custom claims only)
+# Server:
+# ADMIN_EMAILS=you@example.com
+# NO_CHARGE_SUBSCRIPTION_EMAILS=you@example.com,partner@example.com
+# COMMUNITY_HIDE_STATS_EMAILS=you@example.com,partner@example.com
+# Client (UI gating — visible in the browser bundle; still avoid putting secrets here):
+# NEXT_PUBLIC_SUPERADMIN_EMAILS=you@example.com
+# NEXT_PUBLIC_ADMIN_EMAILS=partner@example.com
+# NEXT_PUBLIC_SPECIAL_USER_EMAILS=tester@example.com
+# NEXT_PUBLIC_NO_CHARGE_SUBSCRIPTION_EMAILS=you@example.com,partner@example.com,tester@example.com
+# NEXT_PUBLIC_CLIENT_WORKSPACE_EMAILS=you@example.com,partner@example.com
+# NEXT_PUBLIC_TEST_MODE_EMAIL=test@example.com
+# Local scripts only:
+# GOD_MODE_EMAIL= / MARY_MODE_EMAIL= / NORMAL_USER_EMAIL=
 
 # Firebase Configuration (Client-side public keys)
 NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key

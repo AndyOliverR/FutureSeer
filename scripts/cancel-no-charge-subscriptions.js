@@ -21,11 +21,15 @@ const { FieldValue } = require('firebase-admin/firestore');
 const Razorpay = require('razorpay');
 const { ensureAdminInitialized } = require('./firebase-admin-env');
 
-const NO_CHARGE_EMAILS = [
-  'andyrozario@hotmail.com',
-  'andyoliverrozario2@gmail.com',
-  'andyrozario7@gmail.com',
-];
+const NO_CHARGE_EMAILS = (process.env.NO_CHARGE_SUBSCRIPTION_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim())
+  .filter(Boolean);
+
+if (NO_CHARGE_EMAILS.length === 0) {
+  console.error('Set NO_CHARGE_SUBSCRIPTION_EMAILS in .env.local (comma-separated).');
+  process.exit(1);
+}
 
 async function main() {
   const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;

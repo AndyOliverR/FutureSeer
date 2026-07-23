@@ -39,7 +39,7 @@ You have the right to:
 
 ## 7. Data Deletion
 
-If you wish to delete your account or personal data, please email us at [andyoliverrozario2@gmail.com](mailto:andyoliverrozario2@gmail.com) with your request. We will process your request within 7 days.
+If you wish to delete your account or personal data, please use [futureseer.app/contact](https://futureseer.app/contact) or email **support@futureseer.app** with your request. We will process your request within 7 days.
 
 ## 8. Children’s Privacy
 
@@ -51,7 +51,7 @@ We may update this Privacy Policy from time to time. Changes will be posted on t
 
 ## 10. Contact Us
 
-If you have any questions or concerns about this Privacy Policy or your data, please contact us at [andyoliverrozario2@gmail.com](mailto:andyoliverrozario2@gmail.com). 
+If you have any questions or concerns about this Privacy Policy or your data, please contact us via [futureseer.app/contact](https://futureseer.app/contact) or **support@futureseer.app**. 
 
 ## 11. Content Attribution and Reuse
 

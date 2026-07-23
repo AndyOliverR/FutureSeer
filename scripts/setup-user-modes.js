@@ -30,12 +30,17 @@ async function setupUserModes() {
     console.log('2. Mary Mode (Admin) - Limited admin access');
     console.log('3. Normal User - Regular user access\n');
 
-    // For now, we'll set up with placeholder emails - you can update these
+    // Require env — never hardcode personal emails in the repo
     const userModes = {
-      godMode: process.env.GOD_MODE_EMAIL || 'andyrozario@hotmail.com', // God Mode
-      maryMode: process.env.MARY_MODE_EMAIL || 'andyoliverrozario2@gmail.com', // Mary Mode
-      normalUser: process.env.NORMAL_USER_EMAIL || 'andyrozario7@gmail.com', // Normal User
+      godMode: process.env.GOD_MODE_EMAIL || '',
+      maryMode: process.env.MARY_MODE_EMAIL || '',
+      normalUser: process.env.NORMAL_USER_EMAIL || '',
     };
+
+    if (!userModes.godMode || !userModes.maryMode || !userModes.normalUser) {
+      console.error('Set GOD_MODE_EMAIL, MARY_MODE_EMAIL, and NORMAL_USER_EMAIL in the environment.');
+      process.exit(1);
+    }
 
     console.log('Using these email addresses:');
     console.log(`God Mode: ${userModes.godMode}`);

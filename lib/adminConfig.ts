@@ -1,14 +1,10 @@
 /**
  * Shared admin/superadmin email list for server-side API routes.
- * Single source of truth: change here or via ADMIN_EMAILS env to add/remove admins.
+ * Prefer Firebase custom claims (`admin` / `superadmin`). Email allowlist is optional via ADMIN_EMAILS.
+ * Do not hardcode personal emails — public repos must keep PII in env only.
  */
 
-const DEFAULT_ADMIN_EMAILS = [
-  'andyrozario@hotmail.com',
-  'andyoliverrozario2@gmail.com',
-];
-
-/** Comma-separated list; override via env ADMIN_EMAILS. */
+/** Comma-separated list; set ADMIN_EMAILS in Vercel / .env.local. */
 function parseAdminEmailsEnv(): string[] {
   const raw = process.env.ADMIN_EMAILS;
   if (!raw || typeof raw !== 'string') return [];
@@ -18,11 +14,9 @@ function parseAdminEmailsEnv(): string[] {
     .filter(Boolean);
 }
 
-/** Returns the list of emails that are treated as admin/superadmin (lowercase). */
+/** Returns the list of emails that are treated as admin/superadmin (lowercase). Empty if unset. */
 export function getAdminEmails(): string[] {
-  const fromEnv = parseAdminEmailsEnv();
-  if (fromEnv.length > 0) return fromEnv;
-  return DEFAULT_ADMIN_EMAILS.map((e) => e.toLowerCase());
+  return parseAdminEmailsEnv();
 }
 
 /** Decoded Firebase ID token (minimal shape). */
