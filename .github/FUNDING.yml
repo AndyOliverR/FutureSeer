@@ -1,6 +1,1 @@
-# These are supported funding model platforms
-
-github: AndyOliverR
-custom:
-  - "https://futureseer.app/contact"
-  - "https://futureseer.app/credits"
+github: [AndyOliverR]
