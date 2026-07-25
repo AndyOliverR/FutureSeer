@@ -181,6 +181,11 @@ export async function consumeBillingAction(
   }
 }
 
+/**
+ * Credit a verified pack purchase. `packId` must come from server-side Razorpay
+ * order notes — never from an untrusted client body field alone.
+ * Global `creditOrderRedemptions/{orderId}` prevents cross-account replay.
+ */
 export async function addCreditsFromPack(
   userId: string,
   packId: CreditPackId,
@@ -196,28 +201,69 @@ export async function addCreditsFromPack(
 
   const userRef = adminDb.collection('users').doc(userId);
   const ledgerRef = userRef.collection('billingLedger').doc();
+  const redemptionRef = adminDb.collection('creditOrderRedemptions').doc(orderId);
 
   return adminDb.runTransaction(async (tx) => {
+    // Reads must complete before any writes in a Firestore transaction.
     const snap = await tx.get(userRef);
+    const redemptionSnap = await tx.get(redemptionRef);
     if (!snap.exists) throw new Error('User not found');
 
     const data = snap.data() ?? {};
+    const balance = creditBalanceFromProfile(userBillingFromData(data));
     const existingOrders: string[] = Array.isArray(data.creditOrderIds)
       ? data.creditOrderIds.filter((x): x is string => typeof x === 'string')
       : [];
-    if (existingOrders.includes(orderId)) {
+
+    if (redemptionSnap.exists) {
+      const redeemedBy = redemptionSnap.data()?.userId;
+      if (typeof redeemedBy === 'string' && redeemedBy !== userId) {
+        throw new Error('This payment was already redeemed by another account');
+      }
       return {
         success: true,
         creditsAdded: 0,
-        creditBalance: creditBalanceFromProfile(userBillingFromData(data)),
+        creditBalance: balance,
         duplicate: true,
       };
     }
 
-    const balance = creditBalanceFromProfile(userBillingFromData(data));
+    if (existingOrders.includes(orderId)) {
+      // Legacy same-user idempotency before global markers existed.
+      tx.set(
+        redemptionRef,
+        {
+          userId,
+          packId,
+          paymentId,
+          credits: pack.credits,
+          createdAt: Date.now(),
+          legacyBackfill: true,
+        },
+        { merge: true },
+      );
+      return {
+        success: true,
+        creditsAdded: 0,
+        creditBalance: balance,
+        duplicate: true,
+      };
+    }
+
     const nextBalance = balance + pack.credits;
     const now = Date.now();
 
+    tx.set(
+      redemptionRef,
+      {
+        userId,
+        packId,
+        paymentId,
+        credits: pack.credits,
+        createdAt: now,
+      },
+      { merge: false },
+    );
     tx.set(
       userRef,
       {
