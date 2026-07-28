@@ -5,6 +5,7 @@ import { ALL_TOOL_SLUGS, summarizeToolReadiness } from '@/lib/profileGenerationO
 import type { UserProfile } from '@/lib/firebase';
 import { calculateProfileDataHash } from '@/lib/firebase';
 import { tryResumeMysticalStageB } from '@/lib/mysticalStageB';
+import { buildInitialToolQueue } from '@/lib/mysticalStageBQueuePure';
 import { FieldPath } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
@@ -116,18 +117,25 @@ export async function POST(request: NextRequest) {
       lastLoginAt: Number(user.lastLoginAt ?? Date.now()),
     };
     const profileHash = calculateProfileDataHash(profileWithUid);
+    const now = Date.now();
+    const existingComprehensive = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
+      {}) as Record<string, unknown>;
+    // Rebuild toolTasks so same-hash backfills can recover terminal-failed tools.
+    const rebuiltToolTasks = buildInitialToolQueue(existingComprehensive, profileHash, now);
     await setDocument('generationJobs', uid, {
       uid,
       status: 'queued',
       phase: 'stageB',
-      queuedAt: Date.now(),
-      updatedAt: Date.now(),
-      attempts: Number(generationJob?.attempts ?? 0),
+      queuedAt: now,
+      updatedAt: now,
+      attempts: 0,
       maxAttempts: Number(generationJob?.maxAttempts ?? 3),
       nextRetryAt: null,
       runId,
       profileHash,
       profileSnapshot: profileWithUid,
+      toolTasks: rebuiltToolTasks,
+      queueDrained: false,
     });
     void tryResumeMysticalStageB(uid);
   }

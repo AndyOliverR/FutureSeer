@@ -294,7 +294,19 @@ describe('Profile generate-mystical API', () => {
           status: 'queued',
           phase: 'running',
           pipelineMode: 'unified',
+          toolTasks: expect.any(Object),
+          queueDrained: false,
         }),
+      );
+      const jobWrite = mockSetDocument.mock.calls.find(
+        (call) => call[0] === 'generationJobs' && call[1] === uid,
+      );
+      const toolTasks = (jobWrite?.[2] as { toolTasks?: Record<string, { status: string }> })?.toolTasks;
+      expect(toolTasks).toBeTruthy();
+      expect(Object.keys(toolTasks!).length).toBeGreaterThan(0);
+      // Fresh enqueue rebuilds pending tasks (no stale terminal-failed leftovers).
+      expect(Object.values(toolTasks!).every((t) => t.status === 'pending' || t.status === 'ready')).toBe(
+        true,
       );
     });
   });
@@ -338,7 +350,10 @@ describe('Profile generate-mystical API', () => {
         if (collection === 'generationLocks') return Promise.resolve(null);
         if (collection === 'comprehensiveMysticalProfiles') {
           return Promise.resolve({
-            western: displayableReportForSlug('western'),
+            western: {
+              ...displayableReportForSlug('western'),
+              generationIdempotencyKey: hash,
+            },
           });
         }
         return Promise.resolve(undefined);
@@ -354,8 +369,16 @@ describe('Profile generate-mystical API', () => {
         uid,
         expect.objectContaining({
           status: 'queued',
+          toolTasks: expect.any(Object),
+          queueDrained: false,
         }),
       );
+      const jobWrite = mockSetDocument.mock.calls.find(
+        (call) => call[0] === 'generationJobs' && call[1] === uid,
+      );
+      const toolTasks = (jobWrite?.[2] as { toolTasks?: Record<string, { status: string }> })?.toolTasks;
+      expect(toolTasks?.western?.status).toBe('ready');
+      expect(toolTasks?.vedic?.status).toBe('pending');
     });
   });
 

@@ -56,6 +56,74 @@ export function buildInitialToolQueue(
   return queue;
 }
 
+export function isTerminalFailedToolTask(
+  task: ToolQueueTask | undefined,
+  profileHash: string,
+  toolSlug: string,
+): boolean {
+  if (!task) return false;
+  if (task.idempotencyKey !== buildToolIdempotencyKey(profileHash, toolSlug)) return false;
+  return task.status === 'failed' && task.attempts >= task.maxAttempts;
+}
+
+/**
+ * Tools that still owe work: pending/running/backoff/missing, or ready-marked without a displayable report.
+ * Excludes skipped and terminal-failed tasks for the current profile hash.
+ */
+export function selectIncompleteToolSlugs(
+  queue: ToolQueueMap,
+  profile: Record<string, unknown>,
+  profileHash: string,
+): string[] {
+  const incomplete: string[] = [];
+  for (const slug of ALL_TOOL_SLUGS) {
+    if (isToolReportReadyForHash(profile[slug], profileHash, slug)) continue;
+    const task = queue[slug];
+    if (!task) {
+      incomplete.push(slug);
+      continue;
+    }
+    if (task.idempotencyKey !== buildToolIdempotencyKey(profileHash, slug)) {
+      incomplete.push(slug);
+      continue;
+    }
+    if (task.status === 'skipped') continue;
+    if (isTerminalFailedToolTask(task, profileHash, slug)) continue;
+    incomplete.push(slug);
+  }
+  return incomplete;
+}
+
+/** Tools that exhausted retries and still lack a displayable report for this hash. */
+export function selectTerminalFailedToolSlugs(
+  queue: ToolQueueMap,
+  profile: Record<string, unknown>,
+  profileHash: string,
+): string[] {
+  const failed: string[] = [];
+  for (const slug of ALL_TOOL_SLUGS) {
+    if (isToolReportReadyForHash(profile[slug], profileHash, slug)) continue;
+    const task = queue[slug];
+    if (isTerminalFailedToolTask(task, profileHash, slug)) failed.push(slug);
+  }
+  return failed;
+}
+
+/** Earliest future nextRetryAt among incomplete tasks, or null if none. */
+export function soonestToolRetryAt(
+  queue: ToolQueueMap,
+  incompleteSlugs: string[],
+  nowMs = Date.now(),
+): number | null {
+  let soonest: number | null = null;
+  for (const slug of incompleteSlugs) {
+    const nextRetryAt = queue[slug]?.nextRetryAt;
+    if (typeof nextRetryAt !== 'number' || nextRetryAt <= nowMs) continue;
+    if (soonest == null || nextRetryAt < soonest) soonest = nextRetryAt;
+  }
+  return soonest;
+}
+
 export function selectRunnableToolSlugs(
   queue: ToolQueueMap,
   profile: Record<string, unknown>,
@@ -79,7 +147,7 @@ export function selectRunnableToolSlugs(
       if (isToolReportReadyForHash(profile[slug], profileHash, slug)) continue;
     } else if (task.status === 'running') {
       continue;
-    } else if (task.status === 'failed' && task.attempts >= task.maxAttempts) {
+    } else if (isTerminalFailedToolTask(task, profileHash, slug)) {
       continue;
     }
     if (task.nextRetryAt != null && task.nextRetryAt > nowMs) continue;
