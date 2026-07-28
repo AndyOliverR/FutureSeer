@@ -350,7 +350,10 @@ describe('Profile generate-mystical API', () => {
         if (collection === 'generationLocks') return Promise.resolve(null);
         if (collection === 'comprehensiveMysticalProfiles') {
           return Promise.resolve({
-            western: displayableReportForSlug('western'),
+            western: {
+              ...displayableReportForSlug('western'),
+              generationIdempotencyKey: hash,
+            },
           });
         }
         return Promise.resolve(undefined);
@@ -366,8 +369,16 @@ describe('Profile generate-mystical API', () => {
         uid,
         expect.objectContaining({
           status: 'queued',
+          toolTasks: expect.any(Object),
+          queueDrained: false,
         }),
       );
+      const jobWrite = mockSetDocument.mock.calls.find(
+        (call) => call[0] === 'generationJobs' && call[1] === uid,
+      );
+      const toolTasks = (jobWrite?.[2] as { toolTasks?: Record<string, { status: string }> })?.toolTasks;
+      expect(toolTasks?.western?.status).toBe('ready');
+      expect(toolTasks?.vedic?.status).toBe('pending');
     });
   });
 
