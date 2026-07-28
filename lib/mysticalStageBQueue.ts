@@ -24,7 +24,10 @@ import {
   buildInitialToolQueue,
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
+  selectIncompleteToolSlugs,
   selectRunnableToolSlugs,
+  selectTerminalFailedToolSlugs,
+  soonestToolRetryAt,
   TOOL_QUEUE_MAX_ATTEMPTS,
   type ToolQueueMap,
   type ToolQueueTask,
@@ -36,7 +39,10 @@ export {
   buildInitialToolQueue,
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
+  selectIncompleteToolSlugs,
   selectRunnableToolSlugs,
+  selectTerminalFailedToolSlugs,
+  soonestToolRetryAt,
 };
 
 const TOOL_MAX_ATTEMPTS = TOOL_QUEUE_MAX_ATTEMPTS;
@@ -155,8 +161,13 @@ export async function processMysticalStageBQueue(params: {
       status: taskStatus,
       attempts: taskAttempts,
       idempotencyKey: buildToolIdempotencyKey(profileHash, toolSlug),
+      // Backoff on both terminal-bound `failed` and retryable `pending` after a failed attempt.
       nextRetryAt:
-        taskStatus === 'failed' && taskAttempts < TOOL_MAX_ATTEMPTS
+        taskError &&
+        taskStatus !== 'ready' &&
+        taskStatus !== 'skipped' &&
+        taskAttempts > 0 &&
+        taskAttempts < TOOL_MAX_ATTEMPTS
           ? computeToolRetryAt(taskAttempts)
           : null,
       lastError: taskError,
@@ -304,20 +315,70 @@ export async function processMysticalStageBQueue(params: {
     {}) as Record<string, unknown>;
   const jobFinal = ((await getDocument('generationJobs', uid)) || {}) as Record<string, unknown>;
   const queueFinal = (jobFinal.toolTasks as ToolQueueMap) ?? {};
-  const remainingTools = selectRunnableToolSlugs(queueFinal, profileFinal, profileHash).length;
+  const nowMs = Date.now();
+  const remainingRunnable = selectRunnableToolSlugs(queueFinal, profileFinal, profileHash, nowMs);
+  const incomplete = selectIncompleteToolSlugs(queueFinal, profileFinal, profileHash);
+  const terminalFailed = selectTerminalFailedToolSlugs(queueFinal, profileFinal, profileHash);
 
-  if (remainingTools > 0) {
+  // Runnable now, or waiting on retry backoff — do not finalize as completed.
+  if (remainingRunnable.length > 0 || incomplete.length > 0) {
+    const remainingTools = Math.max(remainingRunnable.length, incomplete.length);
+    const backoffAt = soonestToolRetryAt(queueFinal, incomplete, nowMs);
     await setDocument('generationJobs', uid, {
       status: 'queued',
       phase: pipelineMode === 'unified' ? 'running' : 'stageB',
       // Successful chunk progress — reset failure attempts so drain can continue.
       attempts: 0,
-      nextRetryAt: Date.now() + 5_000,
-      updatedAt: Date.now(),
-      lastHeartbeatAt: Date.now(),
+      nextRetryAt: backoffAt ?? nowMs + 5_000,
+      pendingToolSlugs: incomplete.length > 0 ? incomplete : remainingRunnable,
+      updatedAt: nowMs,
+      lastHeartbeatAt: nowMs,
       claimId,
     });
     return { done: false, processedTools, remainingTools, finalized: false };
+  }
+
+  // All unfinished tools are terminal-failed — never mark the job completed/drained.
+  if (terminalFailed.length > 0) {
+    const failedAt = Date.now();
+    const errorMessage = `Tools failed after retries: ${terminalFailed.join(', ')}`;
+    devLog.warn('[mysticalStageBQueue] terminal tool failures; skipping completed finalize', {
+      uid,
+      terminalFailed,
+    }, 'mysticalStageBQueue');
+    await setDocument('generationLocks', uid, {
+      lockedAt: null,
+      status: 'failed',
+      phase: 'failed',
+      failedAt,
+      pendingToolSlugs: terminalFailed,
+      allReportsReady: false,
+      updatedAt: failedAt,
+    });
+    await setDocument('generationJobs', uid, {
+      status: 'failed_terminal',
+      phase: 'failed',
+      error: errorMessage,
+      lastError: errorMessage,
+      queueDrained: false,
+      pendingToolSlugs: terminalFailed,
+      allReportsReady: false,
+      failedAt,
+      updatedAt: failedAt,
+      claimId,
+    });
+    await setDocument('users', uid, {
+      profileStatus: 'partial_ready',
+      allReportsReady: false,
+      pendingToolSlugs: terminalFailed,
+      updatedAt: failedAt,
+    });
+    return {
+      done: true,
+      processedTools,
+      remainingTools: terminalFailed.length,
+      finalized: false,
+    };
   }
 
   const toolReports = toolReportsFromComprehensiveProfile(profileFinal);

@@ -2,7 +2,11 @@ import {
   buildInitialToolQueue,
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
+  selectIncompleteToolSlugs,
   selectRunnableToolSlugs,
+  selectTerminalFailedToolSlugs,
+  soonestToolRetryAt,
+  TOOL_QUEUE_MAX_ATTEMPTS,
 } from '@/lib/mysticalStageBQueuePure';
 import { toolReportsFromComprehensiveProfile } from '@/lib/profileGenerationOrchestrator';
 
@@ -44,6 +48,77 @@ describe('mysticalStageBQueue', () => {
     queue.vedic.status = 'ready';
     const runnable = selectRunnableToolSlugs(queue, profile, profileHash);
     expect(runnable).toContain('vedic');
+  });
+
+  it('does not treat terminal-failed tools as runnable (empty runnable ≠ drained)', () => {
+    const profileHash = 'h1';
+    const profile = {
+      vedic: { generationIdempotencyKey: profileHash, planets: [{ name: 'Sun' }] },
+    };
+    const queue = buildInitialToolQueue(profile, profileHash);
+    for (const slug of Object.keys(queue)) {
+      if (slug === 'vedic') {
+        queue[slug].status = 'ready';
+        continue;
+      }
+      queue[slug] = {
+        ...queue[slug],
+        status: 'failed',
+        attempts: TOOL_QUEUE_MAX_ATTEMPTS,
+        nextRetryAt: null,
+      };
+    }
+
+    const runnable = selectRunnableToolSlugs(queue, profile, profileHash);
+    const incomplete = selectIncompleteToolSlugs(queue, profile, profileHash);
+    const terminalFailed = selectTerminalFailedToolSlugs(queue, profile, profileHash);
+
+    expect(runnable).toEqual([]);
+    expect(incomplete).toEqual([]);
+    expect(terminalFailed.length).toBeGreaterThan(0);
+    expect(terminalFailed).not.toContain('vedic');
+    // Bug trigger: old code finalized when runnable.length === 0 even with terminal failures.
+    expect(runnable.length === 0 && terminalFailed.length > 0).toBe(true);
+  });
+
+  it('keeps backoff-blocked tools in incomplete even when none are runnable', () => {
+    const profileHash = 'h1';
+    const now = Date.now();
+    const profile = {
+      vedic: { generationIdempotencyKey: profileHash, planets: [{ name: 'Sun' }] },
+    };
+    const queue = buildInitialToolQueue(profile, profileHash, now);
+    for (const slug of Object.keys(queue)) {
+      if (slug === 'vedic') {
+        queue[slug].status = 'ready';
+        continue;
+      }
+      queue[slug] = {
+        ...queue[slug],
+        status: 'pending',
+        attempts: 1,
+        nextRetryAt: now + 30_000,
+      };
+    }
+
+    const runnable = selectRunnableToolSlugs(queue, profile, profileHash, now);
+    const incomplete = selectIncompleteToolSlugs(queue, profile, profileHash);
+    const soonest = soonestToolRetryAt(queue, incomplete, now);
+
+    expect(runnable).toEqual([]);
+    expect(incomplete.length).toBeGreaterThan(0);
+    expect(soonest).toBe(now + 30_000);
+  });
+
+  it('buildInitialToolQueue resets terminal failures when report is missing', () => {
+    const profileHash = 'h1';
+    const profile = {
+      vedic: { generationIdempotencyKey: profileHash, planets: [{ name: 'Sun' }] },
+    };
+    const rebuilt = buildInitialToolQueue(profile, profileHash);
+    expect(rebuilt.vedic.status).toBe('ready');
+    expect(rebuilt.western.status).toBe('pending');
+    expect(rebuilt.western.attempts).toBe(0);
   });
 });
 

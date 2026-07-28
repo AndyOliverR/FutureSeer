@@ -36,6 +36,7 @@ import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
 import { acquireMysticalGenerationLock, getMysticalLockRuntimeStatus } from '@/lib/generationLock';
 import { tryResumeMysticalStageB } from '@/lib/mysticalStageB';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
+import { buildInitialToolQueue } from '@/lib/mysticalStageBQueuePure';
 
 export const dynamic = 'force-dynamic';
 /** Stage B runs via `after()` after the 202 response; allow enough wall time for full sequential/parallel pipeline. */
@@ -417,6 +418,11 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
       currentToolSlug: null,
     });
+    // Rebuild toolTasks on every enqueue so same-hash backfills do not preserve
+    // stale terminal-failed tasks from a prior drain (Firestore merge would keep them).
+    const existingComprehensive = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
+      {}) as Record<string, unknown>;
+    const rebuiltToolTasks = buildInitialToolQueue(existingComprehensive, newHash, now);
     const jobWriteOk = await setDocument('generationJobs', uid, {
       uid,
       status: 'queued',
@@ -429,10 +435,12 @@ export async function POST(request: NextRequest) {
       profileHash: newHash,
       profileSnapshot: profileWithUid,
       pipelineMode: 'unified',
+      toolTasks: rebuiltToolTasks,
       completedTools: 0,
       totalTools: ALL_TOOL_SLUGS.length,
       lastProgressAt: now,
       lastHeartbeatAt: now,
+      queueDrained: false,
     });
     if (!userWriteOk || !lockWriteOk || !jobWriteOk) {
       throw new Error('Failed to persist generation state. Check Firebase Admin availability.');
