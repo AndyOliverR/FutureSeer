@@ -18,7 +18,7 @@ import {
   finalizeProfileGenerationFromToolReports,
 } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
-import type { PersistedToolStatus, PersistedToolStatusMap } from '@/lib/mysticalStageB';
+import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 import {
   StageBClaimLostError,
   assertStageBClaimHeld,

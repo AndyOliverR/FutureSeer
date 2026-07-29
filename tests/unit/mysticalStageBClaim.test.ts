@@ -2,7 +2,7 @@ import {
   StageBClaimLostError,
   isActiveStageBClaim,
   isStageBClaimLostError,
-} from '@/lib/mysticalStageBClaim';
+} from '@/lib/mysticalStageBClaimPure';
 
 describe('isActiveStageBClaim', () => {
   it('requires matching claimId and running status', () => {
