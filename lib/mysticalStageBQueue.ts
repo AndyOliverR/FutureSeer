@@ -19,6 +19,12 @@ import {
 } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
 import type { PersistedToolStatus, PersistedToolStatusMap } from '@/lib/mysticalStageB';
+import {
+  StageBClaimLostError,
+  assertStageBClaimHeld,
+  isStageBClaimLostError,
+  mergeGenerationJobIfClaimHeld,
+} from '@/lib/mysticalStageBClaim';
 import { userRootDocSet } from '@/lib/userSubcollectionFirestore';
 import {
   buildInitialToolQueue,
@@ -131,6 +137,24 @@ export async function processMysticalStageBQueue(params: {
   const deadline = Date.now() + WORKER_TIME_BUDGET_MS;
   const concurrency = resolveToolConcurrency();
   let processedTools = 0;
+  let claimLost = false;
+
+  const touchClaimHeartbeat = async (
+    patch: Record<string, unknown>,
+  ): Promise<void> => {
+    if (claimLost) return;
+    const ok = await mergeGenerationJobIfClaimHeld(uid, claimId, patch);
+    if (!ok) {
+      claimLost = true;
+    }
+  };
+
+  const ensureClaimHeld = async (): Promise<void> => {
+    if (claimLost) {
+      throw new StageBClaimLostError(uid, claimId);
+    }
+    await assertStageBClaimHeld(uid, claimId);
+  };
 
   await ensureToolQueueInitialized(uid, profileHash, profileWithUid);
 
@@ -142,9 +166,23 @@ export async function processMysticalStageBQueue(params: {
     taskAttempts: number,
   ) => {
     const updatedAt = Date.now();
+    // Refresh heartbeat at persist start — tool heartbeats stop once generation returns,
+    // and sequential Firestore patches for a batch can exceed the 45s stale threshold.
+    await touchClaimHeartbeat({
+      status: 'running',
+      phase: pipelineMode === 'unified' ? 'running' : 'stageB',
+      lastHeartbeatAt: updatedAt,
+      lastProgressAt: updatedAt,
+      updatedAt,
+    });
+    await ensureClaimHeld();
+
     const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
       {}) as Record<string, unknown>;
     const job = ((await getDocument('generationJobs', uid)) || {}) as Record<string, unknown>;
+    if ((job.claimId as string | undefined) !== claimId || job.status !== 'running') {
+      throw new StageBClaimLostError(uid, claimId);
+    }
     const toolTasks = { ...(job.toolTasks as ToolQueueMap) };
     toolTasks[toolSlug] = {
       ...(toolTasks[toolSlug] ?? {
@@ -193,6 +231,9 @@ export async function processMysticalStageBQueue(params: {
       };
     }
 
+    // Re-check before profile writes so a reclaim mid-read does not corrupt the new owner.
+    await ensureClaimHeld();
+
     await setDocument('comprehensiveMysticalProfiles', uid, profilePatch);
     const readiness = summarizeToolReadiness(
       { ...existingProfile, ...profilePatch },
@@ -209,16 +250,19 @@ export async function processMysticalStageBQueue(params: {
       },
       { merge: true },
     );
-    await setDocument('generationJobs', uid, {
+    const jobWriteOk = await mergeGenerationJobIfClaimHeld(uid, claimId, {
       toolTasks,
       lastProgressAt: updatedAt,
       updatedAt,
-      claimId,
       lastHeartbeatAt: updatedAt,
     });
+    if (!jobWriteOk) {
+      throw new StageBClaimLostError(uid, claimId);
+    }
   };
 
   while (Date.now() < deadline) {
+    await ensureClaimHeld();
     const job = ((await getDocument('generationJobs', uid)) || {}) as Record<string, unknown>;
     const profileDoc = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
       {}) as Record<string, unknown>;
@@ -229,7 +273,9 @@ export async function processMysticalStageBQueue(params: {
     const batch = runnable.slice(0, concurrency);
     const batchResult = await runProfileGenerationToolSlugs(uid, profileWithUid, batch, {
       onToolHeartbeat: async ({ toolSlug, startedAt, heartbeatAt, elapsedMs }) => {
-        await setDocument('generationJobs', uid, {
+        // Do not throw here: interval heartbeats are fire-and-forget and a throw would
+        // also mark the tool failed inside the orchestrator catch path.
+        await touchClaimHeartbeat({
           status: 'running',
           phase: pipelineMode === 'unified' ? 'running' : 'stageB',
           currentToolSlug: toolSlug,
@@ -237,15 +283,18 @@ export async function processMysticalStageBQueue(params: {
           currentToolElapsedMs: elapsedMs,
           lastHeartbeatAt: heartbeatAt,
           updatedAt: heartbeatAt,
-          claimId,
         });
       },
     });
+    await ensureClaimHeld();
 
     for (const slug of batch) {
       const entry = batchResult.toolReports[slug];
       if (!entry) continue;
       const jobNow = ((await getDocument('generationJobs', uid)) || {}) as Record<string, unknown>;
+      if ((jobNow.claimId as string | undefined) !== claimId || jobNow.status !== 'running') {
+        throw new StageBClaimLostError(uid, claimId);
+      }
       const tasks = (jobNow.toolTasks as ToolQueueMap) ?? {};
       const prevAttempts = tasks[slug]?.attempts ?? 0;
       const nextAttempts = prevAttempts + 1;
@@ -300,6 +349,8 @@ export async function processMysticalStageBQueue(params: {
     });
   }
 
+  await ensureClaimHeld();
+
   const profileFinal = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
     {}) as Record<string, unknown>;
   const jobFinal = ((await getDocument('generationJobs', uid)) || {}) as Record<string, unknown>;
@@ -307,7 +358,7 @@ export async function processMysticalStageBQueue(params: {
   const remainingTools = selectRunnableToolSlugs(queueFinal, profileFinal, profileHash).length;
 
   if (remainingTools > 0) {
-    await setDocument('generationJobs', uid, {
+    const requeueOk = await mergeGenerationJobIfClaimHeld(uid, claimId, {
       status: 'queued',
       phase: pipelineMode === 'unified' ? 'running' : 'stageB',
       // Successful chunk progress — reset failure attempts so drain can continue.
@@ -315,8 +366,10 @@ export async function processMysticalStageBQueue(params: {
       nextRetryAt: Date.now() + 5_000,
       updatedAt: Date.now(),
       lastHeartbeatAt: Date.now(),
-      claimId,
     });
+    if (!requeueOk) {
+      throw new StageBClaimLostError(uid, claimId);
+    }
     return { done: false, processedTools, remainingTools, finalized: false };
   }
 
@@ -356,6 +409,10 @@ export async function runStageBWorkerForUser(uid: string): Promise<StageBWorkerO
       pipelineMode: claim.pipelineMode ?? 'unified',
     });
   } catch (err) {
+    // Another worker reclaimed — do not mark the job failed for the new owner.
+    if (isStageBClaimLostError(err)) {
+      return { skipped: true, reason: 'claim_lost' };
+    }
     await failMysticalStageBJob(uid, err, { claimId: claim.claimId, attempt: claim.attempt });
     throw err;
   }
