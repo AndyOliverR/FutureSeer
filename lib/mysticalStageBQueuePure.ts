@@ -17,6 +17,20 @@ export type ToolQueueTask = {
 export type ToolQueueMap = Record<string, ToolQueueTask>;
 
 export const TOOL_QUEUE_MAX_ATTEMPTS = 3;
+const CORE_UNLOCK_PRIORITY = new Map([
+  ['vedic', 0],
+  ['western', 1],
+  ['tarot', 2],
+  ['numerology', 3],
+]);
+
+function sortByCoreUnlockPriority(toolSlugs: string[]): string[] {
+  return toolSlugs.sort(
+    (left, right) =>
+      (CORE_UNLOCK_PRIORITY.get(left) ?? Number.MAX_SAFE_INTEGER) -
+      (CORE_UNLOCK_PRIORITY.get(right) ?? Number.MAX_SAFE_INTEGER),
+  );
+}
 
 export function buildToolIdempotencyKey(profileHash: string, toolSlug: string): string {
   return `${profileHash}:${toolSlug}`;
@@ -86,5 +100,21 @@ export function selectRunnableToolSlugs(
     if (isToolReportReadyForHash(profile[slug], profileHash, slug)) continue;
     runnable.push(slug);
   }
-  return runnable;
+  return sortByCoreUnlockPriority(runnable);
+}
+
+export function selectUnfinishedToolSlugs(
+  queue: ToolQueueMap,
+  profile: Record<string, unknown>,
+  profileHash: string,
+): string[] {
+  const unfinished = ALL_TOOL_SLUGS.filter((slug) => {
+    const task = queue[slug];
+    if (!task || task.idempotencyKey !== buildToolIdempotencyKey(profileHash, slug)) return true;
+    if (task.status === 'skipped') return false;
+    if (task.status === 'failed' && task.attempts >= task.maxAttempts) return false;
+    return !isToolReportReadyForHash(profile[slug], profileHash, slug);
+  });
+
+  return sortByCoreUnlockPriority(unfinished);
 }

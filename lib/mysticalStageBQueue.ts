@@ -25,6 +25,7 @@ import {
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
   selectRunnableToolSlugs,
+  selectUnfinishedToolSlugs,
   TOOL_QUEUE_MAX_ATTEMPTS,
   type ToolQueueMap,
   type ToolQueueTask,
@@ -37,6 +38,7 @@ export {
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
   selectRunnableToolSlugs,
+  selectUnfinishedToolSlugs,
 };
 
 const TOOL_MAX_ATTEMPTS = TOOL_QUEUE_MAX_ATTEMPTS;
@@ -304,7 +306,7 @@ export async function processMysticalStageBQueue(params: {
     {}) as Record<string, unknown>;
   const jobFinal = ((await getDocument('generationJobs', uid)) || {}) as Record<string, unknown>;
   const queueFinal = (jobFinal.toolTasks as ToolQueueMap) ?? {};
-  const remainingTools = selectRunnableToolSlugs(queueFinal, profileFinal, profileHash).length;
+  const remainingTools = selectUnfinishedToolSlugs(queueFinal, profileFinal, profileHash).length;
 
   if (remainingTools > 0) {
     await setDocument('generationJobs', uid, {

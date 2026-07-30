@@ -22,8 +22,17 @@ import { summarizeToolReadiness, ALL_TOOL_SLUGS, isReadyToolReport } from "@/lib
 import { isNumerologyChartsV2Enabled } from "@/lib/charts/featureFlags"
 import { buildItemListSchema } from "@/components/schema-markup"
 import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
-import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import {
+  buildToolSlugByPath,
+  toolPathForSlug,
+  toolSlugForPath,
+} from "@/lib/report-viral/toolSlugToPath"
 import { GENERATION_ETA_TOOLS_BANNER } from "@/lib/generationEtaCopy"
+import {
+  isReportGenerationActive,
+  resolveReportGenerationState,
+  TOOLS_GENERATION_RESUME_POLL_MS,
+} from "@/lib/toolsGenerationState"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
 const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
@@ -39,9 +48,32 @@ function ToolsPageContent() {
     () => summarizeToolReadiness((comprehensiveProfile as Record<string, unknown> | null) ?? null, ALL_TOOL_SLUGS),
     [comprehensiveProfile],
   )
+  const toolStatusMap = useMemo(
+    () =>
+      ((comprehensiveProfile as Record<string, unknown> | null)?.toolStatus as
+        | Record<string, { updatedAt?: number; generatedAt?: number; state?: string; unchanged?: boolean }>
+        | undefined) ?? {},
+    [comprehensiveProfile],
+  )
+  const toolTaskMap = useMemo(
+    () =>
+      ((comprehensiveProfile as Record<string, unknown> | null)?.toolTasks as
+        | Record<string, { status?: string }>
+        | undefined) ?? {},
+    [comprehensiveProfile],
+  )
+  const activePendingToolSlugs = useMemo(
+    () =>
+      readiness.pendingToolSlugs.filter((slug) =>
+        isReportGenerationActive(
+          resolveReportGenerationState(toolTaskMap[slug]?.status, toolStatusMap[slug]?.state),
+        ),
+      ),
+    [readiness.pendingToolSlugs, toolStatusMap, toolTaskMap],
+  )
   const allReportsReady = Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady)
   const generationHasPendingTools =
-    Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && readiness.pendingToolSlugs.length > 0
+    Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && activePendingToolSlugs.length > 0
   const generatingParam = searchParams.get("generating") === "1"
   const [sessionGeneratingInitial] = useState(() => {
     if (typeof window === "undefined") return false
@@ -51,21 +83,15 @@ function ToolsPageContent() {
       return false
     }
   })
-  const sessionGenerating = sessionGeneratingInitial && !allReportsReady
+  const sessionGenerating = sessionGeneratingInitial && generationHasPendingTools
   const showGeneratingBanner =
     generatingParam || sessionGenerating || generationHasPendingTools
   const pendingToolsSet = useMemo(
-    () => new Set(readiness.pendingToolSlugs.map((slug) => toolPathForSlug(slug))),
-    [readiness.pendingToolSlugs],
+    () => new Set(activePendingToolSlugs.map((slug) => toolPathForSlug(slug))),
+    [activePendingToolSlugs],
   )
   const [nowMs, setNowMs] = useState(() => Date.now())
-  const toolStatusMap = useMemo(
-    () =>
-      ((comprehensiveProfile as Record<string, unknown> | null)?.toolStatus as
-        | Record<string, { updatedAt?: number; generatedAt?: number; state?: string; unchanged?: boolean }>
-        | undefined) ?? {},
-    [comprehensiveProfile],
-  )
+  const toolSlugByPath = useMemo(() => buildToolSlugByPath(ALL_TOOL_SLUGS), [])
   /** Status rows keyed by the same path segment as profile cards / pending set (not raw list slugs like vedic-astrology). */
   const toolStatusByPath = useMemo(() => {
     const m: Record<string, { updatedAt?: number; generatedAt?: number; state?: string; unchanged?: boolean }> = {}
@@ -74,13 +100,6 @@ function ToolsPageContent() {
     }
     return m
   }, [toolStatusMap])
-  const toolStateByPath = useMemo(() => {
-    const stateMap: Record<string, string> = {}
-    for (const [pathSlug, status] of Object.entries(toolStatusByPath)) {
-      if (typeof status?.state === 'string') stateMap[pathSlug] = status.state
-    }
-    return stateMap
-  }, [toolStatusByPath])
   const profileByPath = useMemo(() => {
     const profileObj = (comprehensiveProfile as Record<string, unknown> | null) ?? {}
     const map: Record<string, unknown> = {}
@@ -126,11 +145,14 @@ function ToolsPageContent() {
     if (!Boolean(userProfile?.mysticalProfileGenerated)) return false
     const pathKey = toolListSlugToProfilePathKey(listSlug)
     const report = profileByPath[pathKey]
+    const pipelineSlug = toolSlugForPath(pathKey, toolSlugByPath)
     // Displayable payload unlocks the card — do not trust stale toolStatus "ready" alone.
-    if (isReadyToolReport(report, pathKey)) return false
-    const state = toolStateByPath[pathKey]
-    if (state === 'running' || state === 'pending' || state === 'placeholder') return true
-    return pendingToolsSet.has(pathKey)
+    if (isReadyToolReport(report, pipelineSlug)) return false
+    const state = resolveReportGenerationState(
+      toolTaskMap[pipelineSlug]?.status,
+      toolStatusMap[pipelineSlug]?.state,
+    )
+    return pendingToolsSet.has(pathKey) && isReportGenerationActive(state)
   }
   const isBaselineNextStepReady = (listSlug: string) => {
     if (isToolPending(listSlug)) return false
@@ -156,9 +178,9 @@ function ToolsPageContent() {
     return () => window.clearInterval(timer)
   }, [])
 
-  /** Clear session generating flag when reports finish. */
+  /** Clear session generating flag when no report is actively running or pending. */
   useEffect(() => {
-    if (!allReportsReady) return
+    if (generationHasPendingTools || !userProfile?.mysticalProfileGenerated) return
     try {
       if (sessionStorage.getItem("futureSeer:generationStatus") === "in_progress") {
         sessionStorage.setItem("futureSeer:generationStatus", "completed")
@@ -166,16 +188,14 @@ function ToolsPageContent() {
     } catch {
       /* ignore */
     }
-  }, [allReportsReady])
+  }, [generationHasPendingTools, userProfile?.mysticalProfileGenerated])
 
   /** Drop ?generating=1 once generation is done (or idle with nothing pending). */
   useEffect(() => {
     if (!generatingParam) return
     const idle =
       allReportsReady ||
-      (!sessionGenerating &&
-        !generationHasPendingTools &&
-        Boolean(userProfile?.mysticalProfileGenerated))
+      (!generationHasPendingTools && Boolean(userProfile?.mysticalProfileGenerated))
     if (!idle) return
     const params = new URLSearchParams(searchParams.toString())
     params.delete("generating")
@@ -184,7 +204,6 @@ function ToolsPageContent() {
   }, [
     generatingParam,
     generationHasPendingTools,
-    sessionGenerating,
     allReportsReady,
     userProfile?.mysticalProfileGenerated,
     router,
@@ -203,7 +222,7 @@ function ToolsPageContent() {
 
   /**
    * Resume stalled generation while the user stays on /tools (GET promotes stale jobs).
-   * Interval is deliberately slow — not the old mystical-profile poll storm.
+   * Poll promptly while reports are active so stalled jobs recover without a long wait.
    */
   useEffect(() => {
     if (!user || !generationHasPendingTools) return
@@ -225,7 +244,7 @@ function ToolsPageContent() {
     void run()
     const id = window.setInterval(() => {
       void run()
-    }, 60_000)
+    }, TOOLS_GENERATION_RESUME_POLL_MS)
     return () => {
       cancelled = true
       window.clearInterval(id)

@@ -3,6 +3,7 @@ import {
   buildToolIdempotencyKey,
   isToolReportReadyForHash,
   selectRunnableToolSlugs,
+  selectUnfinishedToolSlugs,
 } from '@/lib/mysticalStageBQueuePure';
 import { toolReportsFromComprehensiveProfile } from '@/lib/profileGenerationOrchestrator';
 
@@ -33,6 +34,29 @@ describe('mysticalStageBQueue', () => {
     expect(runnable).not.toContain('vedic');
     expect(runnable).not.toContain('western');
     expect(runnable.length).toBeGreaterThan(0);
+  });
+
+  it('prioritizes the four core user-facing reports', () => {
+    const profileHash = 'h1';
+    const queue = buildInitialToolQueue({}, profileHash);
+
+    const runnable = selectRunnableToolSlugs(queue, {}, profileHash);
+
+    expect(runnable.slice(0, 4)).toEqual(['vedic', 'western', 'tarot', 'numerology']);
+  });
+
+  it('keeps backoff-delayed tools unfinished until they retry', () => {
+    const profileHash = 'h1';
+    const queue = buildInitialToolQueue({}, profileHash);
+    queue.western = {
+      ...queue.western,
+      status: 'pending',
+      attempts: 1,
+      nextRetryAt: Date.now() + 60_000,
+    };
+
+    expect(selectRunnableToolSlugs(queue, {}, profileHash)).not.toContain('western');
+    expect(selectUnfinishedToolSlugs(queue, {}, profileHash)).toContain('western');
   });
 
   it('re-queues task marked ready when stored report is not displayable', () => {

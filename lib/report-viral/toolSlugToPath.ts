@@ -54,3 +54,11 @@ const SLUG_TO_PATH: Record<string, string> = {
 export function toolPathForSlug(toolSlug: string): string {
   return SLUG_TO_PATH[toolSlug] ?? toolSlug.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '')
 }
+
+export function buildToolSlugByPath(toolSlugs: readonly string[]): Record<string, string> {
+  return Object.fromEntries(toolSlugs.map((slug) => [toolPathForSlug(slug), slug]));
+}
+
+export function toolSlugForPath(pathSlug: string, toolSlugByPath: Readonly<Record<string, string>>): string {
+  return toolSlugByPath[pathSlug] ?? pathSlug;
+}
