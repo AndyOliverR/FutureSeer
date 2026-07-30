@@ -45,6 +45,7 @@ const mockGenerateAllReports = jest.fn();
 const mockClearCachedDivinationData = jest.fn();
 const mockTryResumeMysticalStageB = jest.fn();
 const mockEnsureAdminAvailable = jest.fn();
+const mockAfterOutputs: Array<void | Promise<void>> = [];
 
 /** User doc snapshot returned inside adminDb.runTransaction (billing credits). */
 let mockBillingTransactionUserData: Record<string, unknown> = {};
@@ -128,6 +129,7 @@ jest.mock('next/server', () => {
     /** Run deferred work synchronously in tests (production uses Vercel/Next `after` lifecycle). */
     after: (fn: () => void | Promise<void>) => {
       const out = fn();
+      mockAfterOutputs.push(out);
       if (out && typeof (out as Promise<void>).then === 'function') void (out as Promise<void>);
     },
   };
@@ -151,6 +153,7 @@ describe('Profile generate-mystical API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAfterOutputs.length = 0;
     mockBillingTransactionUserData = {};
     consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined);
     mockVerifyIdToken.mockResolvedValue({ uid });
@@ -287,6 +290,8 @@ describe('Profile generate-mystical API', () => {
       expect(typeof data.message).toBe('string');
       expect(String(data.message)).toContain('Reports will unlock one by one');
       expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
+      expect(mockAfterOutputs).toHaveLength(1);
+      expect(mockAfterOutputs[0]).toBeInstanceOf(Promise);
       expect(mockSetDocument).toHaveBeenCalledWith(
         'generationJobs',
         uid,

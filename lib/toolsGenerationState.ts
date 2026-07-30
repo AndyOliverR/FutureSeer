@@ -10,3 +10,10 @@ export function resolveReportGenerationState(
 ): string | undefined {
   return taskState ?? reportState;
 }
+
+export function shouldPollGeneration(
+  explicitGenerating: boolean,
+  hasPendingTools: boolean,
+): boolean {
+  return explicitGenerating || hasPendingTools;
+}

@@ -2,6 +2,7 @@ import {
   TOOLS_GENERATION_RESUME_POLL_MS,
   isReportGenerationActive,
   resolveReportGenerationState,
+  shouldPollGeneration,
 } from '@/lib/toolsGenerationState';
 import {
   buildToolSlugByPath,
@@ -34,5 +35,11 @@ describe('tools generation UI state', () => {
 
   it('checks stalled generation often enough for responsive recovery', () => {
     expect(TOOLS_GENERATION_RESUME_POLL_MS).toBe(15_000);
+  });
+
+  it('polls immediately after redirect before the user profile refreshes', () => {
+    expect(shouldPollGeneration(true, false)).toBe(true);
+    expect(shouldPollGeneration(false, true)).toBe(true);
+    expect(shouldPollGeneration(false, false)).toBe(false);
   });
 });

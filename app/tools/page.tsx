@@ -31,6 +31,7 @@ import { GENERATION_ETA_TOOLS_BANNER } from "@/lib/generationEtaCopy"
 import {
   isReportGenerationActive,
   resolveReportGenerationState,
+  shouldPollGeneration,
   TOOLS_GENERATION_RESUME_POLL_MS,
 } from "@/lib/toolsGenerationState"
 
@@ -75,6 +76,7 @@ function ToolsPageContent() {
   const generationHasPendingTools =
     Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && activePendingToolSlugs.length > 0
   const generatingParam = searchParams.get("generating") === "1"
+  const shouldPollGenerationStatus = shouldPollGeneration(generatingParam, generationHasPendingTools)
   const [sessionGeneratingInitial] = useState(() => {
     if (typeof window === "undefined") return false
     try {
@@ -212,20 +214,20 @@ function ToolsPageContent() {
 
   /** While generation is still filling tools, gently refresh profile (Firestore snapshot may lag). */
   useEffect(() => {
-    if (!user?.uid || !generationHasPendingTools) return
+    if (!user?.uid || !shouldPollGenerationStatus) return
     void refreshMysticalProfile()
     const id = window.setInterval(() => {
       void refreshMysticalProfile()
     }, 12_000)
     return () => window.clearInterval(id)
-  }, [user?.uid, generationHasPendingTools, refreshMysticalProfile])
+  }, [user?.uid, shouldPollGenerationStatus, refreshMysticalProfile])
 
   /**
    * Resume stalled generation while the user stays on /tools (GET promotes stale jobs).
    * Poll promptly while reports are active so stalled jobs recover without a long wait.
    */
   useEffect(() => {
-    if (!user || !generationHasPendingTools) return
+    if (!user || !shouldPollGenerationStatus) return
     let cancelled = false
     const run = async () => {
       try {
@@ -249,7 +251,7 @@ function ToolsPageContent() {
       cancelled = true
       window.clearInterval(id)
     }
-  }, [user, generationHasPendingTools, refreshMysticalProfile])
+  }, [user, shouldPollGenerationStatus, refreshMysticalProfile])
 
   useEffect(() => {
     if (

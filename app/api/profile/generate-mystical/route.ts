@@ -450,10 +450,12 @@ export async function POST(request: NextRequest) {
       throw new Error('[generate-mystical] invariant: uid missing after auth before Stage B');
     }
     const uidStageB: string = uid;
-    after(() => {
-      void tryResumeMysticalStageB(uidStageB).catch((e) => {
+    after(async () => {
+      try {
+        await tryResumeMysticalStageB(uidStageB);
+      } catch (e) {
         devLog.error('[generate-mystical] after(tryResumeMysticalStageB) failed', e, 'generate-mystical');
-      });
+      }
     });
 
     return NextResponse.json({
@@ -622,10 +624,12 @@ export async function GET(request: NextRequest) {
           updatedAt: Date.now(),
         });
       }
-      after(() => {
-        void tryResumeMysticalStageB(uid).catch((e) => {
+      after(async () => {
+        try {
+          await tryResumeMysticalStageB(uid);
+        } catch (e) {
           devLog.error('[generate-mystical] GET after(tryResumeMysticalStageB) failed', e, 'generate-mystical');
-        });
+        }
       });
     }
 
