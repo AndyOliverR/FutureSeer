@@ -101,3 +101,24 @@ export async function acquireMysticalGenerationLock(
     return 'concurrent';
   }
 }
+
+/**
+ * Clear a just-acquired lock when a pre-enqueue gate fails (e.g. billing)
+ * so a later retry is not blocked by a phantom in-progress run.
+ */
+export async function releaseMysticalGenerationLock(uid: string): Promise<void> {
+  if (!adminDb) return;
+  try {
+    await adminDb.collection(COLLECTION).doc(uid).set(
+      {
+        lockedAt: null,
+        updatedAt: Date.now(),
+        status: 'idle',
+        idempotencyKey: null,
+      },
+      { merge: true },
+    );
+  } catch (e) {
+    devLog.error('[generationLock] Release failed', e, 'generationLock');
+  }
+}
