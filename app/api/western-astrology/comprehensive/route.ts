@@ -11,6 +11,8 @@ import {
   partOfFortuneFromPlanets,
   type PlanetLike,
 } from '@/lib/western/chartDerivedFacts';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -703,15 +705,28 @@ export async function POST(request: NextRequest) {
         error: 'Missing required parameters: userId or chartData'
       }, { status: 400 });
     }
+
+    const auth = await verifyUserRequest(request, 'western-comprehensive');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
     lockKey = `western-comprehensive:${userId}`;
 
     const leaderWait = westernComprehensiveInFlight.get(lockKey);
     if (leaderWait) {
       await leaderWait;
-      const afterWait = await readValidWesternComprehensiveCache(userId);
-      if (afterWait) {
-        devLog.info('✅ Returning Western comprehensive after in-flight run for user:', userId, 'western');
-        return NextResponse.json({ success: true, data: afterWait });
+      if (canAccessUserScopedData) {
+        const afterWait = await readValidWesternComprehensiveCache(userId);
+        if (afterWait) {
+          devLog.info('✅ Returning Western comprehensive after in-flight run for user:', userId, 'western');
+          return NextResponse.json({ success: true, data: afterWait });
+        }
       }
       return NextResponse.json(
         {
@@ -729,15 +744,17 @@ export async function POST(request: NextRequest) {
 
     devLog.info('🔮 Comprehensive Western Astrology API: Generating comprehensive report for user:', userId, 'western');
 
-    try {
-      const cached = await readValidWesternComprehensiveCache(userId);
-      if (cached) {
-        devLog.info('✅ Returning cached comprehensive Western astrology report for user:', userId, 'western');
-        return NextResponse.json({ success: true, data: cached });
-      }
-    } catch (cacheError: any) {
-      if (process.env.NODE_ENV === 'development') {
-        devWarn('⚠️ Error checking cache, proceeding with generation:', cacheError?.message || cacheError, 'western-astrology');
+    if (canAccessUserScopedData) {
+      try {
+        const cached = await readValidWesternComprehensiveCache(userId);
+        if (cached) {
+          devLog.info('✅ Returning cached comprehensive Western astrology report for user:', userId, 'western');
+          return NextResponse.json({ success: true, data: cached });
+        }
+      } catch (cacheError: any) {
+        if (process.env.NODE_ENV === 'development') {
+          devWarn('⚠️ Error checking cache, proceeding with generation:', cacheError?.message || cacheError, 'western-astrology');
+        }
       }
     }
 
@@ -825,7 +842,10 @@ export async function POST(request: NextRequest) {
           };
         }
       },
-      readFirestoreCache: () => readWesternComprehensiveCache(userId, { allowStale: true }),
+      readFirestoreCache: () =>
+        canAccessUserScopedData
+          ? readWesternComprehensiveCache(userId, { allowStale: true })
+          : Promise.resolve(null),
       buildDeterministic: () => buildWesternChartFallback(...chartArgs),
     });
 
@@ -856,20 +876,22 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now()
     };
 
-    // Cache in Firebase (include reportChunks for retrieval-only Seer)
-    try {
-      const reportChunks = transformComprehensiveToChunks(comprehensiveAnalysis, chartData);
-      await setCachedDoc(['users', userId, 'westernAstrologyReports'], 'comprehensive', {
-        data: responseData,
-        timestamp: Date.now(),
-        schemaVersion: PREDICTIVE_INSIGHTS_SCHEMA_VERSION,
-        reportChunks
-      });
-      devLog.info('✅ Cached comprehensive Western astrology report in Firebase with schema version:', PREDICTIVE_INSIGHTS_SCHEMA_VERSION, 'western-astrology');
-    } catch (cacheError: any) {
-      // Log error but don't fail the request - caching is optional
-      if (process.env.NODE_ENV === 'development') {
-        devWarn('⚠️ Error caching report:', cacheError?.message || cacheError, 'western-astrology');
+    // Cache in Firebase only for the owning authenticated user (include reportChunks for Seer)
+    if (canAccessUserScopedData) {
+      try {
+        const reportChunks = transformComprehensiveToChunks(comprehensiveAnalysis, chartData);
+        await setCachedDoc(['users', userId, 'westernAstrologyReports'], 'comprehensive', {
+          data: responseData,
+          timestamp: Date.now(),
+          schemaVersion: PREDICTIVE_INSIGHTS_SCHEMA_VERSION,
+          reportChunks
+        });
+        devLog.info('✅ Cached comprehensive Western astrology report in Firebase with schema version:', PREDICTIVE_INSIGHTS_SCHEMA_VERSION, 'western-astrology');
+      } catch (cacheError: any) {
+        // Log error but don't fail the request - caching is optional
+        if (process.env.NODE_ENV === 'development') {
+          devWarn('⚠️ Error caching report:', cacheError?.message || cacheError, 'western-astrology');
+        }
       }
     }
 

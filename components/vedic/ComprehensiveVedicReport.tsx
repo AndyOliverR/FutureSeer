@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -122,7 +123,7 @@ export default function ComprehensiveVedicReport({
       setAnalysisError(null)
 
       try {
-        const response = await fetch('/api/vedic/comprehensive', {
+        const response = await fetchWithFirebaseAuthRequired('/api/vedic/comprehensive', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -148,11 +148,18 @@ function WesternAstrologyPageContent() {
 
     let cancelled = false
     setIsLoadingComprehensiveAnalysis(true)
-    fetch('/api/western-astrology/comprehensive', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.uid, chartData })
-    })
+    user
+      .getIdToken()
+      .then((token) =>
+        fetch('/api/western-astrology/comprehensive', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId: user.uid, chartData }),
+        }),
+      )
       .then((res) => res.json())
       .then(async (json) => {
         if (cancelled || !json?.success) return
