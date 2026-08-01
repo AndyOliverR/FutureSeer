@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -141,7 +142,7 @@ export default function ComprehensiveWesternReport({
       setAnalysisError(null)
 
       try {
-        const response = await fetch('/api/western-astrology/comprehensive', {
+        const response = await fetchWithFirebaseAuthRequired('/api/western-astrology/comprehensive', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -348,22 +348,29 @@ function VedicAstrologyPageContent() {
       });
     }
 
-    fetch('/api/vedic/comprehensive', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        userId: user.uid,
-        vedicChartData: vedicProfileData,
-        userProfile: {
-          birthDate: userProfile.birthDate,
-          birthTime,
-          birthPlace: userProfile.birthPlace,
-          fullName: userProfile.fullName || userProfile.displayName,
-          displayName: userProfile.displayName,
-        },
-      }),
-    })
+    user
+      .getIdToken()
+      .then((token) =>
+        fetch('/api/vedic/comprehensive', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            userId: user.uid,
+            vedicChartData: vedicProfileData,
+            userProfile: {
+              birthDate: userProfile.birthDate,
+              birthTime,
+              birthPlace: userProfile.birthPlace,
+              fullName: userProfile.fullName || userProfile.displayName,
+              displayName: userProfile.displayName,
+            },
+          }),
+        }),
+      )
       .then((res) => {
         const responseAt = Date.now();
         if (process.env.NODE_ENV === 'development') {
