@@ -7,6 +7,8 @@ import { tarotIntelligence } from '@/lib/tarotIntelligence';
 import { calculateLifePathNumber, calculateDestinyNumber, calculateSoulNumber, calculatePersonalityNumber, calculatePersonalYearNumber } from '@/lib/numerologyCalculations';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
 import { devLog } from '@/lib/devLogger';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -210,35 +212,47 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const auth = await verifyUserRequest(request, 'tarot-combined-system');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
     devLog.info('🔮 Combined System API: Generating analysis for user:', userId, 'tarot-combined-system');
 
     // Check cache first - but only if we have valid parsed data and matching version
-    const cacheDoc = await getCachedDoc(['users', userId, 'combinedSystemReports'], 'current');
-    if (cacheDoc?.exists()) {
-      const cachedData = cacheDoc.data();
-      const lastUpdated = cachedData?.lastUpdated;
-      const cacheVersion = cachedData?.version;
-      
-      // Also check if cached data has valid holisticAnalysis format
-      const hasValidFormat = cachedData?.data?.holisticAnalysis?.overview && 
-                             typeof cachedData.data.holisticAnalysis.overview === 'string' &&
-                             !cachedData.data.holisticAnalysis.overview.includes('```json') &&
-                             !cachedData.data.holisticAnalysis.overview.includes('```');
-      
-      if (lastUpdated && hasValidFormat && cacheVersion === CACHE_VERSION) {
-        const cacheAge = new Date().getTime() - new Date(lastUpdated).getTime();
-        if (cacheAge < CACHE_TTL) {
-          devLog.info('✅ Returning cached Combined System report for user:', userId, 'tarot-combined-system');
-          return NextResponse.json({
-            success: true,
-            data: cachedData.data
-          });
-        }
-      } else {
-        if (!hasValidFormat) {
-          devLog.info('⚠️ Cached data has invalid format, regenerating...', undefined, 'tarot-combined-system');
-        } else if (cacheVersion !== CACHE_VERSION) {
-          devLog.info('⚠️ Cache version mismatch, regenerating...', undefined, 'tarot-combined-system');
+    if (canAccessUserScopedData) {
+      const cacheDoc = await getCachedDoc(['users', userId, 'combinedSystemReports'], 'current');
+      if (cacheDoc?.exists()) {
+        const cachedData = cacheDoc.data();
+        const lastUpdated = cachedData?.lastUpdated;
+        const cacheVersion = cachedData?.version;
+
+        // Also check if cached data has valid holisticAnalysis format
+        const hasValidFormat = cachedData?.data?.holisticAnalysis?.overview &&
+                               typeof cachedData.data.holisticAnalysis.overview === 'string' &&
+                               !cachedData.data.holisticAnalysis.overview.includes('```json') &&
+                               !cachedData.data.holisticAnalysis.overview.includes('```');
+
+        if (lastUpdated && hasValidFormat && cacheVersion === CACHE_VERSION) {
+          const cacheAge = new Date().getTime() - new Date(lastUpdated).getTime();
+          if (cacheAge < CACHE_TTL) {
+            devLog.info('✅ Returning cached Combined System report for user:', userId, 'tarot-combined-system');
+            return NextResponse.json({
+              success: true,
+              data: cachedData.data
+            });
+          }
+        } else {
+          if (!hasValidFormat) {
+            devLog.info('⚠️ Cached data has invalid format, regenerating...', undefined, 'tarot-combined-system');
+          } else if (cacheVersion !== CACHE_VERSION) {
+            devLog.info('⚠️ Cache version mismatch, regenerating...', undefined, 'tarot-combined-system');
+          }
         }
       }
     }
@@ -397,6 +411,7 @@ Format as JSON with keys: overview, integration, timing, guidance`;
         return mapped;
       },
       readFirestoreCache: async () => {
+        if (!canAccessUserScopedData) return null;
         const cacheDoc = await getCachedDoc(['users', userId, 'combinedSystemReports'], 'current');
         if (!cacheDoc?.exists()) return null;
         const cachedData = cacheDoc.data();
@@ -464,16 +479,17 @@ Format as JSON with keys: overview, integration, timing, guidance`;
       });
     }
 
-    await setCachedDoc(['users', userId, 'combinedSystemReports'], 'current', {
-      data: result,
-      lastUpdated: new Date().toISOString(),
-      version: CACHE_VERSION,
-      userId,
-      birthDate,
-      fullName,
-    });
-
-    devLog.info('✅ Combined System analysis generated and cached for user:', userId, 'tarot-combined-system');
+    if (canAccessUserScopedData) {
+      await setCachedDoc(['users', userId, 'combinedSystemReports'], 'current', {
+        data: result,
+        lastUpdated: new Date().toISOString(),
+        version: CACHE_VERSION,
+        userId,
+        birthDate,
+        fullName,
+      });
+      devLog.info('✅ Combined System analysis generated and cached for user:', userId, 'tarot-combined-system');
+    }
 
     return NextResponse.json({
       success: true,

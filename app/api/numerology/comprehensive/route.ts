@@ -9,6 +9,8 @@ import { devLog, devWarn } from '@/lib/devLogger';
 import { computeChaldeanProfile } from '@/lib/numerology/chaldean';
 import { calcPersonalYear } from '@/lib/numerology/personalYear';
 import { calcDriver, calcConductor } from '@/lib/numerology/driverConductor';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -380,19 +382,31 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const auth = await verifyUserRequest(request, 'numerology-comprehensive');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
     devLog.info('🔮 Comprehensive Numerology API: Generating report for user:', userId, 'numerology');
 
-    try {
-      const cached = await readNumerologyComprehensiveCache(userId);
-      if (cached) {
-        devLog.info('✅ Returning cached comprehensive Numerology report for user:', userId, 'numerology');
-        return NextResponse.json({
-          success: true,
-          data: { comprehensiveAnalysis: cached, timestamp: Date.now() },
-        });
+    if (canAccessUserScopedData) {
+      try {
+        const cached = await readNumerologyComprehensiveCache(userId);
+        if (cached) {
+          devLog.info('✅ Returning cached comprehensive Numerology report for user:', userId, 'numerology');
+          return NextResponse.json({
+            success: true,
+            data: { comprehensiveAnalysis: cached, timestamp: Date.now() },
+          });
+        }
+      } catch (cacheError: unknown) {
+        devWarn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'numerology');
       }
-    } catch (cacheError: unknown) {
-      devWarn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'numerology');
     }
 
     // Check if Groq API key is available
@@ -468,7 +482,10 @@ export async function POST(request: NextRequest) {
           parsingFailed: true,
         };
       },
-      readFirestoreCache: () => readNumerologyComprehensiveCache(userId, { allowStale: true }),
+      readFirestoreCache: () =>
+        canAccessUserScopedData
+          ? readNumerologyComprehensiveCache(userId, { allowStale: true })
+          : Promise.resolve(null),
       buildDeterministic: () => parseGroqResponse('', numerologyData),
     });
 
@@ -498,15 +515,17 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now(),
     };
 
-    try {
-      await setCachedDoc(['users', userId, 'numerologyReports'], 'comprehensive', {
-        data: responseData,
-        timestamp: Date.now(),
-        schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION,
-      });
-      devLog.info('✅ Cached comprehensive Numerology report in Firebase', undefined, 'numerology');
-    } catch (cacheError: unknown) {
-      devWarn('⚠️ Error caching report:', cacheError, 'numerology');
+    if (canAccessUserScopedData) {
+      try {
+        await setCachedDoc(['users', userId, 'numerologyReports'], 'comprehensive', {
+          data: responseData,
+          timestamp: Date.now(),
+          schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION,
+        });
+        devLog.info('✅ Cached comprehensive Numerology report in Firebase', undefined, 'numerology');
+      } catch (cacheError: unknown) {
+        devWarn('⚠️ Error caching report:', cacheError, 'numerology');
+      }
     }
 
     return NextResponse.json({

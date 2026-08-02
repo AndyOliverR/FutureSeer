@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState, useEffect } from 'react'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -212,7 +213,7 @@ export default function AstroNumerologyTab({
       setAnalysisError(null)
 
       try {
-        const response = await fetch('/api/astro-numerology/analysis', {
+        const response = await fetchWithFirebaseAuthRequired('/api/astro-numerology/analysis', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -95,7 +96,7 @@ export default function ComprehensiveNumerologyReport({
       setAnalysisError(null)
 
       try {
-        const response = await fetch('/api/numerology/comprehensive', {
+        const response = await fetchWithFirebaseAuthRequired('/api/numerology/comprehensive', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

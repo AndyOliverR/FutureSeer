@@ -8,6 +8,8 @@ import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStr
 import { type VedicNumerologyProfile } from '@/lib/vedicNumerologyCalculations';
 import { buildVedicKarmaInsights } from '@/lib/vedic/karmaChartInsights';
 import { devLog } from '@/lib/devLogger';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -348,29 +350,41 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const auth = await verifyUserRequest(request, 'vedic-astro-numerology');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
     devLog.info('🔮 Vedic Astro-Numerology API: Generating comprehensive report for user:', userId, 'vedic-astro-numerology');
 
     const birthDataKey = `${birthDate}_${fullName}_${moonSign}_${lagnaSign}`;
 
-    try {
-      const cached = await readVedicAstroNumerologyCache(userId, birthDataKey);
-      if (cached) {
-        devLog.info('✅ Returning cached Vedic Astro-Numerology report for user:', userId, 'vedic-astro-numerology');
-        return NextResponse.json({
-          success: true,
-          data: {
-            moonSign,
-            lagnaSign,
-            sunSign,
-            lifePathNumber: numerologyProfile.lifePathNumber,
-            rulingPlanet: numerologyProfile.planetaryInfluences['Life Path']?.planet || 'Sun',
-            comprehensiveAnalysis: cached,
-            timestamp: Date.now(),
-          },
-        });
+    if (canAccessUserScopedData) {
+      try {
+        const cached = await readVedicAstroNumerologyCache(userId, birthDataKey);
+        if (cached) {
+          devLog.info('✅ Returning cached Vedic Astro-Numerology report for user:', userId, 'vedic-astro-numerology');
+          return NextResponse.json({
+            success: true,
+            data: {
+              moonSign,
+              lagnaSign,
+              sunSign,
+              lifePathNumber: numerologyProfile.lifePathNumber,
+              rulingPlanet: numerologyProfile.planetaryInfluences['Life Path']?.planet || 'Sun',
+              comprehensiveAnalysis: cached,
+              timestamp: Date.now(),
+            },
+          });
+        }
+      } catch (cacheError: unknown) {
+        devLog.warn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'vedic-astro-numerology');
       }
-    } catch (cacheError: unknown) {
-      devLog.warn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'vedic-astro-numerology');
     }
 
     if (!process.env.GROQ_API_KEY) {
@@ -459,7 +473,9 @@ export async function POST(request: NextRequest) {
         };
       },
       readFirestoreCache: () =>
-        readVedicAstroNumerologyCache(userId, birthDataKey, { allowStale: true }),
+        canAccessUserScopedData
+          ? readVedicAstroNumerologyCache(userId, birthDataKey, { allowStale: true })
+          : Promise.resolve(null),
       buildDeterministic: () =>
         buildDeterministicVedicAstroNumerology(moonSign, lagnaSign, numerologyProfile),
     });
@@ -489,15 +505,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    try {
-      await setCachedDoc(['users', userId, 'vedicAstroNumerologyReports'], 'current', {
-        data: responseData,
-        birthDataKey,
-        timestamp: Date.now(),
-      });
-      devLog.info('✅ Cached Vedic Astro-Numerology report in Firebase', undefined, 'vedic-astro-numerology');
-    } catch (cacheError: unknown) {
-      devLog.warn('⚠️ Error caching report:', cacheError, 'vedic-astro-numerology');
+    if (canAccessUserScopedData) {
+      try {
+        await setCachedDoc(['users', userId, 'vedicAstroNumerologyReports'], 'current', {
+          data: responseData,
+          birthDataKey,
+          timestamp: Date.now(),
+        });
+        devLog.info('✅ Cached Vedic Astro-Numerology report in Firebase', undefined, 'vedic-astro-numerology');
+      } catch (cacheError: unknown) {
+        devLog.warn('⚠️ Error caching report:', cacheError, 'vedic-astro-numerology');
+      }
     }
 
     return NextResponse.json({

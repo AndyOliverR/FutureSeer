@@ -252,22 +252,29 @@ function BaziPageContent() {
     baziComprehensiveAbortRef.current = ac;
     const { signal } = ac;
     setIsLoadingComprehensive(true);
-    fetch('/api/bazi/comprehensive', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal,
-      body: JSON.stringify({
-        userId: user.uid,
-        reading: baziReport,
-        userProfile: {
-          displayName: userProfile?.displayName,
-          fullName: userProfile?.fullName,
-          birthDate: userProfile?.birthDate,
-          birthTime: userProfile?.birthTime,
-          birthPlace: userProfile?.birthPlace,
-        },
-      }),
-    })
+    user
+      .getIdToken()
+      .then((token) =>
+        fetch('/api/bazi/comprehensive', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          signal,
+          body: JSON.stringify({
+            userId: user.uid,
+            reading: baziReport,
+            userProfile: {
+              displayName: userProfile?.displayName,
+              fullName: userProfile?.fullName,
+              birthDate: userProfile?.birthDate,
+              birthTime: userProfile?.birthTime,
+              birthPlace: userProfile?.birthPlace,
+            },
+          }),
+        }),
+      )
       .then((res) => res.json())
       .then(async (json) => {
         if (signal.aborted || !json?.success || !json?.data) return;

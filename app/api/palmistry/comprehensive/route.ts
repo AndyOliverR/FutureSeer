@@ -6,7 +6,8 @@ import {
   readAdminComprehensiveCache,
   writeAdminComprehensiveCache,
 } from '@/lib/adminComprehensiveCache';
-import { getAuth } from '@/lib/firebase-admin';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 type PalmistryValidatedAnalysis = {
   overallReading: string;
@@ -108,17 +109,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const freshCached = await readAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
-      maxAgeHours: 24 * 7,
-      extract: (d) => (d.analysis as PalmistryValidatedAnalysis) ?? null,
-    });
-    if (freshCached) {
-      devLog.debug('✅ Returning cached comprehensive palmistry analysis');
-      return NextResponse.json({
-        success: true,
-        data: freshCached,
-        cached: true,
+    const auth = await verifyUserRequest(request, 'palmistry-comprehensive');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
+    if (canAccessUserScopedData) {
+      const freshCached = await readAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
+        maxAgeHours: 24 * 7,
+        extract: (d) => (d.analysis as PalmistryValidatedAnalysis) ?? null,
       });
+      if (freshCached) {
+        devLog.debug('✅ Returning cached comprehensive palmistry analysis');
+        return NextResponse.json({
+          success: true,
+          data: freshCached,
+          cached: true,
+        });
+      }
     }
 
     devLog.debug('🔮 Generating comprehensive palmistry analysis...');
@@ -190,10 +203,12 @@ Provide only valid JSON in your response.`;
         return mapStructuredReportRun(aiRun, validatePalmistryAnalysis);
       },
       readFirestoreCache: () =>
-        readAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
-          allowStale: true,
-          extract: (d) => (d.analysis as PalmistryValidatedAnalysis) ?? null,
-        }),
+        canAccessUserScopedData
+          ? readAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
+              allowStale: true,
+              extract: (d) => (d.analysis as PalmistryValidatedAnalysis) ?? null,
+            })
+          : Promise.resolve(null),
       buildDeterministic: buildPalmistryDeterministic,
     });
 
@@ -213,16 +228,17 @@ Provide only valid JSON in your response.`;
       });
     }
 
-    await writeAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
-      analysis: validatedAnalysis,
-      palmDataSnapshot: {
-        hand: palmistryData.hand,
-        palmShape: palmistryData.palmShape,
-        energyScore: palmistryData.energyScore,
-      },
-    });
-
-    devLog.debug('✅ Cached comprehensive palmistry analysis');
+    if (canAccessUserScopedData) {
+      await writeAdminComprehensiveCache(userId, 'palmistry-comprehensive', 'latest', {
+        analysis: validatedAnalysis,
+        palmDataSnapshot: {
+          hand: palmistryData.hand,
+          palmShape: palmistryData.palmShape,
+          energyScore: palmistryData.energyScore,
+        },
+      });
+      devLog.debug('✅ Cached comprehensive palmistry analysis');
+    }
 
     return NextResponse.json({
       success: true,

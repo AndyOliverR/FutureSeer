@@ -3,6 +3,8 @@ import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { callTextAI } from '@/lib/aiStructuredOutput';
 import { BaziReading } from '@/lib/baziIntelligence';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 /**
  * API Route: /api/bazi/comprehensive
@@ -154,36 +156,48 @@ export async function POST(req: NextRequest) {
 
     const { userId, reading, userProfile } = body;
 
-    // Check cache first (30-day TTL)
+    const auth = await verifyUserRequest(req, 'bazi-comprehensive');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
+    // Check cache first (30-day TTL) — only for the owning authenticated user.
     const cacheKey = `bazi_${userId}_${userProfile?.birthDate || ''}_${userProfile?.birthTime || ''}`;
-    
-    try {
-      const cachedDoc = await getCachedDoc(['users', userId, 'baziReports'], 'comprehensive');
 
-      if (cachedDoc && cachedDoc.exists()) {
-        const cachedData = cachedDoc.data();
-        const cacheAge = Date.now() - (cachedData?.timestamp || 0);
-        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    if (canAccessUserScopedData) {
+      try {
+        const cachedDoc = await getCachedDoc(['users', userId, 'baziReports'], 'comprehensive');
 
-        // Return cached data if less than 30 days old and cache key matches
-        if (cacheAge < thirtyDays && cachedData?.cacheKey === cacheKey) {
-          const cacheAgeDays = Math.floor(cacheAge / (24 * 60 * 60 * 1000));
-          if (process.env.NODE_ENV === 'development') {
-            devLog.debug(`[BAZI] Returning cached report (${cacheAgeDays} days old)`);
+        if (cachedDoc && cachedDoc.exists()) {
+          const cachedData = cachedDoc.data();
+          const cacheAge = Date.now() - (cachedData?.timestamp || 0);
+          const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+          // Return cached data if less than 30 days old and cache key matches
+          if (cacheAge < thirtyDays && cachedData?.cacheKey === cacheKey) {
+            const cacheAgeDays = Math.floor(cacheAge / (24 * 60 * 60 * 1000));
+            if (process.env.NODE_ENV === 'development') {
+              devLog.debug(`[BAZI] Returning cached report (${cacheAgeDays} days old)`);
+            }
+            return NextResponse.json({
+              success: true,
+              data: cachedData.comprehensiveAnalysis,
+              cached: true,
+              cacheAge: `${cacheAgeDays} days`,
+              responseTime: `${Date.now() - startTime}ms`
+            });
           }
-          return NextResponse.json({
-            success: true,
-            data: cachedData.comprehensiveAnalysis,
-            cached: true,
-            cacheAge: `${cacheAgeDays} days`,
-            responseTime: `${Date.now() - startTime}ms`
-          });
         }
-      }
-    } catch (cacheError) {
-      // Log cache error but continue with generation
-      if (process.env.NODE_ENV === 'development') {
-        devLog.warn('[BAZI] Cache read error (continuing with generation)', cacheError, 'bazi-comprehensive');
+      } catch (cacheError) {
+        // Log cache error but continue with generation
+        if (process.env.NODE_ENV === 'development') {
+          devLog.warn('[BAZI] Cache read error (continuing with generation)', cacheError, 'bazi-comprehensive');
+        }
       }
     }
 
@@ -194,22 +208,24 @@ export async function POST(req: NextRequest) {
 
     const comprehensiveAnalysis = await generateComprehensiveAnalysis(reading, userProfile);
 
-    // Cache the result (non-blocking)
-    setCachedDoc(
-      ['users', userId, 'baziReports'],
-      'comprehensive',
-      {
-        comprehensiveAnalysis,
-        cacheKey,
-        timestamp: Date.now(),
-        generatedAt: new Date().toISOString()
-      }
-    ).catch((cacheError) => {
-      // Log cache write error but don't fail the request
-      if (process.env.NODE_ENV === 'development') {
-        devLog.warn('[BAZI] Cache write error (non-critical)', cacheError, 'bazi-comprehensive');
-      }
-    });
+    // Cache the result (non-blocking) — only when caller owns the userId.
+    if (canAccessUserScopedData) {
+      setCachedDoc(
+        ['users', userId, 'baziReports'],
+        'comprehensive',
+        {
+          comprehensiveAnalysis,
+          cacheKey,
+          timestamp: Date.now(),
+          generatedAt: new Date().toISOString()
+        }
+      ).catch((cacheError) => {
+        // Log cache write error but don't fail the request
+        if (process.env.NODE_ENV === 'development') {
+          devLog.warn('[BAZI] Cache write error (non-critical)', cacheError, 'bazi-comprehensive');
+        }
+      });
+    }
 
     const responseTime = Date.now() - startTime;
     if (process.env.NODE_ENV === 'development') {
