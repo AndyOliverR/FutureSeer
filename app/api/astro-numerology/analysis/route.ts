@@ -6,6 +6,8 @@ import { parseStructuredJsonFromResponse } from '@/lib/aiStructuredOutputParse';
 import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { calculateLifePathNumber, calculateDestinyNumber } from '@/lib/numerologyCalculations';
 import { devLog } from '@/lib/devLogger';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -279,6 +281,16 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const auth = await verifyUserRequest(request, 'astro-numerology');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
     devLog.info('🔮 Astro-Numerology API: Generating comprehensive report for user:', userId, 'astro-numerology');
 
     // Calculate numerology numbers
@@ -297,23 +309,25 @@ export async function POST(request: NextRequest) {
 
     const birthDataKey = `${birthDate}_${fullName}_${actualSunSign}`;
 
-    try {
-      const cached = await readAstroNumerologyCache(userId, birthDataKey);
-      if (cached) {
-        devLog.info('✅ Returning cached Astro-Numerology report for user:', userId, 'astro-numerology');
-        return NextResponse.json({
-          success: true,
-          data: {
-            sunSign: actualSunSign,
-            lifePathNumber,
-            nameNumber,
-            comprehensiveAnalysis: cached,
-            timestamp: Date.now(),
-          },
-        });
+    if (canAccessUserScopedData) {
+      try {
+        const cached = await readAstroNumerologyCache(userId, birthDataKey);
+        if (cached) {
+          devLog.info('✅ Returning cached Astro-Numerology report for user:', userId, 'astro-numerology');
+          return NextResponse.json({
+            success: true,
+            data: {
+              sunSign: actualSunSign,
+              lifePathNumber,
+              nameNumber,
+              comprehensiveAnalysis: cached,
+              timestamp: Date.now(),
+            },
+          });
+        }
+      } catch (cacheError: unknown) {
+        devLog.warn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'astro-numerology');
       }
-    } catch (cacheError: unknown) {
-      devLog.warn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'astro-numerology');
     }
 
     if (!process.env.GROQ_API_KEY) {
@@ -393,7 +407,9 @@ export async function POST(request: NextRequest) {
         };
       },
       readFirestoreCache: () =>
-        readAstroNumerologyCache(userId, birthDataKey, { allowStale: true }),
+        canAccessUserScopedData
+          ? readAstroNumerologyCache(userId, birthDataKey, { allowStale: true })
+          : Promise.resolve(null),
       buildDeterministic: () =>
         buildDeterministicAstroNumerology(actualSunSign, lifePathNumber, nameNumber),
     });
@@ -421,15 +437,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    try {
-      await setCachedDoc(['users', userId, 'astroNumerologyReports'], 'current', {
-        data: responseData,
-        birthDataKey,
-        timestamp: Date.now(),
-      });
-      devLog.info('✅ Cached Astro-Numerology report in Firebase', undefined, 'astro-numerology');
-    } catch (cacheError: unknown) {
-      devLog.warn('⚠️ Error caching report:', cacheError, 'astro-numerology');
+    if (canAccessUserScopedData) {
+      try {
+        await setCachedDoc(['users', userId, 'astroNumerologyReports'], 'current', {
+          data: responseData,
+          birthDataKey,
+          timestamp: Date.now(),
+        });
+        devLog.info('✅ Cached Astro-Numerology report in Firebase', undefined, 'astro-numerology');
+      } catch (cacheError: unknown) {
+        devLog.warn('⚠️ Error caching report:', cacheError, 'astro-numerology');
+      }
     }
 
     return NextResponse.json({
