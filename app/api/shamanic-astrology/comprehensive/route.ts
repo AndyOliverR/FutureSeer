@@ -13,6 +13,8 @@ import {
   buildShamanicProfileContext,
 } from '@/lib/shamanicSeerPrompts';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -255,14 +257,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
     }
 
-    const freshCached = await readAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
-      extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
-    });
-    if (freshCached) {
-      return NextResponse.json({
-        success: true,
-        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+    const auth = await verifyUserRequest(request, 'shamanic-comprehensive');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
+    if (canAccessUserScopedData) {
+      const freshCached = await readAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
+        extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
       });
+      if (freshCached) {
+        return NextResponse.json({
+          success: true,
+          data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+        });
+      }
     }
 
     let planets: any[] = [];
@@ -344,10 +358,12 @@ export async function POST(request: NextRequest) {
         return mapStructuredReportRun(aiRun, normalizeAnalysis);
       },
       readFirestoreCache: () =>
-        readAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
-          allowStale: true,
-          extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
-        }),
+        canAccessUserScopedData
+          ? readAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
+              allowStale: true,
+              extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+            })
+          : Promise.resolve(null),
       buildDeterministic: () => buildShamanicDeterministic(planets),
     });
 
@@ -369,9 +385,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await writeAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
-      comprehensiveAnalysis,
-    });
+    if (canAccessUserScopedData) {
+      await writeAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
+        comprehensiveAnalysis,
+      });
+    }
 
     return NextResponse.json({
       success: true,
