@@ -87,20 +87,27 @@ function FinancialAstrologyPageContent() {
     setOnDemandLoading(true);
     onDemandFetchedRef.current = true;
 
-    fetch('/api/financial-astrology/comprehensive', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: uid,
-        userProfile: {
-          birthDate: profile.birthDate,
-          birthTime: profile.birthTime ?? '12:00:00',
-          birthPlace: profile.birthPlace,
-          birthLatitude: profile.birthLatitude ?? 0,
-          birthLongitude: profile.birthLongitude ?? 0,
-        },
-      }),
-    })
+    currentUser
+      .getIdToken()
+      .then((token) =>
+        fetch('/api/financial-astrology/comprehensive', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId: uid,
+            userProfile: {
+              birthDate: profile.birthDate,
+              birthTime: profile.birthTime ?? '12:00:00',
+              birthPlace: profile.birthPlace,
+              birthLatitude: profile.birthLatitude ?? 0,
+              birthLongitude: profile.birthLongitude ?? 0,
+            },
+          }),
+        }),
+      )
       .then((res) => res.json())
       .then(async (json) => {
         if (cancelled) return;

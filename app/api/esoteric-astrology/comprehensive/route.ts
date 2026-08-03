@@ -29,6 +29,8 @@ import {
   type PlanetPosition,
 } from '@/lib/esotericEngines';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -335,14 +337,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
     }
 
-    const freshCached = await readAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
-      extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
-    });
-    if (freshCached) {
-      return NextResponse.json({
-        success: true,
-        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+    const auth = await verifyUserRequest(request, 'esoteric-comprehensive');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
+    if (canAccessUserScopedData) {
+      const freshCached = await readAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
+        extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
       });
+      if (freshCached) {
+        return NextResponse.json({
+          success: true,
+          data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+        });
+      }
     }
 
     let planets: any[] = [];
@@ -422,10 +436,12 @@ export async function POST(request: NextRequest) {
         return mapStructuredReportRun(aiRun, (parsed) => normalizeAnalysis(parsed, precomputed));
       },
       readFirestoreCache: () =>
-        readAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
-          allowStale: true,
-          extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
-        }),
+        canAccessUserScopedData
+          ? readAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
+              allowStale: true,
+              extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+            })
+          : Promise.resolve(null),
       buildDeterministic: () => buildEsotericDeterministic(planets, precomputed),
     });
 
@@ -447,9 +463,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await writeAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
-      comprehensiveAnalysis,
-    });
+    if (canAccessUserScopedData) {
+      await writeAdminComprehensiveCache(userId, 'esotericAstrologyReports', 'comprehensive', {
+        comprehensiveAnalysis,
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -14,6 +14,8 @@ import {
   buildFinancialReportSystemPrompt,
   getFinancialDisclaimer,
 } from '@/lib/financialAstrology/financialAstrologyPrompts';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -96,14 +98,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
     }
 
-    const freshCached = await readAdminComprehensiveCache(userId, 'financialAstrologyReports', 'comprehensive', {
-      extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
-    });
-    if (freshCached) {
-      return NextResponse.json({
-        success: true,
-        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+    const auth = await verifyUserRequest(request, 'financial-comprehensive');
+    const access = decideUserScopedAccess(userId, auth);
+    if (access.kind === 'unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (access.kind === 'forbidden') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+    const canAccessUserScopedData = access.kind === 'owned';
+
+    if (canAccessUserScopedData) {
+      const freshCached = await readAdminComprehensiveCache(userId, 'financialAstrologyReports', 'comprehensive', {
+        extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
       });
+      if (freshCached) {
+        return NextResponse.json({
+          success: true,
+          data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+        });
+      }
     }
 
     const birthData: BirthData | null = bodyBirthData
@@ -271,6 +285,7 @@ export async function POST(request: NextRequest) {
         };
       },
       readFirestoreCache: async () => {
+        if (!canAccessUserScopedData) return null;
         const cached = await readAdminComprehensiveCache(
           userId,
           'financialAstrologyReports',
@@ -332,9 +347,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await writeAdminComprehensiveCache(userId, 'financialAstrologyReports', 'comprehensive', {
-      comprehensiveAnalysis,
-    });
+    if (canAccessUserScopedData) {
+      await writeAdminComprehensiveCache(userId, 'financialAstrologyReports', 'comprehensive', {
+        comprehensiveAnalysis,
+      });
+    }
 
     return NextResponse.json({
       success: true,
