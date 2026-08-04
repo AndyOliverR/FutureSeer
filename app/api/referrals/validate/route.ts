@@ -24,10 +24,10 @@ export async function GET(request: NextRequest) {
     const result = await validateReferralCode(code);
 
     if (result.valid) {
+      // Do not return referrer userId — public callers only need validity.
       return NextResponse.json({
         success: true,
         valid: true,
-        userId: result.userId,
         message: 'Referral code is valid'
       });
     } else {

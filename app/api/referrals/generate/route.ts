@@ -1,76 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { generateReferralCode } from '@/lib/referralUtils';
+import { resolveOwnedUserId, verifyUserRequest } from '@/lib/userApiAuth';
+import { devLog } from '@/lib/devLogger';
 
 /**
  * POST /api/referrals/generate
- * Generate a referral code for a user (if they don't have one)
+ * Generate a referral code for the authenticated user (if they don't have one).
+ * Header: Authorization: Bearer <Firebase ID token>
+ * Body: { userId: string } — must match the authenticated UID.
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId } = body;
+    const auth = await verifyUserRequest(request, 'referrals-generate');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (!userId) {
+    const body = await request.json();
+    const ownedUserId = resolveOwnedUserId(body?.userId, auth.uid);
+
+    if (!ownedUserId) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: 'User ID is required and must match authenticated user' },
+        { status: 403 },
       );
     }
 
     const db = getFirebaseDB();
     if (!db) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    // Server-side: Use Admin SDK
-    if (typeof window === 'undefined') {
-      const userRef = db.collection('users').doc(userId);
-      const userDoc = await userRef.get();
+    const userRef = db.collection('users').doc(ownedUserId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
 
-      const userData = userDoc.data();
-
-      // If user already has a referral code, return it
-      if (userData?.referralCode) {
-        return NextResponse.json({
-          success: true,
-          referralCode: userData.referralCode,
-          message: 'Existing referral code retrieved'
-        });
-      }
-
-      // Generate new referral code
-      const referralCode = generateReferralCode(userId);
-
-      // Create or update user document with referral code (merge so we don't overwrite existing data)
-      await userRef.set(
-        {
-          referralCode,
-          updatedAt: Date.now()
-        },
-        { merge: true }
-      );
-
+    if (userData?.referralCode) {
       return NextResponse.json({
         success: true,
-        referralCode: referralCode,
-        message: 'Referral code generated successfully'
+        referralCode: userData.referralCode,
+        message: 'Existing referral code retrieved',
       });
-    } else {
-      return NextResponse.json(
-        { error: 'Client-side not supported for this endpoint' },
-        { status: 400 }
-      );
     }
-  } catch (error: any) {
-    devLog.error('Error generating referral code:', error, 'route');
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate referral code' },
-      { status: 500 }
+
+    const referralCode = generateReferralCode(ownedUserId);
+
+    await userRef.set(
+      {
+        referralCode,
+        updatedAt: Date.now(),
+      },
+      { merge: true },
     );
+
+    return NextResponse.json({
+      success: true,
+      referralCode,
+      message: 'Referral code generated successfully',
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to generate referral code';
+    devLog.error('Error generating referral code:', error, 'route');
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

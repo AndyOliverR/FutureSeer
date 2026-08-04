@@ -6,6 +6,7 @@ import { Copy, Check, Share2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { getReferralStats } from '@/lib/referralUtils';
 import { safeCopyToClipboard } from '@/lib/safeClipboard';
 
@@ -33,7 +34,7 @@ export function ReferralCodeCard({ userId, targetCount }: ReferralCodeCardProps)
     setIsGenerating(true);
     setError(null);
     try {
-      const response = await fetch('/api/referrals/generate', {
+      const response = await fetchWithFirebaseAuthRequired('/api/referrals/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
