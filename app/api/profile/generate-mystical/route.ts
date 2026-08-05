@@ -253,37 +253,6 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      if (!isFirstOnboardingGeneration) {
-        const profileForBilling = profileWithUid as Partial<UserProfile>;
-        if (!hasUnlimitedBillingAccess(profileForBilling)) {
-          const billing = await consumeBillingAction(uid, 'profile_regen');
-          if (!billing.ok) {
-            const auditId = await writeRegenDecisionTelemetry(uid, {
-              event: 'mystical_regen_blocked_payment',
-              generationMode,
-              hashMatch: false,
-              pendingToolCount: 0,
-              reason: 'payment_blocked',
-            });
-            return NextResponse.json(
-              {
-                error: 'Add credits to regenerate your full mystical profile, or choose unlimited membership.',
-                blockReason: 'credits_required',
-                code: 'insufficient_credits',
-                creditBalance: billing.creditBalance,
-                creditsRequired: billing.creditsRequired,
-                addCreditsUrl: '/credits',
-                missingFields: missingFullFields,
-                generationMode,
-                decision: 'blocked',
-                decisionReason: 'payment_blocked',
-                auditId,
-              },
-              { status: 402 },
-            );
-          }
-        }
-      }
     }
 
     // Idempotent guard: already generated with same effective data — do not re-run tools
@@ -295,12 +264,14 @@ export async function POST(request: NextRequest) {
       userProfile.profileDataHash !== '' &&
       userProfile.profileDataHash === effectiveHash;
     let decisionAuditId: string | null = null;
+    let pendingToolCountForRun = ALL_TOOL_SLUGS.length;
 
     if (hashMatches) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
       const storedProfile = (stored || {}) as Record<string, unknown>;
       const readiness = summarizeToolReadiness(storedProfile, ALL_TOOL_SLUGS);
       const missingSlugs = readiness.pendingToolSlugs;
+      pendingToolCountForRun = missingSlugs.length;
       if (missingSlugs.length === 0) {
         const auditId = await writeRegenDecisionTelemetry(uid, {
           event: 'mystical_regen_skipped_unchanged',
@@ -344,6 +315,40 @@ export async function POST(request: NextRequest) {
         reason: 'profile_hash_changed',
       });
       devLog.info(`[generate-mystical] decision=rerun reason=profile_hash_changed auditId=${decisionAuditId}`, 'generate-mystical');
+    }
+
+    // Every path below enqueues the full tool catalog. Do not let the client-reported
+    // display mode bypass regeneration billing, and do not debit a no-op request.
+    if (!isFirstOnboardingGeneration) {
+      const profileForBilling = profileWithUid as Partial<UserProfile>;
+      if (!hasUnlimitedBillingAccess(profileForBilling)) {
+        const billing = await consumeBillingAction(uid, 'profile_regen');
+        if (!billing.ok) {
+          const auditId = await writeRegenDecisionTelemetry(uid, {
+            event: 'mystical_regen_blocked_payment',
+            generationMode,
+            hashMatch: hashMatches,
+            pendingToolCount: pendingToolCountForRun,
+            reason: 'payment_blocked',
+          });
+          return NextResponse.json(
+            {
+              error: 'Add credits to regenerate your full mystical profile, or choose unlimited membership.',
+              blockReason: 'credits_required',
+              code: 'insufficient_credits',
+              creditBalance: billing.creditBalance,
+              creditsRequired: billing.creditsRequired,
+              addCreditsUrl: '/credits',
+              missingFields: missingFullFields,
+              generationMode,
+              decision: 'blocked',
+              decisionReason: 'payment_blocked',
+              auditId,
+            },
+            { status: 402 },
+          );
+        }
+      }
     }
 
     const idempotencyKey =
