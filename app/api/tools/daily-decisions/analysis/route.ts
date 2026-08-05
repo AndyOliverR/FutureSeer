@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dailyDecisionsIntelligence } from '@/lib/dailyDecisionsIntelligence'
-import { getUserProfile, isProfileComplete } from '@/lib/firebase'
-import { getDocument } from '@/lib/firebase-admin'
-import { devLog, devWarn } from '@/lib/devLogger'
+import { isProfileComplete } from '@/lib/firebase'
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile'
+import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,39 +24,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user profile (try lib/firebase first, then Admin SDK fallback)
+    // Prefer body profile (Stage B / orchestrator). Firestore load requires ownership.
     let userProfile = providedProfile
     if (!userProfile && userId) {
-      try {
-        devLog.debug('📂 [DAILY DECISIONS API] Fetching user profile...', undefined, 'daily-decisions')
-        userProfile = await getUserProfile(userId)
-        if (!userProfile && typeof getDocument === 'function') {
-          try {
-            const data = await getDocument('users', userId)
-            if (data && typeof data === 'object') {
-              userProfile = data as typeof userProfile
-            }
-          } catch (adminErr) {
-            devWarn('⚠️ [DAILY DECISIONS API] getDocument (admin) fallback failed:', adminErr)
-          }
-        }
-        devLog.debug('✅ [DAILY DECISIONS API] Profile fetched:', {
-          hasProfile: !!userProfile,
-          hasBirthDate: !!userProfile?.birthDate,
-          hasBirthTime: !!userProfile?.birthTime,
-          hasBirthPlace: !!userProfile?.birthPlace
-        }, 'daily-decisions')
-      } catch (profileError) {
-        devWarn('⚠️ [DAILY DECISIONS API] Failed to fetch user profile:', profileError)
-        if (typeof getDocument === 'function') {
-          try {
-            const data = await getDocument('users', userId)
-            if (data && typeof data === 'object') userProfile = data as typeof userProfile
-          } catch {
-            // ignore
-          }
-        }
+      const loaded = await loadOwnedUserProfile(request, userId, 'daily-decisions')
+      if (!loaded.ok) {
+        return NextResponse.json(
+          { success: false, error: loaded.error },
+          { status: loaded.status },
+        )
       }
+      userProfile = loaded.profile
+      devLog.debug('✅ [DAILY DECISIONS API] Owned profile fetched:', {
+        hasBirthDate: !!userProfile?.birthDate,
+        hasBirthTime: !!userProfile?.birthTime,
+        hasBirthPlace: !!userProfile?.birthPlace
+      }, 'daily-decisions')
     }
 
     // Validate required fields

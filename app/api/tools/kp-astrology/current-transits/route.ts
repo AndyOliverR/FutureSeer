@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserProfile } from '@/lib/firebase'
-import { getDocument } from '@/lib/firebase-admin'
 import { calculateTransitData } from '@/lib/transitCalculatorServer'
 import { getChart } from '@/lib/astronomia-vedic'
 import { geocodePlace } from '@/services/geocoding'
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile'
 import { devLog } from '@/lib/devLogger'
 import { normalizeBirthTime } from '@/lib/birthTimeUtils'
 import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC'
@@ -80,48 +79,45 @@ export async function POST(request: NextRequest) {
     let coordinates: { latitude: number; longitude: number } | null = null
     let currentLocation: string | undefined
 
-    // If userId provided, try to fetch profile (client SDK then Admin fallback)
-    type ProfileShape = { birthDate?: string; birthTime?: string; birthPlace?: string; displayName?: string; currentLocation?: string; current_location?: string }
-    if (userId) {
-      let userProfile: ProfileShape | null = null
-      try {
-        userProfile = await getUserProfile(userId) as ProfileShape | null
-      } catch (err) {
-        devLog.warn('⚠️ getUserProfile (client) failed, trying Admin:', err, 'route')
+    const hasCompleteBirthData =
+      !!birthData?.birthDate && !!birthData?.birthTime && !!birthData?.birthPlace
+
+    // Prefer request birthData (Stage B). Firestore profile load requires ownership.
+    type ProfileShape = {
+      birthDate?: string
+      birthTime?: string
+      birthPlace?: string
+      displayName?: string
+      currentLocation?: string
+      current_location?: string
+    }
+    if (userId && !hasCompleteBirthData) {
+      const loaded = await loadOwnedUserProfile(request, userId, 'kp-astrology-transits')
+      if (!loaded.ok) {
+        return NextResponse.json(
+          { success: false, error: loaded.error },
+          { status: loaded.status },
+        )
       }
-      if (!userProfile && typeof getDocument === 'function') {
-        try {
-          const data = await getDocument('users', userId)
-          if (data && typeof data === 'object') userProfile = data as ProfileShape
-        } catch (adminErr) {
-          devLog.warn('⚠️ getDocument (admin) failed:', adminErr, 'route')
-        }
-      }
-      if (userProfile) {
-        currentLocation = (userProfile.currentLocation ?? userProfile.current_location) as string | undefined
-        if (typeof currentLocation === 'string') currentLocation = currentLocation.trim() || undefined
-      }
-      if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
+      const userProfile = loaded.profile as ProfileShape
+      currentLocation = (userProfile.currentLocation ?? userProfile.current_location) as
+        | string
+        | undefined
+      if (typeof currentLocation === 'string') currentLocation = currentLocation.trim() || undefined
+      if (userProfile.birthDate && userProfile.birthTime && userProfile.birthPlace) {
         userBirthData = {
           birthDate: userProfile.birthDate,
           birthTime: userProfile.birthTime,
           birthPlace: userProfile.birthPlace,
-          displayName: userProfile.displayName || 'User'
+          displayName: userProfile.displayName || 'User',
         }
       }
-      // If still no birth data, use request body birthData so transits work when Firestore fails
-      if (!userBirthData?.birthDate || !userBirthData?.birthTime || !userBirthData?.birthPlace) {
-        if (birthData?.birthDate && birthData?.birthTime && birthData?.birthPlace) {
-          userBirthData = {
-            birthDate: birthData.birthDate,
-            birthTime: birthData.birthTime,
-            birthPlace: birthData.birthPlace,
-            displayName: birthData.displayName || 'User'
-          }
-          if (verboseKpTransitLogs) {
-            devLog.debug('📋 Using birth data from request body (profile unavailable)', undefined, 'kp-astrology')
-          }
-        }
+    } else if (hasCompleteBirthData) {
+      userBirthData = {
+        birthDate: birthData.birthDate,
+        birthTime: birthData.birthTime,
+        birthPlace: birthData.birthPlace,
+        displayName: birthData.displayName || 'User',
       }
     }
 

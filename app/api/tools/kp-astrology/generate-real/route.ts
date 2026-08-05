@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { kpAstrologyIntelligence, KPChartData } from '@/lib/kpAstrologyIntelligence'
-import { getUserProfile } from '@/lib/firebase'
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile'
 import { devLog } from '@/lib/devLogger'
 import { normalizeBirthTime } from '@/lib/birthTimeUtils'
 
@@ -103,17 +103,15 @@ export async function POST(request: NextRequest) {
         longitude
       }
     } else if (userId) {
-      // Use fetched profile; normalize camelCase and snake_case fields
-      let userProfile: Record<string, unknown> | null = null
-      try {
-        userProfile = (await getUserProfile(userId)) as Record<string, unknown> | null
-      } catch (profileError) {
-        devLog.error('⚠️ Failed to fetch user profile:', profileError, 'route')
+      // Firestore profile load requires ownership (Stage B sends complete birthData instead).
+      const loaded = await loadOwnedUserProfile(request, userId, 'kp-astrology-generate')
+      if (!loaded.ok) {
         return NextResponse.json(
-          { success: false, error: 'Failed to fetch user profile' },
-          { status: 400 }
+          { success: false, error: loaded.error },
+          { status: loaded.status },
         )
       }
+      const userProfile = loaded.profile as Record<string, unknown>
 
       const birthDate = (userProfile?.birthDate ?? userProfile?.birth_date) as string | undefined
       const birthTimeRaw = (userProfile?.birthTime ?? userProfile?.birth_time) as string | undefined
@@ -188,13 +186,14 @@ export async function GET(request: NextRequest) {
 
     devLog.info('🎯 Fetching KP astrology report for user:', userId, 'kp-astrology')
 
-    const userProfile = (await getUserProfile(userId)) as Record<string, unknown> | null
-    if (!userProfile) {
+    const loaded = await loadOwnedUserProfile(request, userId, 'kp-astrology-generate-get')
+    if (!loaded.ok) {
       return NextResponse.json(
-        { success: false, error: 'User profile not found' },
-        { status: 404 }
+        { success: false, error: loaded.error },
+        { status: loaded.status },
       )
     }
+    const userProfile = loaded.profile as Record<string, unknown>
 
     const birthDate = (userProfile.birthDate ?? userProfile.birth_date) as string | undefined
     const birthTimeRaw = (userProfile.birthTime ?? userProfile.birth_time) as string | undefined
