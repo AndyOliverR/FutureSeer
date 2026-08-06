@@ -3,6 +3,8 @@ import { lenormandIntelligence, LenormandReading } from '@/lib/lenormandIntellig
 import { getUserProfile } from '@/lib/firebase'
 import { analyzeSpreadCombinations, generateFallbackInterpretation } from '@/lib/lenormandCombinations'
 import { callTextAI } from '@/lib/aiStructuredOutput'
+import { verifyUserRequest } from '@/lib/userApiAuth'
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess'
 import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
@@ -28,18 +30,23 @@ export async function POST(request: NextRequest) {
     devLog.debug('📝 Question:', question, 'lenormand')
     devLog.debug('📊 Spread Type:', spreadType, 'lenormand')
 
-    // Fetch user profile to get display name
+    // Fetch display name / allow persist only for authenticated owner
     let displayName: string | undefined = 'Seeker' // Default fallback
-    if (userId) {
-      try {
-        const userProfile = await getUserProfile(userId)
-        if (userProfile?.displayName) {
-          displayName = userProfile.displayName
-          devLog.debug('👤 Using display name:', displayName, 'lenormand')
+    let canPersist = false
+    if (userId && typeof userId === 'string') {
+      const auth = await verifyUserRequest(request, 'lenormand')
+      const access = decideUserScopedAccess(userId, auth)
+      if (access.kind === 'owned') {
+        canPersist = true
+        try {
+          const userProfile = await getUserProfile(access.userId)
+          if (userProfile?.displayName) {
+            displayName = userProfile.displayName
+            devLog.debug('👤 Using display name:', displayName, 'lenormand')
+          }
+        } catch (profileError) {
+          devLog.warn('⚠️ Failed to fetch user profile (using default):', profileError, 'lenormand')
         }
-      } catch (profileError) {
-        devLog.warn('⚠️ Failed to fetch user profile (using default):', profileError, 'lenormand')
-        // Continue with default "Seeker"
       }
     }
 
@@ -208,8 +215,8 @@ Write in a warm, practical voice addressing ${displayName} directly.`
       timestamp: new Date()
     }
 
-    // Save reading to database if userId provided
-    if (userId) {
+    // Persist only when the caller owns userId (Stage B / anonymous skip save).
+    if (canPersist && userId) {
       try {
         await lenormandIntelligence.saveReading(userId, reading)
         devLog.info('✅ Saved Lenormand reading to database for user:', userId, 'lenormand')

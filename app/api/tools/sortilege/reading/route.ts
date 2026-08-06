@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sortilegeIntelligence, CastingMethod } from '@/lib/sortilegeIntelligence'
-import { getUserProfile, isProfileComplete } from '@/lib/firebase'
-import { devLog, devWarn } from '@/lib/devLogger'
+import { isProfileComplete } from '@/lib/firebase'
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile'
+import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,21 +45,23 @@ export async function POST(request: NextRequest) {
     devLog.debug('📝 [SORTILEGE API] Question:', question, 'sortilege')
     devLog.debug('🎲 [SORTILEGE API] Method:', method, 'sortilege')
 
-    // Get user profile
+    // Prefer body profile (Stage B). Firestore load requires ownership.
     let userProfile = providedProfile
     if (!userProfile && userId) {
-      try {
-        devLog.debug('📂 [SORTILEGE API] Fetching user profile...', undefined, 'sortilege')
-        userProfile = await getUserProfile(userId)
-        devLog.debug('✅ [SORTILEGE API] Profile fetched:', {
-          hasProfile: !!userProfile,
-          hasBirthDate: !!userProfile?.birthDate,
-          hasBirthTime: !!userProfile?.birthTime,
-          hasBirthPlace: !!userProfile?.birthPlace
-        }, 'sortilege')
-      } catch (profileError) {
-        devWarn('⚠️ [SORTILEGE API] Failed to fetch user profile:', profileError)
+      const loaded = await loadOwnedUserProfile(request, userId, 'sortilege')
+      if (!loaded.ok) {
+        return NextResponse.json(
+          { success: false, error: loaded.error },
+          { status: loaded.status },
+        )
       }
+      userProfile = loaded.profile
+      devLog.debug('✅ [SORTILEGE API] Owned profile fetched:', {
+        hasProfile: !!userProfile,
+        hasBirthDate: !!userProfile?.birthDate,
+        hasBirthTime: !!userProfile?.birthTime,
+        hasBirthPlace: !!userProfile?.birthPlace
+      }, 'sortilege')
     }
 
     // Check profile completeness (optional but recommended for personalized readings)
