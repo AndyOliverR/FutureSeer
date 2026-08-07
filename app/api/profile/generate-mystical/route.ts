@@ -33,7 +33,11 @@ import { hasUnlimitedBillingAccess } from '@/lib/billingAccess';
 import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
 import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
-import { acquireMysticalGenerationLock, getMysticalLockRuntimeStatus } from '@/lib/generationLock';
+import {
+  acquireMysticalGenerationLock,
+  getMysticalLockRuntimeStatus,
+  releaseMysticalGenerationLock,
+} from '@/lib/generationLock';
 import { tryResumeMysticalStageB } from '@/lib/mysticalStageB';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 
@@ -253,37 +257,6 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      if (!isFirstOnboardingGeneration) {
-        const profileForBilling = profileWithUid as Partial<UserProfile>;
-        if (!hasUnlimitedBillingAccess(profileForBilling)) {
-          const billing = await consumeBillingAction(uid, 'profile_regen');
-          if (!billing.ok) {
-            const auditId = await writeRegenDecisionTelemetry(uid, {
-              event: 'mystical_regen_blocked_payment',
-              generationMode,
-              hashMatch: false,
-              pendingToolCount: 0,
-              reason: 'payment_blocked',
-            });
-            return NextResponse.json(
-              {
-                error: 'Add credits to regenerate your full mystical profile, or choose unlimited membership.',
-                blockReason: 'credits_required',
-                code: 'insufficient_credits',
-                creditBalance: billing.creditBalance,
-                creditsRequired: billing.creditsRequired,
-                addCreditsUrl: '/credits',
-                missingFields: missingFullFields,
-                generationMode,
-                decision: 'blocked',
-                decisionReason: 'payment_blocked',
-                auditId,
-              },
-              { status: 402 },
-            );
-          }
-        }
-      }
     }
 
     // Idempotent guard: already generated with same effective data — do not re-run tools
@@ -295,12 +268,14 @@ export async function POST(request: NextRequest) {
       userProfile.profileDataHash !== '' &&
       userProfile.profileDataHash === effectiveHash;
     let decisionAuditId: string | null = null;
+    let pendingToolCountForRun: number = ALL_TOOL_SLUGS.length;
 
     if (hashMatches) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
       const storedProfile = (stored || {}) as Record<string, unknown>;
       const readiness = summarizeToolReadiness(storedProfile, ALL_TOOL_SLUGS);
       const missingSlugs = readiness.pendingToolSlugs;
+      pendingToolCountForRun = missingSlugs.length;
       if (missingSlugs.length === 0) {
         const auditId = await writeRegenDecisionTelemetry(uid, {
           event: 'mystical_regen_skipped_unchanged',
@@ -379,6 +354,41 @@ export async function POST(request: NextRequest) {
         { error: 'Profile generation is already in progress. Please wait for it to complete.', generationState: 'in_progress' },
         { status: 409 }
       );
+    }
+
+    // Bill only after the lock is held so parallel/double-click POSTs cannot debit twice
+    // then lose on 409. Release the lock if payment is blocked so retries are not stuck.
+    if (generationMode === 'full' && !isFirstOnboardingGeneration) {
+      const profileForBilling = profileWithUid as Partial<UserProfile>;
+      if (!hasUnlimitedBillingAccess(profileForBilling)) {
+        const billing = await consumeBillingAction(uid, 'profile_regen');
+        if (!billing.ok) {
+          await releaseMysticalGenerationLock(uid);
+          const auditId = await writeRegenDecisionTelemetry(uid, {
+            event: 'mystical_regen_blocked_payment',
+            generationMode,
+            hashMatch: hashMatches,
+            pendingToolCount: pendingToolCountForRun,
+            reason: 'payment_blocked',
+          });
+          return NextResponse.json(
+            {
+              error: 'Add credits to regenerate your full mystical profile, or choose unlimited membership.',
+              blockReason: 'credits_required',
+              code: 'insufficient_credits',
+              creditBalance: billing.creditBalance,
+              creditsRequired: billing.creditsRequired,
+              addCreditsUrl: '/credits',
+              missingFields: missingFullFields,
+              generationMode,
+              decision: 'blocked',
+              decisionReason: 'payment_blocked',
+              auditId,
+            },
+            { status: 402 },
+          );
+        }
+      }
     }
 
     // Check for selective retry of failed tools via query param

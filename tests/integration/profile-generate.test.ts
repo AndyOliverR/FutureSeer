@@ -49,6 +49,9 @@ const mockAfterOutputs: Array<void | Promise<void>> = [];
 
 /** User doc snapshot returned inside adminDb.runTransaction (billing credits). */
 let mockBillingTransactionUserData: Record<string, unknown> = {};
+/** generationLocks/{uid} snapshot for acquire/release lock transactions. */
+let mockGenerationLockData: Record<string, unknown> | null = null;
+let mockBillingDebitCount = 0;
 
 jest.mock('firebase-admin/auth', () => ({
   getAuth: () => ({ verifyIdToken: mockVerifyIdToken }),
@@ -67,21 +70,46 @@ jest.mock('@/lib/firebase-admin', () => {
               data: () => mockBillingTransactionUserData,
             };
           }
+          if (path.startsWith('generationLocks/')) {
+            return {
+              exists: mockGenerationLockData != null,
+              data: () => mockGenerationLockData ?? undefined,
+            };
+          }
           return {
             exists: false,
             data: () => undefined,
           };
         }),
-        set: jest.fn(),
+        set: jest.fn((ref: { path?: string }, data: Record<string, unknown>) => {
+          const path = ref?.path ?? '';
+          if (path.startsWith('generationLocks/')) {
+            mockGenerationLockData = { ...(mockGenerationLockData ?? {}), ...data };
+          }
+          if (path.startsWith('users/') && !path.includes('/billingLedger/')) {
+            if (typeof data.creditBalance === 'number') {
+              const prev = typeof mockBillingTransactionUserData.creditBalance === 'number'
+                ? mockBillingTransactionUserData.creditBalance
+                : 0;
+              if (data.creditBalance < prev) mockBillingDebitCount += 1;
+            }
+            mockBillingTransactionUserData = { ...mockBillingTransactionUserData, ...data };
+          }
+        }),
       };
       return callback(tx);
     }),
     collection: jest.fn((colName: string) => ({
       add: jest.fn().mockResolvedValue({ id: 'mock-error-event-id' }),
       doc: jest.fn((docId: string) => {
-        const ref: { path: string; collection?: jest.Mock } = {
+        const ref: { path: string; collection?: jest.Mock; set?: jest.Mock } = {
           path: `${colName}/${docId}`,
         };
+        ref.set = jest.fn(async (data: Record<string, unknown>) => {
+          if (colName === 'generationLocks') {
+            mockGenerationLockData = { ...(mockGenerationLockData ?? {}), ...data };
+          }
+        });
         ref.collection = jest.fn((subCol: string) => ({
           doc: jest.fn((ledgerId?: string) => ({
             path: `${colName}/${docId}/${subCol}/${ledgerId ?? 'auto-id'}`,
@@ -155,6 +183,8 @@ describe('Profile generate-mystical API', () => {
     jest.clearAllMocks();
     mockAfterOutputs.length = 0;
     mockBillingTransactionUserData = {};
+    mockGenerationLockData = null;
+    mockBillingDebitCount = 0;
     consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined);
     mockVerifyIdToken.mockResolvedValue({ uid });
     mockSetDocument.mockResolvedValue(true);
@@ -423,6 +453,77 @@ describe('Profile generate-mystical API', () => {
       expect(data.code).toBe('insufficient_credits');
       expect(data.creditsRequired).toBe(8);
       expect(data.creditBalance).toBe(0);
+      expect(mockGenerationLockData?.status).toBe('idle');
+    });
+
+    it('does not debit credits when generation is already locked (concurrent 409)', async () => {
+      const profile = {
+        ...baseProfile,
+        mysticalProfileGenerated: true,
+        profileDataHash: 'old-hash-different-from-current',
+        fullName: 'Test User',
+        gender: 'male',
+        currentLocation: 'New York, NY',
+        facePhotoUrl: 'https://example.com/face.jpg',
+        palmPhotoUrl: 'https://example.com/palm.jpg',
+        creditBalance: 16,
+        freeUseConsumed: { profileRegen: true },
+      };
+      mockGetDocument.mockResolvedValue(profile);
+      mockBillingTransactionUserData = {
+        creditBalance: 16,
+        freeUseConsumed: { profileRegen: true },
+      };
+      mockGenerationLockData = {
+        status: 'running',
+        lockedAt: Date.now(),
+        updatedAt: Date.now(),
+        idempotencyKey: 'other-request',
+      };
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      const data = await res.json();
+
+      expect(res.status).toBe(409);
+      expect(data.generationState).toBe('in_progress');
+      expect(mockBillingDebitCount).toBe(0);
+      expect(mockBillingTransactionUserData.creditBalance).toBe(16);
+      expect(mockSetDocument).not.toHaveBeenCalledWith(
+        'generationJobs',
+        uid,
+        expect.anything(),
+      );
+    });
+
+    it('does not debit an unchanged returning-user profile', async () => {
+      const profile = {
+        ...baseProfile,
+        mysticalProfileGenerated: true,
+        fullName: 'Test User',
+        gender: 'male',
+        currentLocation: 'New York, NY',
+        facePhotoUrl: 'https://example.com/face.jpg',
+        palmPhotoUrl: 'https://example.com/palm.jpg',
+        creditBalance: 16,
+        freeUseConsumed: { profileRegen: true },
+      };
+      const hash = calculateProfileDataHash(profile);
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...profile, profileDataHash: hash });
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve(allToolsDisplayableProfile());
+        }
+        return Promise.resolve(undefined);
+      });
+      mockBillingTransactionUserData = profile;
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.alreadyGenerated).toBe(true);
+      expect(mockBillingDebitCount).toBe(0);
+      expect(mockBillingTransactionUserData.creditBalance).toBe(16);
     });
 
     it('allows first onboarding full generation without payment setup', async () => {
