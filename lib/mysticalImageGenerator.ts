@@ -1,5 +1,6 @@
 import { getSymbolById, getToolSymbol } from './symbolSystem'
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 // Mystical Image Generator using Stability AI
 export interface MysticalImageRequest {
@@ -101,7 +102,7 @@ export async function generateMysticalImage(request: MysticalImageRequest): Prom
   try {
     const prompt = buildMysticalPrompt(request)
     
-    const response = await fetch('/api/stability', {
+    const response = await fetchWithFirebaseAuthRequired('/api/stability', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
