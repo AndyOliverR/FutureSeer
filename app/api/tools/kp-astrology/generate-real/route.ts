@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
           { status: loaded.status },
         )
       }
-      const userProfile = loaded.profile as Record<string, unknown>
+      const userProfile = loaded.profile as unknown as Record<string, unknown>
 
       const birthDate = (userProfile?.birthDate ?? userProfile?.birth_date) as string | undefined
       const birthTimeRaw = (userProfile?.birthTime ?? userProfile?.birth_time) as string | undefined
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
         { status: loaded.status },
       )
     }
-    const userProfile = loaded.profile as Record<string, unknown>
+    const userProfile = loaded.profile as unknown as Record<string, unknown>
 
     const birthDate = (userProfile.birthDate ?? userProfile.birth_date) as string | undefined
     const birthTimeRaw = (userProfile.birthTime ?? userProfile.birth_time) as string | undefined
