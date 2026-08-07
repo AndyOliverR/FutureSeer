@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HoraryEngine } from '@/lib/horaryEngine'
 import { devLog } from '@/lib/devLogger'
-import { getUserProfile } from '@/lib/firebase'
-import { getDocument } from '@/lib/firebase-admin'
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile'
 import { geocodePlace } from '@/services/geocoding'
 
 export async function POST(request: NextRequest) {
@@ -24,30 +23,33 @@ export async function POST(request: NextRequest) {
     let longitude = questionData?.longitude ?? 76.6394
     const timezone = questionData?.timezone ?? 5.5
 
-    // Use profile current residence when available
-    type ProfileShape = { currentLocation?: string; current_location?: string }
-    let profile: ProfileShape | null = null
-    try {
-      profile = (await getUserProfile(userId)) as ProfileShape | null
-    } catch (_) {}
-    if (!profile && typeof getDocument === 'function') {
-      try {
-        const data = await getDocument('users', userId)
-        if (data && typeof data === 'object') profile = data as ProfileShape
-      } catch (_) {}
-    }
-    const currentLocation = profile ? (profile.currentLocation ?? profile.current_location) : undefined
-    const locationStr = typeof currentLocation === 'string' ? currentLocation.trim() : ''
-    if (locationStr.length > 0) {
-      try {
-        const coords = await geocodePlace(locationStr)
-        if (coords?.latitude != null && coords?.longitude != null) {
-          questionPlace = locationStr
-          latitude = coords.latitude
-          longitude = coords.longitude
-          devLog.debug('📍 Using current residence for horary transits:', locationStr, 'horary')
+    // Optional residence enrichment — only from an owned profile (never cross-user Admin reads).
+    const hasExplicitCoords =
+      questionData?.latitude != null &&
+      questionData?.longitude != null &&
+      Number.isFinite(Number(questionData.latitude)) &&
+      Number.isFinite(Number(questionData.longitude))
+    if (!hasExplicitCoords) {
+      const loaded = await loadOwnedUserProfile(request, userId, 'horary-transits')
+      if (loaded.ok) {
+        const profile = loaded.profile as { currentLocation?: string; current_location?: string }
+        const currentLocation = profile.currentLocation ?? profile.current_location
+        const locationStr = typeof currentLocation === 'string' ? currentLocation.trim() : ''
+        if (locationStr.length > 0) {
+          try {
+            const coords = await geocodePlace(locationStr)
+            if (coords?.latitude != null && coords?.longitude != null) {
+              questionPlace = locationStr
+              latitude = coords.latitude
+              longitude = coords.longitude
+              devLog.debug('📍 Using current residence for horary transits:', locationStr, 'horary')
+            }
+          } catch {
+            /* keep defaults */
+          }
         }
-      } catch (_) { /* keep defaults */ }
+      }
+      // Stateless / unauthenticated callers keep questionData or defaults — no profile IDOR.
     }
 
     // Use our custom Horary engine for current transits
