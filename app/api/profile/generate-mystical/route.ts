@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
       userProfile.profileDataHash !== '' &&
       userProfile.profileDataHash === effectiveHash;
     let decisionAuditId: string | null = null;
-    let pendingToolCountForRun = ALL_TOOL_SLUGS.length;
+    let pendingToolCountForRun: number = ALL_TOOL_SLUGS.length;
 
     if (hashMatches) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
