@@ -862,23 +862,11 @@ async function runTool(
           };
         }
         try {
-          const res = await fetch(`${baseUrl}/api/tools/palmistry/analysis`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageUrl: profile.palmPhotoUrl,
-              dominantHand: 'right',
-              gender: profile.gender || 'other',
-              age: profile.birthDate
-                ? Math.floor(
-                    (Date.now() - new Date(profile.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-                  )
-                : 30,
-            }),
-          });
-          if (!res.ok) throw new Error(`Palmistry API: ${res.status}`);
-          const json = await res.json();
-          const aiData = json.data ?? json;
+          // Call vision helper directly — do not HTTP-loop through the public route
+          // (that route requires user auth and must not be an unauthenticated paid proxy).
+          const { runPalmVisionAnalysis } = await import('./palmistry/runPalmVisionAnalysis');
+          const vision = await runPalmVisionAnalysis(profile.palmPhotoUrl);
+          const aiData = vision.data;
           if (!aiData?.lines || !aiData?.mounts) throw new Error('Incomplete palm analysis');
           const dominantHand: 'left' | 'right' = 'right';
           const hand: 'left' | 'right' | 'both' =

@@ -107,7 +107,15 @@ class PalmistryImageAnalyzer {
    */
   async analyzePalmImage(imageUrl: string): Promise<GroqPalmAnalysis> {
     try {
-      const response = await fetch('/api/tools/palmistry/analysis', {
+      // Browser: authenticated HTTP. Server: call vision helper directly (no open proxy).
+      if (typeof window === 'undefined') {
+        const { runPalmVisionAnalysis } = await import('@/lib/palmistry/runPalmVisionAnalysis');
+        const resolved = await runPalmVisionAnalysis(imageUrl);
+        return resolved.data as GroqPalmAnalysis;
+      }
+
+      const { fetchWithFirebaseAuthRequired } = await import('@/lib/clientFirebaseFetch');
+      const response = await fetchWithFirebaseAuthRequired('/api/tools/palmistry/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +124,7 @@ class PalmistryImageAnalyzer {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to analyze palm image');
       }
 

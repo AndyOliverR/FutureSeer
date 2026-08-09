@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
-import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
-import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
+import { runPalmVisionAnalysis } from '@/lib/palmistry/runPalmVisionAnalysis';
 import { devLog } from '@/lib/devLogger';
-import { getGroqVisionModel } from '@/lib/groqModels';
 
 interface PalmAnalysisRequest {
   imageUrl: string;
@@ -14,172 +13,7 @@ interface PalmAnalysisRequest {
 
 interface PalmAnalysisResponse {
   success: boolean;
-  data?: {
-    lines: {
-      lifeLine: {
-        length: 'short' | 'medium' | 'long';
-        depth: 'faint' | 'clear' | 'deep';
-        quality: 'broken' | 'straight' | 'wavy' | 'forked' | 'island' | 'chained';
-        breaks?: string[];
-        interpretation: string;
-      };
-      heartLine: {
-        length: 'short' | 'medium' | 'long';
-        depth: 'faint' | 'clear' | 'deep';
-        quality: 'broken' | 'straight' | 'wavy' | 'forked' | 'island' | 'chained';
-        breaks?: string[];
-        interpretation: string;
-      };
-      headLine: {
-        length: 'short' | 'medium' | 'long';
-        depth: 'faint' | 'clear' | 'deep';
-        quality: 'broken' | 'straight' | 'wavy' | 'forked' | 'island' | 'chained';
-        breaks?: string[];
-        interpretation: string;
-      };
-      fateLine: {
-        presence: boolean;
-        length?: 'short' | 'medium' | 'long';
-        depth?: 'faint' | 'clear' | 'deep';
-        quality?: 'broken' | 'straight' | 'wavy' | 'forked' | 'island' | 'chained';
-        breaks?: string[];
-        interpretation: string;
-      };
-      healthLine?: {
-        presence: boolean;
-        length?: 'short' | 'medium' | 'long';
-        depth?: 'faint' | 'clear' | 'deep';
-        quality?: 'broken' | 'straight' | 'wavy' | 'forked' | 'island' | 'chained';
-        interpretation?: string;
-      };
-      marriageLines?: {
-        count: number;
-        characteristics: string[];
-        interpretation: string;
-      };
-      travelLines?: {
-        count: number;
-        characteristics: string[];
-        interpretation: string;
-      };
-      sunLine?: {
-        presence: boolean;
-        length?: 'short' | 'medium' | 'long';
-        quality?: 'broken' | 'straight' | 'wavy' | 'forked' | 'island' | 'chained';
-        interpretation?: string;
-      };
-      mercuryLine?: {
-        presence: boolean;
-        length?: 'short' | 'medium' | 'long';
-        quality?: 'broken' | 'straight' | 'wavy' | 'forked' | 'island' | 'chained';
-        interpretation?: string;
-      };
-    };
-    mounts: {
-      jupiter: {
-        prominence: 'flat' | 'normal' | 'prominent' | 'very-prominent';
-        interpretation: string;
-      };
-      saturn: {
-        prominence: 'flat' | 'normal' | 'prominent' | 'very-prominent';
-        interpretation: string;
-      };
-      apollo: {
-        prominence: 'flat' | 'normal' | 'prominent' | 'very-prominent';
-        interpretation: string;
-      };
-      mercury: {
-        prominence: 'flat' | 'normal' | 'prominent' | 'very-prominent';
-        interpretation: string;
-      };
-      mars: {
-        prominence: 'flat' | 'normal' | 'prominent' | 'very-prominent';
-        interpretation: string;
-      };
-      venus: {
-        prominence: 'flat' | 'normal' | 'prominent' | 'very-prominent';
-        interpretation: string;
-      };
-      moon: {
-        prominence: 'flat' | 'normal' | 'prominent' | 'very-prominent';
-        interpretation: string;
-      };
-    };
-    handShape: {
-      type: 'earth' | 'air' | 'fire' | 'water' | 'mixed';
-      characteristics: string[];
-      interpretation: string;
-    };
-    fingers: {
-      thumb: {
-        length: 'short' | 'medium' | 'long';
-        thickness: 'thin' | 'medium' | 'thick';
-        flexibility: 'rigid' | 'normal' | 'flexible';
-        shape?: 'pointed' | 'square' | 'spatulate';
-        interpretation: string;
-      };
-      index: {
-        length: 'short' | 'medium' | 'long';
-        thickness: 'thin' | 'medium' | 'thick';
-        flexibility: 'rigid' | 'normal' | 'flexible';
-        shape?: 'pointed' | 'square' | 'spatulate';
-        interpretation: string;
-      };
-      middle: {
-        length: 'short' | 'medium' | 'long';
-        thickness: 'thin' | 'medium' | 'thick';
-        flexibility: 'rigid' | 'normal' | 'flexible';
-        shape?: 'pointed' | 'square' | 'spatulate';
-        interpretation: string;
-      };
-      ring: {
-        length: 'short' | 'medium' | 'long';
-        thickness: 'thin' | 'medium' | 'thick';
-        flexibility: 'rigid' | 'normal' | 'flexible';
-        shape?: 'pointed' | 'square' | 'spatulate';
-        interpretation: string;
-      };
-      pinky: {
-        length: 'short' | 'medium' | 'long';
-        thickness: 'thin' | 'medium' | 'thick';
-        flexibility: 'rigid' | 'normal' | 'flexible';
-        shape?: 'pointed' | 'square' | 'spatulate';
-        interpretation: string;
-      };
-    };
-    markings: {
-      stars?: Array<{
-        location: string;
-        size: 'small' | 'medium' | 'large';
-        associatedFeature?: string;
-        interpretation: string;
-      }>;
-      crosses?: Array<{
-        location: string;
-        size: 'small' | 'medium' | 'large';
-        associatedFeature?: string;
-        interpretation: string;
-      }>;
-      triangles?: Array<{
-        location: string;
-        size: 'small' | 'medium' | 'large';
-        associatedFeature?: string;
-        interpretation: string;
-      }>;
-      islands?: Array<{
-        location: string;
-        line: string;
-        size: 'small' | 'medium' | 'large';
-        interpretation: string;
-      }>;
-      grids?: Array<{
-        location: string;
-        size: 'small' | 'medium' | 'large';
-        associatedFeature?: string;
-        interpretation: string;
-      }>;
-    };
-  };
+  data?: Awaited<ReturnType<typeof runPalmVisionAnalysis>>['data'];
   error?: string;
   parsingFailed?: boolean;
   fallbackSource?: string;
@@ -187,151 +21,54 @@ interface PalmAnalysisResponse {
   technical?: string;
 }
 
-type PalmVisionValidatedData = NonNullable<PalmAnalysisResponse['data']>;
+/** Cap image URL / data-URI size to reduce abuse payload size. */
+const MAX_IMAGE_URL_CHARS = 6_000_000;
 
-/** Normalize vision model JSON into the stable palm analysis response shape. */
-function validatePalmVisionData(palmData: Record<string, unknown>): PalmVisionValidatedData {
-  const linesRaw = palmData.lines as Record<string, unknown> | undefined;
-  const mountsRaw = palmData.mounts as Record<string, unknown> | undefined;
-  const fingersRaw = palmData.fingers as Record<string, unknown> | undefined;
-
-  if (!linesRaw || !mountsRaw || !palmData.handShape || !fingersRaw) {
-    devLog.warn('⚠️ Vision AI returned incomplete data structure. Missing:', {
-      lines: !linesRaw,
-      mounts: !mountsRaw,
-      handShape: !palmData.handShape,
-      fingers: !fingersRaw,
-    }, 'palmistry');
+function isAllowedPalmImageUrl(imageUrl: string): boolean {
+  if (imageUrl.startsWith('https://')) return true;
+  if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
+    return process.env.NODE_ENV === 'development';
   }
-
-  return {
-    lines: {
-      ...(linesRaw as PalmVisionValidatedData['lines']),
-      lifeLine: (linesRaw?.lifeLine as PalmVisionValidatedData['lines']['lifeLine']) || {
-        length: 'medium',
-        depth: 'clear',
-        quality: 'straight',
-        breaks: [],
-        interpretation: 'Life line analysis pending - please retry analysis',
-      },
-      heartLine: (linesRaw?.heartLine as PalmVisionValidatedData['lines']['heartLine']) || {
-        length: 'medium',
-        depth: 'clear',
-        quality: 'straight',
-        breaks: [],
-        interpretation: 'Heart line analysis pending - please retry analysis',
-      },
-      headLine: (linesRaw?.headLine as PalmVisionValidatedData['lines']['headLine']) || {
-        length: 'medium',
-        depth: 'clear',
-        quality: 'straight',
-        breaks: [],
-        interpretation: 'Head line analysis pending - please retry analysis',
-      },
-      fateLine: (linesRaw?.fateLine as PalmVisionValidatedData['lines']['fateLine']) || {
-        presence: false,
-        interpretation: 'Fate line analysis pending - please retry analysis',
-      },
-    },
-    mounts: {
-      ...(mountsRaw as PalmVisionValidatedData['mounts']),
-      jupiter: (mountsRaw?.jupiter as PalmVisionValidatedData['mounts']['jupiter']) || {
-        prominence: 'normal',
-        interpretation: 'Mount analysis pending - please retry',
-      },
-      saturn: (mountsRaw?.saturn as PalmVisionValidatedData['mounts']['saturn']) || {
-        prominence: 'normal',
-        interpretation: 'Mount analysis pending - please retry',
-      },
-      apollo: (mountsRaw?.apollo as PalmVisionValidatedData['mounts']['apollo']) || {
-        prominence: 'normal',
-        interpretation: 'Mount analysis pending - please retry',
-      },
-      mercury: (mountsRaw?.mercury as PalmVisionValidatedData['mounts']['mercury']) || {
-        prominence: 'normal',
-        interpretation: 'Mount analysis pending - please retry',
-      },
-      mars: (mountsRaw?.mars as PalmVisionValidatedData['mounts']['mars']) || {
-        prominence: 'normal',
-        interpretation: 'Mount analysis pending - please retry',
-      },
-      venus: (mountsRaw?.venus as PalmVisionValidatedData['mounts']['venus']) || {
-        prominence: 'normal',
-        interpretation: 'Mount analysis pending - please retry',
-      },
-      moon: (mountsRaw?.moon as PalmVisionValidatedData['mounts']['moon']) || {
-        prominence: 'normal',
-        interpretation: 'Mount analysis pending - please retry',
-      },
-    },
-    handShape: (palmData.handShape as PalmVisionValidatedData['handShape']) || {
-      type: 'mixed',
-      characteristics: ['Analysis incomplete'],
-      interpretation: 'Hand shape analysis pending - please retry analysis',
-    },
-    fingers: {
-      ...(fingersRaw as PalmVisionValidatedData['fingers']),
-      thumb: (fingersRaw?.thumb as PalmVisionValidatedData['fingers']['thumb']) || {
-        length: 'medium',
-        thickness: 'medium',
-        flexibility: 'normal',
-        shape: 'square',
-        interpretation: 'Finger analysis pending - please retry',
-      },
-      index: (fingersRaw?.index as PalmVisionValidatedData['fingers']['index']) || {
-        length: 'medium',
-        thickness: 'medium',
-        flexibility: 'normal',
-        shape: 'square',
-        interpretation: 'Finger analysis pending - please retry',
-      },
-      middle: (fingersRaw?.middle as PalmVisionValidatedData['fingers']['middle']) || {
-        length: 'medium',
-        thickness: 'medium',
-        flexibility: 'normal',
-        shape: 'square',
-        interpretation: 'Finger analysis pending - please retry',
-      },
-      ring: (fingersRaw?.ring as PalmVisionValidatedData['fingers']['ring']) || {
-        length: 'medium',
-        thickness: 'medium',
-        flexibility: 'normal',
-        shape: 'square',
-        interpretation: 'Finger analysis pending - please retry',
-      },
-      pinky: (fingersRaw?.pinky as PalmVisionValidatedData['fingers']['pinky']) || {
-        length: 'medium',
-        thickness: 'medium',
-        flexibility: 'normal',
-        shape: 'square',
-        interpretation: 'Finger analysis pending - please retry',
-      },
-    },
-    markings: (palmData.markings as PalmVisionValidatedData['markings']) || {},
-  };
+  if (imageUrl.startsWith('data:image/')) return true;
+  return false;
 }
 
 /**
  * Palm Image Analysis Endpoint
  *
  * Uses Groq vision model (default qwen/qwen3.6-27b; override GROQ_VISION_MODEL) to analyze palm images.
- * Llama 4 Scout was deprecated 2026-07-17 — see lib/groqModels.ts.
- * 
- * The AI examines the uploaded palm photo and provides specific assessments of:
- * - Palm lines (length, depth, quality)
- * - Mounts (prominence levels)
- * - Hand shape (element classification)
- * - Fingers (length, thickness, flexibility)
- * 
- * This provides real, personalized palmistry readings instead of generic defaults.
+ * Requires a signed-in Firebase user — must not be an unauthenticated paid proxy.
+ *
+ * Trusted server callers (Stage B, update-palmistry) should import
+ * `runPalmVisionAnalysis` directly instead of HTTP-looping through this route.
  */
-export async function POST(request: NextRequest) {
+async function handlePalmistryAnalysis(request: NextRequest) {
   try {
-    const { imageUrl, dominantHand, gender, age }: PalmAnalysisRequest = await request.json();
+    const auth = await verifyUserRequest(request, 'palmistry-analysis');
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = (await request.json().catch(() => null)) as PalmAnalysisRequest | null;
+    const imageUrl = typeof body?.imageUrl === 'string' ? body.imageUrl.trim() : '';
 
     if (!imageUrl) {
       return NextResponse.json(
         { success: false, error: 'Image URL is required' },
+        { status: 400 }
+      );
+    }
+
+    if (imageUrl.length > MAX_IMAGE_URL_CHARS) {
+      return NextResponse.json(
+        { success: false, error: `Image URL too long (max ${MAX_IMAGE_URL_CHARS} characters)` },
+        { status: 400 }
+      );
+    }
+
+    if (!isAllowedPalmImageUrl(imageUrl)) {
+      return NextResponse.json(
+        { success: false, error: 'Image URL must be https or a data:image URI' },
         { status: 400 }
       );
     }
@@ -343,132 +80,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build detailed vision-based prompt for actual palm image analysis
-    const analysisPrompt = `You are an expert palmistry analyst with vision capabilities. Analyze this palm image in EXTREME DETAIL and return a comprehensive JSON palmistry reading.
-
-CRITICAL: Examine the ACTUAL palm image carefully. Provide SPECIFIC, VARIED observations based on what you SEE. DO NOT use generic "medium/normal/clear" for everything.
-
-**LINES** - Examine each major line visible in the image:
-
-1. **Life Line** (curves from between thumb/index down toward wrist):
-   - length: "short" | "medium" | "long" (measure actual visible length)
-   - depth: "faint" | "clear" | "deep" (assess line darkness/prominence)
-   - quality: "broken" | "straight" | "wavy" | "curved" | "forked" | "chained" | "island"
-   - breaks: array of any visible breaks or gaps
-   - interpretation: detailed interpretation based on observations
-
-2. **Heart Line** (horizontal below fingers):
-   - Same structure as Life Line
-
-3. **Head Line** (horizontal in middle palm):
-   - Same structure as Life Line
-
-4. **Fate Line** (vertical center, may be absent):
-   - present: true | false
-   - If present, same structure as Life Line
-
-**MOUNTS** - Assess prominence of raised flesh areas (look for actual elevation):
-
-For each mount (Jupiter, Saturn, Apollo, Mercury, Mars, Venus, Luna):
-- prominence: "flat" | "normal" | "prominent" | "very-prominent"
-- Look for actual raised areas, not just assume "normal"
-
-**HAND SHAPE**:
-- Measure palm-to-finger ratio visually
-- earth: square palm + short fingers (practical)
-- air: square palm + long fingers (intellectual)
-- fire: long palm + short fingers (energetic) 
-- water: long palm + long fingers (emotional)
-- mixed: doesn't fit clear category
-
-**FINGERS** - For thumb, index, middle, ring, pinky:
-
-Each finger:
-- length: "short" | "medium" | "long" (relative to palm and other fingers)
-- thickness: "thin" | "medium" | "thick"
-- flexibility: "rigid" | "normal" | "flexible" (if discernible from image)
-
-**OUTPUT FORMAT** - Return ONLY valid JSON (no markdown, no code blocks):
-
-{
-  "lines": {
-    "lifeLine": { "length": "...", "depth": "...", "quality": "...", "breaks": [], "interpretation": "..." },
-    "heartLine": { "length": "...", "depth": "...", "quality": "...", "breaks": [], "interpretation": "..." },
-    "headLine": { "length": "...", "depth": "...", "quality": "...", "breaks": [], "interpretation": "..." },
-    "fateLine": { "present": true/false, "length": "...", "depth": "...", "quality": "...", "breaks": [], "interpretation": "..." }
-  },
-  "mounts": {
-    "jupiter": { "prominence": "..." },
-    "saturn": { "prominence": "..." },
-    "apollo": { "prominence": "..." },
-    "mercury": { "prominence": "..." },
-    "mars": { "prominence": "..." },
-    "venus": { "prominence": "..." },
-    "luna": { "prominence": "..." }
-  },
-  "handShape": {
-    "type": "earth|air|fire|water|mixed",
-    "description": "Brief description of why this classification"
-  },
-  "fingers": {
-    "thumb": { "length": "...", "thickness": "...", "flexibility": "..." },
-    "index": { "length": "...", "thickness": "...", "flexibility": "..." },
-    "middle": { "length": "...", "thickness": "...", "flexibility": "..." },
-    "ring": { "length": "...", "thickness": "...", "flexibility": "..." },
-    "pinky": { "length": "...", "thickness": "...", "flexibility": "..." }
-  }
-}
-
-REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not everything should be "medium/normal/clear".`;
-
-    devLog.info('🤲 Analyzing palm image with vision-capable AI...', undefined, 'palmistry');
-
-    const resolved = await resolveAiReportWithFallback({
-      label: 'palmistry-vision-analysis',
-      tryLlm: async () => {
-        const aiRun = await runStructuredReportAI({
-          label: 'palmistry-vision-analysis',
-          model: getGroqVisionModel(),
-          messages: [
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: analysisPrompt },
-                { type: 'image_url', image_url: { url: imageUrl } },
-              ],
-            },
-          ],
-          temperature: 0.5,
-          maxTokens: 3000,
-          maxAttempts: 3,
-        });
-
-        const palmData =
-          (aiRun.raw as Record<string, unknown> | null) ??
-          parseLlmJsonRecord(aiRun.lastRaw ?? '');
-        if (!palmData) {
-          return {
-            data: null,
-            attempts: aiRun.attempts,
-            failureMode: aiRun.failureMode,
-            parsingFailed: true,
-          };
-        }
-
-        return {
-          data: validatePalmVisionData(palmData),
-          attempts: aiRun.attempts,
-          failureMode: 'none' as const,
-        };
-      },
-      buildDeterministic: () => validatePalmVisionData({}),
-    });
-
+    const resolved = await runPalmVisionAnalysis(imageUrl);
     const validatedData = resolved.data;
 
-    devLog.info('✅ Palm analysis completed successfully', undefined, 'palmistry');
+    devLog.info('✅ Palm analysis completed successfully', { uid: auth.uid }, 'palmistry');
 
-    if (resolved.degraded && resolved.source !== 'llm') {
+    if (resolved.degraded) {
       devLog.warn(
         `⚠️ Palm vision analysis degraded (${resolved.source}) — returning validated defaults`,
         undefined,
@@ -493,7 +110,10 @@ REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not ev
     let userMessage = 'Failed to analyze palm image';
     let statusCode = 500;
 
-    if (error.message?.includes('context_length_exceeded') || 
+    if (error.message?.includes('GROQ_API_KEY')) {
+      userMessage = 'Service configuration error. Please contact support.';
+      statusCode = 503;
+    } else if (error.message?.includes('context_length_exceeded') ||
         error.message?.includes('reduce the length')) {
       userMessage = 'Analysis request too complex. The palm image may be too large or detailed. Please try uploading a clearer, simpler image.';
       statusCode = 400;
@@ -529,3 +149,4 @@ REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not ev
   }
 }
 
+export const POST = withRateLimit(handlePalmistryAnalysis, rateLimiters.ai, 'palmistry_analysis_post');
