@@ -11,9 +11,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { getDocument, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
-import { getServerBaseUrl } from '@/lib/serverBaseUrl';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
 import { palmistryImageAnalyzer } from '@/lib/palmistry/palmistryImageAnalyzer';
+import { runPalmVisionAnalysis } from '@/lib/palmistry/runPalmVisionAnalysis';
 import { devLog } from '@/lib/devLogger';
 
 export const dynamic = 'force-dynamic';
@@ -52,33 +52,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const baseUrl = getServerBaseUrl();
-
-    const res = await fetch(`${baseUrl}/api/tools/palmistry/analysis`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageUrl: profile.palmPhotoUrl,
-        dominantHand: 'right',
-        gender: profile.gender || 'other',
-        age: profile.birthDate
-          ? Math.floor(
-              (Date.now() - new Date(profile.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-            )
-          : 30,
-      }),
-    });
-
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      return NextResponse.json(
-        { error: errBody.error || `Palm analysis failed: ${res.status}` },
-        { status: res.status >= 500 ? 500 : 400 }
-      );
+    let aiData: Awaited<ReturnType<typeof runPalmVisionAnalysis>>['data'];
+    try {
+      const vision = await runPalmVisionAnalysis(profile.palmPhotoUrl);
+      aiData = vision.data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Palm analysis failed';
+      const status = message.includes('GROQ_API_KEY') ? 503 : 500;
+      return NextResponse.json({ error: message }, { status });
     }
 
-    const json = await res.json();
-    const aiData = json.data ?? json;
     if (!aiData?.lines || !aiData?.mounts) {
       return NextResponse.json(
         { error: 'Incomplete palm analysis. Try a clearer image.' },
