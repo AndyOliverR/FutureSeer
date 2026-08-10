@@ -38,6 +38,7 @@ import { ViralLockOverlay } from '@/components/report-viral/LockedReportView';
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser';
 import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath';
 import { cn } from '@/lib/utils';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 type TabValue = 'introduction' | 'report' | 'ask-the-seer';
 
@@ -252,7 +253,7 @@ function BaziPageContent() {
     baziComprehensiveAbortRef.current = ac;
     const { signal } = ac;
     setIsLoadingComprehensive(true);
-    fetch('/api/bazi/comprehensive', {
+    fetchWithFirebaseAuthRequired('/api/bazi/comprehensive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal,
@@ -275,10 +276,9 @@ function BaziPageContent() {
         if (comp) {
           setFetchedComprehensive(comp);
           try {
-            const token = await user.getIdToken();
-            const saveRes = await fetch('/api/profile/save-tool-report', {
+            const saveRes = await fetchWithFirebaseAuthRequired('/api/profile/save-tool-report', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 toolSlug: 'bazi',
                 data: { ...baziReport, comprehensiveAnalysis: comp },
@@ -291,7 +291,7 @@ function BaziPageContent() {
         }
       })
       .catch(() => {
-        /* ignore abort + network */
+        /* ignore abort + network / missing auth */
       })
       .finally(() => {
         setIsLoadingComprehensive(false);
