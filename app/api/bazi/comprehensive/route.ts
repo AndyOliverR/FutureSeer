@@ -3,11 +3,16 @@ import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { callTextAI } from '@/lib/aiStructuredOutput';
 import { BaziReading } from '@/lib/baziIntelligence';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 
 /**
  * API Route: /api/bazi/comprehensive
  * Generates comprehensive AI-enhanced BaZi analysis report
- * Features: Request validation, caching (30-day TTL), error handling
+ * Features: Auth + ownership, request validation, caching (30-day TTL), error handling
+ *
+ * Must not be an unauthenticated paid proxy: callers must send a Firebase Bearer token
+ * that owns the body userId before cache R/W or Groq generation.
  */
 
 // Helper to check if we're using Admin SDK
@@ -122,7 +127,7 @@ function validateRequest(body: any): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-export async function POST(req: NextRequest) {
+async function handleBaziComprehensive(req: NextRequest) {
   const startTime = Date.now();
   
   try {
@@ -152,7 +157,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId, reading, userProfile } = body;
+    const auth = await verifyUserRequest(req, 'bazi-comprehensive');
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const ownedUserId = resolveOwnedUserId(body.userId, auth.uid);
+    if (!ownedUserId) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { reading, userProfile } = body;
+    const userId = ownedUserId;
 
     // Check cache first (30-day TTL)
     const cacheKey = `bazi_${userId}_${userProfile?.birthDate || ''}_${userProfile?.birthTime || ''}`;
@@ -250,6 +265,8 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(handleBaziComprehensive, rateLimiters.ai, 'bazi_comprehensive_post');
 
 /**
  * Generates comprehensive AI-enhanced BaZi analysis
