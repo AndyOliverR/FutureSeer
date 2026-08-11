@@ -1,21 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
+import { authorizeVedicInterpretationRequest } from '@/lib/vedicInterpretationsRouteGuard';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 
-export async function POST(request: NextRequest) {
+/**
+ * Vedic overview interpretations: must not be an unauthenticated paid proxy
+ * or allow Admin cache IDOR via body userId.
+ */
+async function handleOverview(request: NextRequest) {
   try {
-    const { chartData, userId } = await request.json();
-    
-    if (!userId || !chartData) {
+    const gate = await authorizeVedicInterpretationRequest(request, 'vedic-interpretations-overview');
+    if (!gate.ok) return gate.response;
+
+    const { chartData } = gate.body;
+    const userId = gate.userId;
+
+    if (!chartData) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     const enhancer = new VedicInterpretationEnhancer();
     const interpretation = await enhancer.generateEnhancedOverview(chartData, userId);
-    
+
     return NextResponse.json({ interpretation });
   } catch (error) {
     devLog.error('Overview interpretation error:', error, 'route');
@@ -25,3 +35,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(handleOverview, rateLimiters.ai, 'vedic_interpretations_overview_post');

@@ -1,25 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
+import { authorizeVedicInterpretationRequest } from '@/lib/vedicInterpretationsRouteGuard';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 
-export async function POST(request: NextRequest) {
+async function handlePlanets(request: NextRequest) {
   try {
-    const { planet, chartData, userId } = await request.json();
-    
-    if (!userId || !chartData || !planet) {
+    const gate = await authorizeVedicInterpretationRequest(request, 'vedic-interpretations-planets');
+    if (!gate.ok) return gate.response;
+
+    const { planet, chartData } = gate.body;
+    const userId = gate.userId;
+
+    if (!chartData || !planet) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     const enhancer = new VedicInterpretationEnhancer();
     const interpretation = await enhancer.generatePlanetaryInterpretation(
-      planet,
+      String(planet),
       chartData,
       userId
     );
-    
+
     return NextResponse.json({ interpretation });
   } catch (error) {
     devLog.error('Planetary interpretation error:', error, 'route');
@@ -29,3 +35,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(handlePlanets, rateLimiters.ai, 'vedic_interpretations_planets_post');

@@ -1,25 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
+import { authorizeVedicInterpretationRequest } from '@/lib/vedicInterpretationsRouteGuard';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 
-export async function POST(request: NextRequest) {
+async function handleHouses(request: NextRequest) {
   try {
-    const { houseNumber, chartData, userId } = await request.json();
-    
-    if (!userId || !chartData || houseNumber === undefined) {
+    const gate = await authorizeVedicInterpretationRequest(request, 'vedic-interpretations-houses');
+    if (!gate.ok) return gate.response;
+
+    const { houseNumber, chartData } = gate.body;
+    const userId = gate.userId;
+
+    if (!chartData || houseNumber === undefined) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     const enhancer = new VedicInterpretationEnhancer();
     const interpretation = await enhancer.generateHouseInterpretation(
-      houseNumber,
+      Number(houseNumber),
       chartData,
       userId
     );
-    
+
     return NextResponse.json({ interpretation });
   } catch (error) {
     devLog.error('House interpretation error:', error, 'route');
@@ -29,3 +35,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(handleHouses, rateLimiters.ai, 'vedic_interpretations_houses_post');

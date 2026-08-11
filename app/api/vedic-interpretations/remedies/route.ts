@@ -1,26 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
+import { authorizeVedicInterpretationRequest } from '@/lib/vedicInterpretationsRouteGuard';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 
-export async function POST(request: NextRequest) {
+async function handleRemedies(request: NextRequest) {
   try {
-    const { planet, remedy, chartData, userId } = await request.json();
-    
-    if (!userId || !chartData || !planet || !remedy) {
+    const gate = await authorizeVedicInterpretationRequest(request, 'vedic-interpretations-remedies');
+    if (!gate.ok) return gate.response;
+
+    const { planet, remedy, chartData } = gate.body;
+    const userId = gate.userId;
+
+    if (!chartData || !planet || !remedy) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     const enhancer = new VedicInterpretationEnhancer();
     const interpretation = await enhancer.generateRemedyInterpretation(
-      planet,
+      String(planet),
       remedy,
       chartData,
       userId
     );
-    
+
     return NextResponse.json({ interpretation });
   } catch (error) {
     devLog.error('Remedy interpretation error:', error, 'route');
@@ -30,3 +36,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(handleRemedies, rateLimiters.ai, 'vedic_interpretations_remedies_post');
