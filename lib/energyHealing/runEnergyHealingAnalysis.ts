@@ -156,7 +156,7 @@ export async function runEnergyHealingAnalysis(input: EnergyHealingAnalysisInput
     devLog.warn('⚠️ Could not fetch astrological data, using minimal context:', error, 'energy-healing');
   }
 
-  const userContext = extractUserContext(userProfile, astroData);
+  const userContext = extractUserContext(userProfile as any, astroData);
   const personalizedContext = buildContextString(userContext, method);
   const questionSuffix =
     typeof question === 'string' && question.trim()
