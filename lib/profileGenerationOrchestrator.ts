@@ -1394,20 +1394,14 @@ async function runTool(
         const methods = ['chakra', 'aura', 'reiki', 'crystal', 'energy'] as const;
         const combined: Record<string, unknown> = {};
         let hasAny = false;
-        const energyUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+        const { runEnergyHealingAnalysis } = await import('./energyHealing/runEnergyHealingAnalysis');
         const methodResults = await Promise.allSettled(
           methods.map(async (method) => {
-            const res = await fetch(`${baseUrl}/api/tools/energy-healing/analysis`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ method, userProfile: profile }),
+            const resolved = await runEnergyHealingAnalysis({
+              method,
+              userProfile: profile,
             });
-            if (!res.ok) {
-              const err = await res.json().catch(() => ({}));
-              throw new Error((err as { error?: string })?.error ?? `Energy Healing API: ${res.status}`);
-            }
-            const json = await res.json();
-            return { method, json };
+            return { method, data: resolved.data };
           }),
         );
         for (const result of methodResults) {
@@ -1415,14 +1409,7 @@ async function runTool(
             devLog.warn('[ProfileOrchestrator] Energy Healing method failed:', result.reason, 'profileGenerationOrchestrator');
             continue;
           }
-          const { method, json } = result.value;
-          if (json._usage || json.usage) {
-            const u = json._usage ?? json.usage;
-            if (typeof u.promptTokens === 'number') energyUsage.promptTokens += u.promptTokens;
-            if (typeof u.completionTokens === 'number') energyUsage.completionTokens += u.completionTokens;
-            if (typeof u.totalTokens === 'number') energyUsage.totalTokens += u.totalTokens;
-          }
-          const data = json.data ?? json;
+          const { method, data } = result.value;
           if (data && typeof data === 'object' && (data as Record<string, unknown>).placeholder !== true) {
             combined[method] = data;
             hasAny = true;
@@ -1433,10 +1420,9 @@ async function runTool(
             status: 'success',
             data: { placeholder: true, reason: 'Energy healing analysis unavailable.' },
             generatedAt,
-            _usage: energyUsage.promptTokens + energyUsage.completionTokens + energyUsage.totalTokens > 0 ? energyUsage : undefined,
           };
         }
-        return { status: 'success', data: combined as Record<string, unknown>, generatedAt, _usage: energyUsage.promptTokens + energyUsage.completionTokens + energyUsage.totalTokens > 0 ? energyUsage : undefined };
+        return { status: 'success', data: combined as Record<string, unknown>, generatedAt };
       }
 
       case 'vastu': {

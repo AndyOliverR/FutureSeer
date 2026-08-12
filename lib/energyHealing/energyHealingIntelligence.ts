@@ -2,6 +2,7 @@
 // Core logic for energy healing analysis using Groq API
 
 import { UserProfile } from '@/lib/firebase';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { devLog } from '@/lib/devLogger';
 import { energyHealingImageAnalyzer } from './energyHealingImageAnalyzer';
 import {
@@ -35,7 +36,7 @@ class EnergyHealingIntelligence {
     try {
       devLog.debug('✨ Analyzing chakras with AI...');
       
-      const response = await fetch('/api/tools/energy-healing/analysis', {
+      const response = await fetchWithFirebaseAuthRequired('/api/tools/energy-healing/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +76,7 @@ class EnergyHealingIntelligence {
     try {
       devLog.debug('✨ Analyzing aura with AI...');
       
-      const response = await fetch('/api/tools/energy-healing/analysis', {
+      const response = await fetchWithFirebaseAuthRequired('/api/tools/energy-healing/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +113,7 @@ class EnergyHealingIntelligence {
     try {
       devLog.debug('✨ Analyzing Reiki energy with AI...');
       
-      const response = await fetch('/api/tools/energy-healing/analysis', {
+      const response = await fetchWithFirebaseAuthRequired('/api/tools/energy-healing/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +149,7 @@ class EnergyHealingIntelligence {
     try {
       devLog.debug('✨ Analyzing crystal recommendations with AI...');
       
-      const response = await fetch('/api/tools/energy-healing/analysis', {
+      const response = await fetchWithFirebaseAuthRequired('/api/tools/energy-healing/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,7 +185,7 @@ class EnergyHealingIntelligence {
     try {
       devLog.debug('✨ Analyzing energy balance with AI...');
       
-      const response = await fetch('/api/tools/energy-healing/analysis', {
+      const response = await fetchWithFirebaseAuthRequired('/api/tools/energy-healing/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
