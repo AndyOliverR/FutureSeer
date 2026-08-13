@@ -9,6 +9,7 @@ import {
   toVedicFocusedReportApiProfile,
   type VedicFocusedReportUserInput,
 } from '@/lib/vedic/vedicFocusedReportProfile';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { AlertCircle, Briefcase, Calendar, Loader2, MessageCircle, RefreshCw, Target, TrendingUp } from 'lucide-react';
 
 interface VedicCareerReportPanelProps {
@@ -35,7 +36,7 @@ export function VedicCareerReportPanel({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/vedic/career', {
+      const res = await fetchWithFirebaseAuthRequired('/api/vedic/career', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
