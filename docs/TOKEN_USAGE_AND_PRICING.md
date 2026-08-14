@@ -14,7 +14,7 @@ Token usage is **not** currently aggregated per generation:
 
 ## Ask the Seer cost
 
-- **Main Seer** ([app/api/seer/chat/route.ts](app/api/seer/chat/route.ts)): One non-streaming Groq call per user message. The Groq response includes `usage` (prompt_tokens, completion_tokens, total_tokens); the route does not currently read or log it. Typical size: system prompt + thread (last 6 messages) + new message; response `max_tokens: 500`. Rough order of magnitude: **~1k–4k tokens per exchange** (model llama-3.3-70b-versatile).
+- **Main Seer** ([app/api/seer/chat/route.ts](app/api/seer/chat/route.ts)): One non-streaming Groq call per user message. The Groq response includes `usage` (prompt_tokens, completion_tokens, total_tokens); the route does not currently read or log it. Typical size: system prompt + thread (last 6 messages) + new message; response `max_tokens: 500`. Rough order of magnitude: **~1k–4k tokens per exchange** (default models `openai/gpt-oss-20b` for free/trial and `openai/gpt-oss-120b` for paid, hosted by Groq).
 - **Per-tool Ask the Seer** (e.g. [app/api/ask-tarot-seer/route.ts](app/api/ask-tarot-seer/route.ts)): Uses `createAIStream` from [lib/aiGateway.ts](lib/aiGateway.ts). Streaming responses do not expose usage in the same way; cost is still incurred. Use the **Groq console** for aggregate usage by time window. Typical: one short answer per question, similar scale to main Seer.
 
 To get per-question cost for the main Seer later, you can read `data.usage` from the Groq response in the seer/chat route and log it or write it to Firestore (e.g. `seerUsage/{userId}/questions`).
