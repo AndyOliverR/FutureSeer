@@ -1,6 +1,7 @@
 import 'server-only';
 
 import Groq from 'groq-sdk';
+import { normalizeGroqTextModel } from '@/lib/groqModels';
 import { assertAiCircuitClosed, recordAiCircuitFailure, recordAiCircuitSuccess } from '@/lib/aiCircuitBreakerControl';
 import { devLog } from '@/lib/devLogger';
 import {
@@ -71,7 +72,7 @@ export async function callSeerChatWithTools(
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
     const completion = await groq.chat.completions.create({
-      model: options.model,
+      model: normalizeGroqTextModel(options.model),
       messages: messages as Parameters<typeof groq.chat.completions.create>[0]['messages'],
       tools: MAIN_SEER_TOOL_DEFINITIONS,
       tool_choice: round < MAX_TOOL_ROUNDS ? 'auto' : 'none',

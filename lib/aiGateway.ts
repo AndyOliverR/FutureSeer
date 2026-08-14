@@ -15,6 +15,7 @@ import {
   recordAiCircuitSuccess,
 } from '@/lib/aiCircuitBreakerControl';
 import { devLog } from '@/lib/devLogger';
+import { normalizeGroqTextModel } from '@/lib/groqModels';
 import Groq from 'groq-sdk';
 import OpenAI from 'openai';
 
@@ -84,36 +85,51 @@ async function withRetry<T>(fn: () => Promise<T>, label = 'AI call'): Promise<T>
 
 // Map model names to AI Gateway format (provider/model)
 const mapModelToGateway = (model: string): string => {
-  // If already in provider/model format, return as-is
-  if (model.includes('/')) {
-    return `groq/${model}`;
+  const normalized = normalizeGroqTextModel(model);
+
+  if (normalized.startsWith('groq/')) {
+    return normalized;
   }
-  
-  // Map common models
-  if (model === 'llama-3.3-70b-versatile') {
-    return 'groq/llama-3.3-70b-versatile';
+  // GPT-OSS IDs use an openai/ vendor namespace inside Groq.
+  if (normalized.startsWith('openai/gpt-oss-')) {
+    return `groq/${normalized}`;
   }
-  if (model === 'llama-3.1-8b-instant') {
-    return 'groq/llama-3.1-8b-instant';
+  if (normalized.startsWith('openai/')) {
+    return normalized;
   }
-  if (model === 'gpt-4' || model === 'gpt-4o' || model === 'gpt-4-turbo') {
-    return `openai/${model}`;
+  if (normalized.includes('/')) {
+    return `groq/${normalized}`;
   }
-  if (model === 'gpt-4o-mini') {
+
+  if (normalized === 'gpt-4' || normalized === 'gpt-4o' || normalized === 'gpt-4-turbo') {
+    return `openai/${normalized}`;
+  }
+  if (normalized === 'gpt-4o-mini') {
     return 'openai/gpt-4o-mini';
   }
-  
+
   // Default: assume Groq for unknown models
-  return `groq/${model}`;
+  return `groq/${normalized}`;
 };
 
 // Map model back to provider SDK format
 const getProviderFromModel = (model: string): 'groq' | 'openai' => {
-  if (model.startsWith('openai/') || model === 'gpt-4' || model === 'gpt-4o' || model === 'gpt-4-turbo' || model === 'gpt-4o-mini') {
+  const normalized = normalizeGroqTextModel(model);
+  if (normalized.startsWith('openai/gpt-oss-')) return 'groq';
+  if (normalized.startsWith('openai/') || normalized === 'gpt-4' || normalized === 'gpt-4o' || normalized === 'gpt-4-turbo' || normalized === 'gpt-4o-mini') {
     return 'openai';
   }
   return 'groq';
 };
+
+function getDirectModelName(model: string, provider: 'groq' | 'openai'): string {
+  const withoutGroqPrefix = model.startsWith('groq/') ? model.substring(5) : model;
+  const normalized = normalizeGroqTextModel(withoutGroqPrefix);
+  if (provider === 'openai' && normalized.startsWith('openai/')) {
+    return normalized.substring(7);
+  }
+  return normalized;
+}
 
 export interface AIStreamOptions {
   model: string;
@@ -190,14 +206,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
   // Fallback to direct SDK
   const provider = getProviderFromModel(options.model);
   
-  // Extract model name: strip provider prefixes (groq/, openai/) but keep vendor prefixes (meta-llama/)
-  let modelName = options.model;
-  if (options.model.startsWith('groq/')) {
-    modelName = options.model.substring(5); // Remove "groq/" prefix
-  } else if (options.model.startsWith('openai/')) {
-    modelName = options.model.substring(7); // Remove "openai/" prefix
-  }
-  // Keep meta-llama/ and other vendor prefixes intact
+  const modelName = getDirectModelName(options.model, provider);
 
   if (provider === 'groq') {
     if (!process.env.GROQ_API_KEY) {
@@ -313,14 +322,7 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
   try {
   const provider = getProviderFromModel(options.model);
   
-  // Extract model name: strip provider prefixes (groq/, openai/) but keep vendor prefixes (meta-llama/)
-  let modelName = options.model;
-  if (options.model.startsWith('groq/')) {
-    modelName = options.model.substring(5); // Remove "groq/" prefix
-  } else if (options.model.startsWith('openai/')) {
-    modelName = options.model.substring(7); // Remove "openai/" prefix
-  }
-  // Keep meta-llama/ and other vendor prefixes intact
+  const modelName = getDirectModelName(options.model, provider);
 
   if (provider === 'groq') {
     if (!process.env.GROQ_API_KEY) {

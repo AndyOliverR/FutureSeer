@@ -7,7 +7,7 @@ Central completion helper: [`lib/aiGateway.ts`](../lib/aiGateway.ts) — `create
 ## Seer chat (tiered model + caps)
 
 - Route: [`app/api/seer/chat/route.ts`](../app/api/seer/chat/route.ts)
-- Model: [`lib/seerModel.ts`](../lib/seerModel.ts) — free/trial → `llama-3.1-8b-instant` (default), paid plans → `llama-3.3-70b-versatile` (default). Override with `SEER_CHAT_MODEL` (all tiers) or `SEER_CHAT_MODEL_FAST` / `SEER_CHAT_MODEL_FULL`.
+- Model: [`lib/seerModel.ts`](../lib/seerModel.ts) — free/trial → `openai/gpt-oss-20b` on Groq (default), paid plans → `openai/gpt-oss-120b` on Groq (default). Override with `SEER_CHAT_MODEL` (all tiers) or `SEER_CHAT_MODEL_FAST` / `SEER_CHAT_MODEL_FULL`. Legacy Llama values are normalized to these replacements after Groq's August 16, 2026 shutdown.
 - Daily token caps (optional): `SEER_DAILY_TOKEN_CAP_FREE`, `SEER_DAILY_TOKEN_CAP_PAID` (unset = no cap).
 - Max output tokens: `SEER_MAX_TOKENS_FREE` (default 400), `SEER_MAX_TOKENS_PAID` (default 500).
 
