@@ -1015,39 +1015,32 @@ async function runTool(
         const currentLocRaw = (profile as { currentLocation?: string }).currentLocation;
         const currentLocation =
           typeof currentLocRaw === 'string' && currentLocRaw.trim() ? currentLocRaw.trim() : undefined;
-        const res = await fetch(`${baseUrl}/api/mundane-astrology/comprehensive`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            userProfile: {
-              birthDate: profile.birthDate,
-              birthTime: profile.birthTime || '12:00:00',
-              birthPlace: profile.birthPlace,
-              birthLatitude: profile.birthLatitude ?? profile.latitude ?? 0,
-              birthLongitude: profile.birthLongitude ?? profile.longitude ?? 0,
-              currentLocation,
-            },
-            birthData: {
-              birthDate: profile.birthDate,
-              birthTime: profile.birthTime || '12:00:00',
-              birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
-              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
-            },
-          }),
+        // Lazy import: this orchestrator is also imported by client UI; keep Groq/geocoding server-only.
+        const { generateMundaneComprehensive } = await import('@/lib/mundane/generateMundaneComprehensive');
+        const result = await generateMundaneComprehensive({
+          userProfile: {
+            birthDate: profile.birthDate,
+            birthTime: profile.birthTime || '12:00:00',
+            birthPlace: profile.birthPlace,
+            birthLatitude: profile.birthLatitude ?? profile.latitude ?? 0,
+            birthLongitude: profile.birthLongitude ?? profile.longitude ?? 0,
+            currentLocation,
+          },
+          birthData: {
+            birthDate: profile.birthDate,
+            birthTime: profile.birthTime || '12:00:00',
+            birthPlace: profile.birthPlace,
+            latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+            longitude: profile.birthLongitude ?? profile.longitude ?? 0,
+          },
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error((err as { error?: string })?.error ?? `Mundane Astrology API: ${res.status}`);
+        if (!result.ok) {
+          throw new Error(result.error);
         }
-        const json = await res.json();
-        const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data ?? json;
         return {
           status: 'success',
-          data: report ? { comprehensiveAnalysis: report } : { comprehensiveAnalysis: json },
+          data: { comprehensiveAnalysis: result.comprehensiveAnalysis },
           generatedAt,
-          _usage: json._usage ?? json.usage,
         };
       }
 
