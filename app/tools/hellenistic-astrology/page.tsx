@@ -31,6 +31,7 @@ import HellenisticSeerChatInterface from '@/components/hellenistic/HellenisticSe
 import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMethodologyBadge'
 import { DashboardSection } from '@/components/western/DashboardSection'
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 
 // Constants
 const HOUSE_MEANINGS: Record<number, string> = {
@@ -95,7 +96,7 @@ export default function HellenisticAstrologyPage() {
     const currentUser = user
     setOnDemandError(null)
     setOnDemandLoading(true)
-    fetch('/api/hellenistic/comprehensive', {
+    fetchWithFirebaseAuthRequired('/api/hellenistic/comprehensive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getIntelligentHellenisticAstrologyData } from '@/lib/hellenisticAstrologyIntelligence';
 import { devLog } from '@/lib/devLogger';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -29,6 +31,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const auth = await verifyUserRequest(request, 'hellenistic-comprehensive');
+    const access = decideUserScopedAccess(userId, auth);
+    let useCache = false;
+    switch (access.kind) {
+      case 'unauthorized':
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      case 'forbidden':
+        return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+      case 'owned':
+        useCache = true;
+        break;
+      case 'stateless':
+        useCache = false;
+        break;
+      default: {
+        const _exhaustive: never = access;
+        return NextResponse.json(
+          { success: false, error: `Unhandled access: ${String(_exhaustive)}` },
+          { status: 403 },
+        );
+      }
+    }
+
     const birthDate = userProfile?.birthDate ?? '';
     const birthTime = normalizeBirthTime(userProfile?.birthTime ?? '12:00:00');
     const birthPlace = userProfile?.birthPlace ?? '';
@@ -52,7 +77,8 @@ export async function POST(request: NextRequest) {
       birthTime,
       birthPlace,
       latitude,
-      longitude
+      longitude,
+      { useCache }
     );
 
     // Ensure response is JSON-serializable (e.g. Date -> string)
