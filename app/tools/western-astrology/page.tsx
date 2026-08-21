@@ -35,7 +35,7 @@ import { AstrologyMethodologyBadge } from '@/components/astrology/AstrologyMetho
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGate'
 import { useViralReportBypass } from '@/hooks/useViralReportBypass'
-import { classifyToolReportState } from '@/lib/profileGenerationOrchestrator'
+import { classifyToolReportState } from '@/lib/toolReportReadiness'
 import { 
   Star, 
   Calendar,

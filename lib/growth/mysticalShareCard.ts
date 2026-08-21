@@ -3,7 +3,7 @@
  */
 
 import { buildMysticalCardSnippet, resolveToolReportFromProfile } from '@/lib/mysticalProfilePositiveSnippet';
-import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
+import { ALL_TOOL_SLUGS } from '@/lib/toolReportReadiness';
 import { toolManager } from '@/lib/services/toolManager';
 import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath';
 
