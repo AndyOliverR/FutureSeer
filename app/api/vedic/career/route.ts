@@ -12,8 +12,10 @@ import {
   type VedicCareerAnalysis,
 } from '@/lib/vedic/vedicCareerReport';
 import { generateVedicFocusedReport } from '@/lib/vedic/generateVedicFocusedReport';
+import { authorizeVedicFocusedReportRequest } from '@/lib/vedic/vedicFocusedReportRouteGuard';
 import type { ChartDataInput } from '@/lib/vedic/vedicChartContext';
 import type { VedicBirthProfile } from '@/lib/vedic/vedicReportFirestore';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 
 interface CareerRequest {
   userId: string;
@@ -21,14 +23,15 @@ interface CareerRequest {
   userProfile?: VedicBirthProfile & { currentRole?: string; skills?: string };
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  try {
-    const body = (await request.json()) as CareerRequest;
-    const { userId, vedicChartData, userProfile } = body;
+async function handlePost(request: NextRequest): Promise<NextResponse> {
+  const authorized = await authorizeVedicFocusedReportRequest(request, 'vedic-career');
+  if (!authorized.ok) return authorized.response;
 
-    if (!userId) {
-      return NextResponse.json({ success: false, error: 'User ID is required' }, { status: 400 });
-    }
+  try {
+    const body = authorized.body as unknown as CareerRequest;
+    const userId = authorized.userId;
+    const { vedicChartData, userProfile } = body;
+
     if (!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
       return NextResponse.json(
         { success: false, error: 'Complete birth data (date, time, place) is required' },
@@ -93,3 +96,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
+
+export const POST = withRateLimit(handlePost, rateLimiters.ai, 'vedic_career_post');

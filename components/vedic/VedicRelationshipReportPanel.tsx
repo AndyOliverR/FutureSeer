@@ -10,6 +10,7 @@ import {
   toVedicFocusedReportApiProfile,
   type VedicFocusedReportUserInput,
 } from '@/lib/vedic/vedicFocusedReportProfile';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { AlertCircle, Calendar, Heart, Loader2, MessageCircle, RefreshCw, Users } from 'lucide-react';
 
 interface VedicRelationshipReportPanelProps {
@@ -50,7 +51,7 @@ export function VedicRelationshipReportPanel({
           }
         : undefined;
 
-      const res = await fetch('/api/vedic/relationships', {
+      const res = await fetchWithFirebaseAuthRequired('/api/vedic/relationships', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
