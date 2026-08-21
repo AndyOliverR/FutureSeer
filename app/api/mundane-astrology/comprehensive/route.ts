@@ -2,22 +2,15 @@
  * POST /api/mundane-astrology/comprehensive
  * Generate mundane astrology report: Aries Ingress + national context + risk scores + narrative.
  * Chart is cast for the user's current residence when set, else birth place (geocoded), not a silent US default.
+ *
+ * Requires a valid Firebase Bearer token. Stage B calls generateMundaneComprehensive in-process.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { generateMundaneComprehensive } from '@/lib/mundane/generateMundaneComprehensive';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
+import { resolveOwnedUserId, verifyUserRequest } from '@/lib/userApiAuth';
 import { devLog } from '@/lib/devLogger';
-import {
-  inferCountryCodeFromPlace,
-  inferCountryCodeFromGeocodedDisplayName,
-  getNationalChart,
-  getCapitalCoordinatesOrNull,
-  timeZoneForCountryCode,
-} from '@/lib/mundane/nationalCharts';
-import { getAriesIngressUTC } from '@/lib/mundane/ingressEclipse';
-import { buildMundaneChart } from '@/lib/mundane/mundaneChartService';
-import { computeRiskScores } from '@/lib/mundane/riskScoring';
-import { buildMundaneReport } from '@/lib/mundane/mundaneReportBuilder';
-import { getCoordinatesWithMeta } from '@/lib/geocoding';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -41,138 +34,34 @@ interface RequestBody {
   };
 }
 
-function formatIngressLocal(ingressUtc: Date, timeZone: string): string {
+async function handleMundaneComprehensiveRequest(request: NextRequest) {
   try {
-    return new Intl.DateTimeFormat('en-GB', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone,
-    }).format(ingressUtc);
-  } catch {
-    return ingressUtc.toISOString();
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const body: RequestBody = await request.json();
-    const birthPlaceRaw =
-      body.birthData?.birthPlace ?? body.userProfile?.birthPlace ?? '';
-    const currentLocationRaw =
-      typeof body.userProfile?.currentLocation === 'string'
-        ? body.userProfile.currentLocation.trim()
-        : '';
-
-    const birthPlace = typeof birthPlaceRaw === 'string' ? birthPlaceRaw.trim() : '';
-    const scopePlace =
-      currentLocationRaw.length > 0 ? currentLocationRaw : birthPlace;
-
-    if (!scopePlace) {
-      return NextResponse.json(
-        {
-          error:
-            'Current residence or birth place is required to generate a mundane report (used to locate the ingress chart).',
-        },
-        { status: 400 },
-      );
+    const auth = await verifyUserRequest(request, 'mundane-comprehensive');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const geo = await getCoordinatesWithMeta(scopePlace);
-
-    let countryCode =
-      inferCountryCodeFromPlace(scopePlace) ||
-      (geo.displayName
-        ? inferCountryCodeFromGeocodedDisplayName(geo.displayName)
-        : null);
-    if (!countryCode && birthPlace) {
-      countryCode = inferCountryCodeFromPlace(birthPlace);
-    }
-
-    const nationalRecord = getNationalChart(countryCode);
-    const nationalCapitalCoords = getCapitalCoordinatesOrNull(countryCode);
-
-    const countryName =
-      nationalRecord?.name ??
-      (countryCode ? `Country (${countryCode})` : 'Regional context');
-
-    const latFromBody = body.birthData?.latitude ?? body.userProfile?.birthLatitude;
-    const lngFromBody = body.birthData?.longitude ?? body.userProfile?.birthLongitude;
-    const hasFiniteLatLng =
-      typeof latFromBody === 'number' &&
-      typeof lngFromBody === 'number' &&
-      Number.isFinite(latFromBody) &&
-      Number.isFinite(lngFromBody);
-
-    let chartLatFinal = geo.latitude;
-    let chartLngFinal = geo.longitude;
-    let chartLocationLabel =
-      (geo.displayName && geo.displayName.trim()) || scopePlace;
-
-    if (geo.resolution === 'ultimate_fallback') {
-      if (hasFiniteLatLng) {
-        chartLatFinal = latFromBody as number;
-        chartLngFinal = lngFromBody as number;
-        chartLocationLabel = (birthPlace || scopePlace).trim();
-      } else if (nationalCapitalCoords) {
-        chartLatFinal = nationalCapitalCoords.lat;
-        chartLngFinal = nationalCapitalCoords.lng;
-        chartLocationLabel = `${nationalCapitalCoords.name} (national capital; precise location unavailable for "${scopePlace}")`;
-      } else {
-        return NextResponse.json(
-          {
-            error:
-              'Could not resolve coordinates for your location. Add a clearer current residence or birth place with country, or save birth latitude and longitude on your profile.',
-          },
-          { status: 400 },
-        );
+    const body = (await request.json().catch(() => ({}))) as RequestBody;
+    if (body.userId != null && body.userId !== '') {
+      const owned = resolveOwnedUserId(body.userId, auth.uid);
+      if (!owned) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
-    if (!Number.isFinite(chartLatFinal) || !Number.isFinite(chartLngFinal)) {
-      return NextResponse.json(
-        { error: 'Invalid coordinates for mundane chart. Check your profile birth place and coordinates.' },
-        { status: 400 },
-      );
-    }
-
-    const year = new Date().getUTCFullYear();
-    const ingressUTC = getAriesIngressUTC(year);
-    const chart = buildMundaneChart(ingressUTC, chartLatFinal, chartLngFinal);
-    const riskScores = computeRiskScores(chart, 0);
-
-    const nationalChartNote = nationalRecord?.independence
-      ? `National foundation: ${nationalRecord.independence.note} (${nationalRecord.independence.date}, ${nationalRecord.independence.place}).`
-      : undefined;
-
-    const tz = timeZoneForCountryCode(countryCode);
-    const ingressDisplayLocal = formatIngressLocal(ingressUTC, tz);
-
-    const nationalCapitalName = nationalCapitalCoords?.name ?? null;
-
-    const comprehensiveAnalysis = await buildMundaneReport({
-      countryName,
-      nationalCapitalName,
-      chartLocationName: chartLocationLabel,
-      chart,
-      riskScores,
-      nationalChartNote,
-      year,
-      ingressDisplayLocal,
+    const result = await generateMundaneComprehensive({
+      userProfile: body.userProfile,
+      birthData: body.birthData,
     });
 
-    devLog.debug(
-      'Mundane report generated',
-      { countryCode, countryName, chartLocationLabel, year },
-      'mundane-astrology',
-    );
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        comprehensiveAnalysis: {
-          ...comprehensiveAnalysis,
-          riskBands: comprehensiveAnalysis.riskScores.bands,
-        },
+        comprehensiveAnalysis: result.comprehensiveAnalysis,
       },
     });
   } catch (err) {
@@ -183,3 +72,9 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(
+  handleMundaneComprehensiveRequest,
+  rateLimiters.ai,
+  'mundane_comprehensive_post',
+);

@@ -22,6 +22,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { NewsHeadlinesStrip } from '@/components/integrations/NewsHeadlinesStrip';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 type TabValue = 'introduction' | 'report' | 'ask-the-seer';
 
@@ -75,7 +76,7 @@ function MundaneAstrologyPageContent() {
     setOnDemandLoading(true);
     onDemandFetchedRef.current = true;
 
-    fetch('/api/mundane-astrology/comprehensive', {
+    fetchWithFirebaseAuthRequired('/api/mundane-astrology/comprehensive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -93,7 +94,13 @@ function MundaneAstrologyPageContent() {
         },
       }),
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error((json?.error as string) || `Mundane astrology request failed (${res.status})`);
+        }
+        return json;
+      })
       .then(async (json) => {
         if (cancelled) return;
         const data = json?.data;
