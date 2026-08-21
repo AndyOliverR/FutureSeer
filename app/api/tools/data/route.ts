@@ -2,8 +2,9 @@
 // Fetches comprehensive profile data for specific tools
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, isAdminAvailable, getDocument } from '@/lib/firebase-admin';
+import { isAdminAvailable, getDocument } from '@/lib/firebase-admin';
 import { log } from '@/lib/consoleLogger';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-dynamic'
 
@@ -19,9 +20,19 @@ export async function GET(request: NextRequest) {
         error: 'Missing userId or toolName parameter'
       }, { status: 400 });
     }
+
+    const auth = await verifyUserRequest(request, 'tool-data-api');
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
+    if (!ownedUserId) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
     
     log.info('🔍 Fetching tool data from comprehensive profile', {
-      userId,
+      userId: ownedUserId,
       toolName
     }, 'tool-data-api');
     
@@ -33,7 +44,7 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
     
-    const profile = await getDocument('comprehensiveMysticalProfiles', userId);
+    const profile = await getDocument('comprehensiveMysticalProfiles', ownedUserId);
     
     if (!profile) {
       return NextResponse.json({
@@ -53,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
     
     log.success(`✅ Tool data fetched successfully`, {
-      userId,
+      userId: ownedUserId,
       toolName,
       hasData: !!toolData,
       dataKeys: toolData ? Object.keys(toolData) : []
@@ -64,7 +75,7 @@ export async function GET(request: NextRequest) {
       data: toolData,
       metadata: {
         toolName,
-        userId,
+        userId: ownedUserId,
         generatedAt: profile.lastUpdated,
         dataQuality: profile.dataQuality,
         source: profile.source
@@ -81,8 +92,13 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper function to get all available tools for a user
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'tool-data-api');
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { userId } = await request.json();
     
     if (!userId) {
@@ -91,10 +107,15 @@ export async function POST(request: Request) {
         error: 'Missing userId'
       }, { status: 400 });
     }
+
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
+    if (!ownedUserId) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
     
-    log.info('🔍 Fetching available tools for user', { userId }, 'tool-data-api');
+    log.info('🔍 Fetching available tools for user', { userId: ownedUserId }, 'tool-data-api');
     
-    const profile = await getDocument('comprehensiveMysticalProfiles', userId);
+    const profile = await getDocument('comprehensiveMysticalProfiles', ownedUserId);
     
     if (!profile) {
       return NextResponse.json({
@@ -117,7 +138,7 @@ export async function POST(request: Request) {
     }));
     
     log.success(`✅ Available tools fetched`, {
-      userId,
+      userId: ownedUserId,
       toolsCount: availableTools.length,
       successfulTools: availableTools.filter(t => !t.hasError).length
     }, 'tool-data-api');
@@ -126,7 +147,7 @@ export async function POST(request: Request) {
       success: true,
       tools: availableTools,
       metadata: {
-        userId,
+        userId: ownedUserId,
         totalTools: availableTools.length,
         successfulTools: availableTools.filter(t => !t.hasError).length,
         failedTools: availableTools.filter(t => t.hasError).length,
