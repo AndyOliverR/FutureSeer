@@ -1,10 +1,30 @@
 # FutureSeer
 
-**Open-source AI divination platform** — traditional occult systems (Vedic & Western astrology, Tarot, numerology, runes, I Ching, and more) implemented as type-safe engines, with a unified “Ask the Seer” layer that respects each tradition’s rules.
+**Open-source AI divination platform** — 50+ traditional occult systems (Vedic and Western astrology, Tarot, numerology, runes, I Ching, and more) as type-safe engines, plus a unified **Ask the Seer** layer that stays inside each tradition’s rules.
 
-Live product: [futureseer.app](https://futureseer.app)
+Live product: [futureseer.app](https://futureseer.app) · Source: [github.com/AndyOliverR/FutureSeer](https://github.com/AndyOliverR/FutureSeer)
 
 > Mysticism should be inspectable. We open-source the code so enthusiasts and engineers can audit methodology, improve accuracy, and self-host — not so anyone can paste secrets into git.
+
+## Who this is for
+
+- **Practitioners** who want readings whose methodology they can actually read and challenge
+- **Engineers** building type-safe astrology / divination tooling (tropical Western vs sidereal Lahiri Vedic, not a mash-up)
+- **Supporters of open occult research** who want inspectable engines and curated knowledge instead of another wrapper horoscope
+
+## Why this is hard (and worth funding)
+
+Most AI horoscope apps hide the pipeline. FutureSeer does not: each tool follows that system’s established rules, profiles persist so returning users keep their reports, desktop and mobile use different design systems, and Seer chat goes through a shared AI control layer (gates, budget, fallback) rather than a raw SDK call.
+
+That work is slow on purpose. **Sponsor or fund it if you want the research to stay public.**
+
+**What funding pays for**
+
+- Chart-engine accuracy (birth-time → UTC → tropical / sidereal pipelines you can audit)
+- Depth in the traditional knowledge files that ground Ask the Seer
+- Keeping [futureseer.app](https://futureseer.app) online so the live product matches the open source
+
+Support: GitHub **Sponsor** button (after [GitHub Sponsors](https://github.com/sponsors/AndyOliverR) is published) · [Credits](https://futureseer.app/credits) · [Contact](https://futureseer.app/contact). See [SUPPORT.md](SUPPORT.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Why open source
 
@@ -14,8 +34,6 @@ Commercial AI “horoscope apps” often hide how readings are produced. FutureS
 - Per-tool Seer experts that stay inside that system’s domain
 - A master Seer that synthesizes across tools without mushing traditions together
 - Community contributions toward better traditional fidelity — and optional support so the lights stay on
-
-Support the project via the GitHub **Sponsor** button, [Credits](https://futureseer.app/credits), or [Contact](https://futureseer.app/contact). See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Features
 
@@ -103,6 +121,7 @@ MIT — see [LICENSE](LICENSE). Divination content is for education and entertai
 
 ## Support
 
+- **Sponsor / research funding**: GitHub Sponsors and Credits — see [SUPPORT.md](SUPPORT.md)
 - **Docs**: this README, [AGENTS.md](AGENTS.md), [docs/DEVELOPER_RUNBOOK.md](docs/DEVELOPER_RUNBOOK.md)
 - **Issues**: GitHub Issues
 - **Product support**: [futureseer.app/contact](https://futureseer.app/contact)
