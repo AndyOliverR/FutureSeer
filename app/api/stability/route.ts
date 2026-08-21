@@ -1,9 +1,33 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { devLog } from '@/lib/devLogger'
+import { verifyUserRequest } from '@/lib/userApiAuth'
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit'
 
-export async function POST(request: NextRequest) {
+const MAX_PROMPT_CHARS = 2_000
+
+async function handleStabilityRequest(request: NextRequest) {
   try {
-    const { prompt } = await request.json()
+    const auth = await verifyUserRequest(request, 'stability');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json().catch(() => null)
+    const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : ''
+    if (!prompt) {
+      return NextResponse.json({
+        success: false,
+        error: "Prompt is required",
+        imageUrl: null,
+      }, { status: 400 })
+    }
+    if (prompt.length > MAX_PROMPT_CHARS) {
+      return NextResponse.json({
+        success: false,
+        error: `Prompt too long (max ${MAX_PROMPT_CHARS} characters)`,
+        imageUrl: null,
+      }, { status: 400 })
+    }
 
     const stabilityApiKey = process.env.STABILITY_API_KEY
 
@@ -59,3 +83,5 @@ export async function POST(request: NextRequest) {
     })
   }
 }
+
+export const POST = withRateLimit(handleStabilityRequest, rateLimiters.ai, 'stability_post');

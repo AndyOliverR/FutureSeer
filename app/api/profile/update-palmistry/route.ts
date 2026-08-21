@@ -98,14 +98,10 @@ export async function POST(request: NextRequest) {
 
     const analysis = palmistryImageAnalyzer.formatPalmistryData(aiData, hand, dominantHand, age, gender);
 
-    const comprehensiveDoc = await getDocument('comprehensiveMysticalProfiles', uid);
-    const existing = (comprehensiveDoc && typeof comprehensiveDoc === 'object' ? comprehensiveDoc : {}) as Record<
-      string,
-      unknown
-    >;
-
+    // Merge only the palmistry key. Do not spread a previously read profile doc —
+    // setDocument already merges, and a stale full-document write can clobber
+    // concurrent Stage B tool patches under the same comprehensive profile.
     await setDocument('comprehensiveMysticalProfiles', uid, {
-      ...existing,
       palmistry: {
         palmistryContext: analysis,
         analysis,

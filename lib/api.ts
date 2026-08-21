@@ -1,5 +1,6 @@
 import posthog from "posthog-js"
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 // Initialize PostHog only if API key is provided.
 // iOS App Store: if analytics qualifies as "tracking", request ATT before enabling IDFA-linked features; see docs/MOBILE_APP_STORE_COMPLIANCE.md
@@ -94,7 +95,7 @@ export async function getAstroData(birthDate: string, birthPlace: string, userId
 // Stability AI for symbolic backgrounds
 export async function generateSymbolicImage(prompt: string) {
   try {
-    const response = await fetch("/api/stability", {
+    const response = await fetchWithFirebaseAuthRequired("/api/stability", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
