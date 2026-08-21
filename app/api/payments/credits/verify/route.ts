@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { devLog } from '@/lib/devLogger';
 import { addCreditsFromPack } from '@/lib/billingCreditsServer';
-import type { CreditPackId } from '@/lib/billingTypes';
+import { validateCreditPackPayment } from '@/lib/creditPaymentVerification';
+import { fetchOrder, fetchPayment } from '@/lib/razorpay';
 import { verifyUserRequest } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-dynamic';
 
-const PACK_IDS: CreditPackId[] = ['starter', 'regular', 'power'];
-
 /**
  * POST /api/payments/credits/verify
+ *
+ * Credits are derived from the Razorpay order created server-side (notes.packId /
+ * notes.credits / notes.userId). Client-supplied packId is ignored.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -24,15 +26,17 @@ export async function POST(request: NextRequest) {
       razorpay_payment_id: paymentId,
       razorpay_order_id: orderId,
       razorpay_signature: signature,
-      packId,
     } = body;
 
-    if (!paymentId || !orderId || !signature || !packId) {
+    if (
+      typeof paymentId !== 'string' ||
+      !paymentId ||
+      typeof orderId !== 'string' ||
+      !orderId ||
+      typeof signature !== 'string' ||
+      !signature
+    ) {
       return NextResponse.json({ error: 'Missing payment verification data' }, { status: 400 });
-    }
-
-    if (!PACK_IDS.includes(packId as CreditPackId)) {
-      return NextResponse.json({ error: 'Invalid packId' }, { status: 400 });
     }
 
     const secret = process.env.RAZORPAY_KEY_SECRET || '';
@@ -46,16 +50,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
     }
 
-    const result = await addCreditsFromPack(
-      auth.uid,
-      packId as CreditPackId,
+    const [order, payment] = await Promise.all([fetchOrder(orderId), fetchPayment(paymentId)]);
+    const validated = validateCreditPackPayment({
+      authenticatedUserId: auth.uid,
       orderId,
       paymentId,
-    );
+      order,
+      payment,
+    });
+
+    if (!validated.ok) {
+      const status =
+        validated.code === 'user_mismatch' || validated.code === 'pack_mismatch' ? 403 : 400;
+      return NextResponse.json({ error: validated.error, code: validated.code }, { status });
+    }
+
+    const result = await addCreditsFromPack(auth.uid, validated.packId, orderId, paymentId);
 
     return NextResponse.json({
       success: true,
       duplicate: result.duplicate === true,
+      packId: validated.packId,
       creditsAdded: result.creditsAdded,
       creditBalance: result.creditBalance,
       transactionId: paymentId,
@@ -63,6 +78,8 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to verify credit payment';
     devLog.error('Error verifying credit payment:', error, 'route');
-    return NextResponse.json({ error: message }, { status: 500 });
+    const conflict =
+      typeof message === 'string' && message.includes('already redeemed by another account');
+    return NextResponse.json({ error: message }, { status: conflict ? 409 : 500 });
   }
 }
