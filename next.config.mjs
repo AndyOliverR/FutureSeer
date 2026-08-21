@@ -159,10 +159,28 @@ const nextConfig = {
       ],
     };
   },
-  // I Ching: canonical URL is /tools/iching; redirect /tools/i-ching so both work (no duplicate page)
+  // Canonical tool URLs: aliases from getToolRoute / toolManager.redirectTo (HTTP 301, not client render)
   async redirects() {
     return [
       { source: '/tools/i-ching', destination: '/tools/iching', permanent: true },
+      { source: '/tools/vedic-astrology', destination: '/tools/vedic', permanent: true },
+      { source: '/tools/thirteen-signs-zodiac', destination: '/tools/13-signs-zodiac', permanent: true },
+      { source: '/tools/uranian-astrology', destination: '/tools/western-astrology', permanent: true },
+      { source: '/tools/cosmobiology', destination: '/tools/western-astrology', permanent: true },
+      { source: '/tools/solar-return', destination: '/tools/western-astrology', permanent: true },
+      { source: '/tools/lunar-return', destination: '/tools/western-astrology', permanent: true },
+      { source: '/tools/progressions', destination: '/tools/western-astrology', permanent: true },
+      { source: '/tools/transits', destination: '/tools/western-astrology', permanent: true },
+      { source: '/tools/evolutionary-astrology', destination: '/tools/western-astrology', permanent: true },
+      { source: '/tools/composite-charts', destination: '/tools/synastry', permanent: true },
+      { source: '/tools/davison-charts', destination: '/tools/synastry', permanent: true },
+      { source: '/tools/chinese-face-reading', destination: '/tools/face-reading', permanent: true },
+      { source: '/tools/chakra-analysis', destination: '/tools/energy-healing', permanent: true },
+      { source: '/tools/aura-reading', destination: '/tools/energy-healing', permanent: true },
+      { source: '/tools/reiki', destination: '/tools/energy-healing', permanent: true },
+      { source: '/tools/crystal-healing', destination: '/tools/energy-healing', permanent: true },
+      { source: '/tools/tea-leaf-reading', destination: '/tools/dream-symbols', permanent: true },
+      { source: '/tools/bone-throwing', destination: '/tools/dream-symbols', permanent: true },
       { source: '/privacy-policy', destination: '/privacy', permanent: true },
     ];
   },

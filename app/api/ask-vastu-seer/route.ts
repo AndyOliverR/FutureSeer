@@ -9,6 +9,7 @@ import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import { buildVastuSeerSystemPrompt } from '@/lib/vastuSeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   buildVastuState,
   classifyVastuQuestion,
@@ -249,7 +250,7 @@ export async function POST(request: NextRequest) {
       history: conversationHistory,
     });
 
-    const { stream } = await callTextStream({ label: 'ask-vastu-seer', model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'ask-vastu-seer', model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,

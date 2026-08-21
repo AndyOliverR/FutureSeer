@@ -40,8 +40,8 @@ interface Message {
   timestamp: number;
 }
 
-const SEE_MORE_THRESHOLD = 320;
-const PREVIEW_LENGTH = 320;
+const SEE_MORE_THRESHOLD = 900;
+const PREVIEW_LENGTH = 480;
 
 function threadToMessages(thread: ThreadMessage[]): Message[] {
   return thread.map((m, i) => ({
@@ -112,6 +112,7 @@ export default function MainSeerChatInterface({
         body: JSON.stringify({
           message: messageToSend,
           thread,
+          stream: true,
           responseStyle,
           userId: userId ?? undefined,
           birthProfile: userProfile
@@ -124,9 +125,8 @@ export default function MainSeerChatInterface({
         }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         analytics.trackMainSeerChat({
           layout,
           responseStyle: responseStyle,
@@ -141,6 +141,58 @@ export default function MainSeerChatInterface({
         ]);
         return;
       }
+
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = (await res.json()) as { reply?: string; thread?: ThreadMessage[]; error?: string };
+        analytics.trackMainSeerChat({
+          layout,
+          responseStyle: responseStyle,
+          interaction: 'response_ok',
+          httpStatus: res.status,
+        });
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(MAIN_SEER_FIRST_SUCCESS_KEY, '1');
+          }
+        } catch {
+          /* ignore quota / private mode */
+        }
+        setSeerFirstSuccessRecorded(true);
+        setThread(data.thread ?? [
+          ...thread,
+          { role: 'user', content: messageToSend },
+          { role: 'seer', content: data.reply || 'The vision is unclear. Ask again.' },
+        ]);
+        return;
+      }
+
+      setThread((prev) => [
+        ...prev,
+        { role: 'user', content: messageToSend },
+        { role: 'seer', content: '' },
+      ]);
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          accumulated += decoder.decode(value, { stream: true });
+          const snapshot = accumulated;
+          setThread((prev) => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            if (last?.role === 'seer') {
+              next[next.length - 1] = { ...last, content: snapshot };
+            }
+            return next;
+          });
+        }
+      }
+
       analytics.trackMainSeerChat({
         layout,
         responseStyle: responseStyle,
@@ -155,7 +207,16 @@ export default function MainSeerChatInterface({
         /* ignore quota / private mode */
       }
       setSeerFirstSuccessRecorded(true);
-      setThread(data.thread ?? []);
+      if (!accumulated.trim()) {
+        setThread((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last?.role === 'seer') {
+            next[next.length - 1] = { ...last, content: 'The vision is unclear. Ask again.' };
+          }
+          return next;
+        });
+      }
     } catch (e) {
       analytics.trackMainSeerChat({
         layout,
@@ -391,7 +452,7 @@ export default function MainSeerChatInterface({
 
         <div
           className={cn(
-            'shrink-0 border-t border-amber-200 bg-white/80 p-4',
+            'shrink-0 border-t border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] p-4',
             layout === 'mobile' && 'pb-[max(1rem,env(safe-area-inset-bottom))]'
           )}
         >
@@ -408,7 +469,7 @@ export default function MainSeerChatInterface({
               onKeyDown={handleKeyPress}
               placeholder="Ask how your saved readings agree or disagree on one real decision…"
               disabled={isLoading}
-              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+              className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
               aria-label="Your question for the Seer"
             />
             <Button

@@ -7,6 +7,7 @@ import {
   writeAdminComprehensiveCache,
 } from '@/lib/adminComprehensiveCache';
 import { getAuth } from '@/lib/firebase-admin';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 type PalmistryValidatedAnalysis = {
   overallReading: string;
@@ -174,7 +175,7 @@ Provide only valid JSON in your response.`;
       tryLlm: async () => {
         const aiRun = await runStructuredReportAI({
           label: 'palmistry-comprehensive',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           messages: [
             {
               role: 'system',

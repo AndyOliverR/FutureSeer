@@ -15,6 +15,7 @@ import {
 } from '@/lib/ichingSeerState';
 import type { IChingAnalysis } from '@/lib/ichingIntelligence';
 import { buildIChingSeerSystemPrompt } from '@/lib/ichingSeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-iching-seer';
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
           try {
             const { stream } = await callTextStream({
               label: 'ask-iching-seer',
-              model: 'llama-3.3-70b-versatile',
+              model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
               messages: seerMessages,

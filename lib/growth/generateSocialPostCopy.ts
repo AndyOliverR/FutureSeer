@@ -4,6 +4,7 @@
 
 import { callStructuredAI } from '@/lib/aiStructuredOutput';
 import { getSocialPostTemplate } from '@/lib/growth/socialPostTemplates';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   buildSocialPostPromptMessages,
   parseGeneratedSocialPostCopy,
@@ -18,7 +19,7 @@ export {
   parseGeneratedSocialPostCopy,
 } from '@/lib/growth/socialPostCopyHelpers';
 
-export const ADMIN_SOCIAL_POST_MODEL = 'llama-3.3-70b-versatile';
+export const ADMIN_SOCIAL_POST_MODEL = GROQ_DEFAULT_TEXT_MODEL;
 
 const OUTPUT_SCHEMA = {
   requiredKeys: ['primary', 'cta'] as string[],

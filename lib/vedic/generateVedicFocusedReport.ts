@@ -4,6 +4,7 @@ import { parseStructuredJsonFromResponse } from '@/lib/aiStructuredOutputParse';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { getVedicReading } from '@/lib/vedicIntelligence';
 import type { ChartDataInput } from '@/lib/vedic/vedicChartContext';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   getCoordinatesWithFallback,
   setVedicReportDoc,
@@ -89,7 +90,7 @@ export async function generateVedicFocusedReport<T>(opts: {
             },
             { role: 'user', content: prompt },
           ],
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           temperature: 0.65,
           maxTokens: 4500,
           responseFormat: { type: 'json_object' },

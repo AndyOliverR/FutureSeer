@@ -16,6 +16,7 @@ import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import type { GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
 import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
       tryLlm: async () => {
         const aiRun = await runStructuredReportAI({
           label: 'astrocartography-comprehensive',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           messages: [
             {
               role: 'system',

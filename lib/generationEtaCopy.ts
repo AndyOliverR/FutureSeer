@@ -1,23 +1,20 @@
 /**
  * Shared first-generation timing copy for Profile + Occult tools surfaces.
- * Flow: Profile Generate → /tools (Occult / Divination tools) as reports unlock.
- *
- * One Generate enqueues the full catalog; workers finish tools over time (serverless
- * limits). Never claim a fixed short finish time for every tool.
+ * Flow: Profile Generate commits natal charts → /tools. Each tool generates on visit.
  */
 
 export const GENERATION_ETA_PRE_GENERATE =
-  "Core charts usually unlock within a few minutes. The full catalog fills in the background — open Occult / Divination tools and check tool cards as they unlock.";
+  "Natal charts are ready in seconds. Open any Occult / Divination tool to generate that reading — it stays saved on your profile.";
 
 /** Shown under the Generate button from click until redirect to /tools. */
 export const GENERATION_ETA_PREPARING =
-  "Starting report generation… Tools unlock as each reading finishes. You'll open Occult / Divination tools next — leave the page open or check back as more cards unlock.";
+  "Saving your profile and natal charts… You'll open Occult / Divination tools next.";
 
 export const GENERATION_ETA_IN_PROGRESS =
-  "Generating readings across divination systems… Tools unlock as each reading finishes. Open Occult / Divination tools to use unlocked reports while others keep filling.";
+  "Profile saved. Open a tool to generate its reading — one tool at a time, usually a few seconds.";
 
 export const GENERATION_ETA_TOOLS_BANNER =
-  "Reports unlock over time — open a tool when its card is ready. Leave this page open or return later; generation keeps filling the rest.";
+  "Open any tool to generate its reading. Charts you already opened stay saved.";
 
 export const GENERATION_SUCCESS_ALERT =
-  "Generation is running—open Occult / Divination tools to use unlocked reports while others keep filling. Then Ask the Seer for the cross-tool read.";
+  "Profile saved. Open Occult / Divination tools — each reading generates when you open it. Then Ask the Seer for the cross-tool read.";

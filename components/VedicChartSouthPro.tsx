@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
 import { planetSymbols, getPlanetColor, formatPlanetDisplay, signSymbols } from "@/lib/chart-utils";
+import { CHART_SVG_FONT_FAMILY } from "@/lib/charts/svgTypography";
 
 interface VedicChartSouthProProps {
   chart: {
@@ -139,7 +140,7 @@ const VedicChartSouthPro: React.FC<VedicChartSouthProProps> = ({
                 y={y + 12}
                 fontSize="10"
                 fill="#666666"
-                fontFamily="Arial"
+                fontFamily={CHART_SVG_FONT_FAMILY}
                 fontWeight="normal"
               >
                 {houseNum}
@@ -164,7 +165,7 @@ const VedicChartSouthPro: React.FC<VedicChartSouthProProps> = ({
               textAnchor="middle"
               fontSize="16"
               fill="#2C3E50"
-              fontFamily="Arial"
+              fontFamily={CHART_SVG_FONT_FAMILY}
               fontWeight="bold"
             >
               {signSymbol}
@@ -204,7 +205,7 @@ const VedicChartSouthPro: React.FC<VedicChartSouthProProps> = ({
                 textAnchor="middle"
                 fontSize="11"
                 fill={planetColor}
-                fontFamily="Arial"
+                fontFamily={CHART_SVG_FONT_FAMILY}
                 fontWeight="bold"
                 style={{ cursor: onPlanetClick ? "pointer" : "default" }}
                 onClick={() => onPlanetClick?.(planet, planetData)}
@@ -222,7 +223,7 @@ const VedicChartSouthPro: React.FC<VedicChartSouthProProps> = ({
           textAnchor="middle"
           fontSize="12"
           fill="#333333"
-          fontFamily="Arial"
+          fontFamily={CHART_SVG_FONT_FAMILY}
           fontWeight="bold"
         >
           South Indian Chart

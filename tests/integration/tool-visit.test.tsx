@@ -1,5 +1,6 @@
 /**
- * Integration test: Tool visit must not trigger POST /api/profile/generate-mystical or POST /api/seer/chat.
+ * Tool visit must not trigger POST /api/profile/generate-mystical or POST /api/seer/chat.
+ * On-demand generation uses POST /api/profile/ensure-tool-report instead.
  * Tool pages read from MysticalProfileContext (Firestore/cache), not from those APIs.
  * @jest-environment jsdom
  */

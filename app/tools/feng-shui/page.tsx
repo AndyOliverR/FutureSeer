@@ -15,6 +15,7 @@ import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
 import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
 import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
 import { cn } from "@/lib/utils"
+import { fetchWithFirebaseAuthRequired } from "@/lib/clientFirebaseFetch"
 import { 
   Compass, 
   Layout, 
@@ -203,6 +204,18 @@ export default function FengShuiPage() {
 
     loadFengShuiAnalysis()
   }, [userProfile, fengShuiFromPipeline])
+
+  useEffect(() => {
+    if (!facingDirection) return
+    void fetchWithFirebaseAuthRequired('/api/profile/ensure-tool-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        toolSlug: 'fengShui',
+        extraInputs: { facingDirection },
+      }),
+    }).catch(() => undefined)
+  }, [facingDirection])
 
   if (!user) {
     return (

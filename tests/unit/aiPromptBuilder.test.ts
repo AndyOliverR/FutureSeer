@@ -41,6 +41,9 @@ describe('aiPromptBuilder', () => {
       history: [{ question: 'Hi', answer: 'Hello' }],
     });
     expect(messages[0]?.role).toBe('system');
+    const systemText = messages.filter((m) => m.role === 'system').map((m) => String(m.content)).join('\n');
+    expect(systemText).toContain('THIS tradition only');
+    expect(systemText).toContain('Tarot expert');
     expect(messages[messages.length - 1]).toEqual({
       role: 'user',
       content: 'What does my card mean?',

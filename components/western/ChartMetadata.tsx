@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Calendar, Clock, MapPin, Settings, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -23,7 +22,6 @@ interface ChartMetadataProps {
 
 export default function ChartMetadataComponent({ metadata, onToggle }: ChartMetadataProps) {
   const {
-    eventType = "Natal Chart",
     date = "Nov 5 2025, Wed",
     time = "5:19:14 AM PST",
     timezone = "+8:00",
@@ -35,14 +33,14 @@ export default function ChartMetadataComponent({ metadata, onToggle }: ChartMeta
 
   if (!showMetadata) {
     return (
-      <div className="mb-4">
+      <div className="mb-2 flex justify-center">
         <Button
           onClick={onToggle}
           variant="outline"
           size="sm"
-          className="bg-white/90 backdrop-blur-sm border-slate-300 hover:bg-white"
+          className="border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] text-[var(--m3-on-surface)] hover:bg-[var(--m3-surface-container-high)]"
         >
-          <Eye className="w-4 h-4 mr-2" />
+          <Eye className="mr-2 h-4 w-4" />
           Show Info
         </Button>
       </div>
@@ -50,46 +48,37 @@ export default function ChartMetadataComponent({ metadata, onToggle }: ChartMeta
   }
 
   return (
-    <div className="mb-4">
-      <Card className="bg-white/95 backdrop-blur-sm border-slate-300 shadow-lg max-w-xs">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold text-slate-800">{eventType}</h3>
-            {onToggle && (
-              <Button
-                onClick={onToggle}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 hover:bg-slate-100"
-              >
-                <EyeOff className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
-          
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-slate-700">
-              <Calendar className="w-3 h-3 flex-shrink-0" />
-              <span className="font-medium">{date}</span>
-            </div>
-            
-            <div className="flex items-center gap-2 text-slate-700">
-              <Clock className="w-3 h-3 flex-shrink-0" />
-              <span>{time} {timezone}</span>
-            </div>
-            
-            <div className="flex items-center gap-2 text-slate-700">
-              <MapPin className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">{location}</span>
-            </div>
-            
-            <div className="flex items-center gap-2 text-slate-700">
-              <Settings className="w-3 h-3 flex-shrink-0" />
-              <span>{houseSystem} • {zodiacType}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="mb-1 rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] px-3 py-2 text-xs text-[var(--m3-on-surface-variant)]">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 space-y-1">
+          <p className="flex items-center gap-1.5 truncate">
+            <Calendar className="h-3 w-3 shrink-0 text-amber-200" />
+            <span className="text-[var(--m3-on-surface)]">{date}</span>
+          </p>
+          <p className="flex items-center gap-1.5 truncate">
+            <Clock className="h-3 w-3 shrink-0 text-amber-200" />
+            {time} {timezone}
+          </p>
+          <p className="flex items-center gap-1.5 truncate">
+            <MapPin className="h-3 w-3 shrink-0 text-amber-200" />
+            {location}
+          </p>
+          <p className="flex items-center gap-1.5 truncate">
+            <Settings className="h-3 w-3 shrink-0 text-amber-200" />
+            {houseSystem} · {zodiacType}
+          </p>
+        </div>
+        {onToggle ? (
+          <Button
+            onClick={onToggle}
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 shrink-0 p-0 text-[var(--m3-on-surface-variant)] hover:bg-[var(--m3-surface-container-high)]"
+          >
+            <EyeOff className="h-3 w-3" />
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

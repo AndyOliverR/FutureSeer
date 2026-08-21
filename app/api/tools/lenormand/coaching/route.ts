@@ -3,6 +3,7 @@ import { getUserProfile } from '@/lib/firebase'
 import { LENORMAND_DECK } from '@/lib/lenormandIntelligence'
 import { callTextAI } from '@/lib/aiStructuredOutput'
 import { devLog } from '@/lib/devLogger'
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 
 export async function POST(request: NextRequest) {
@@ -58,7 +59,7 @@ Keep your response conversational yet informative, helping ${displayName} deepen
 
     const result = await callTextAI({
       label: 'lenormand-coaching',
-      model: 'llama-3.3-70b-versatile',
+      model: GROQ_DEFAULT_TEXT_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }

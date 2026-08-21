@@ -295,7 +295,7 @@ export function VastuCoachInterface({
         )}
       </div>
 
-      <div className="p-4 border-t border-amber-200 bg-white/80 shrink-0">
+      <div className="p-4 border-t border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] shrink-0">
         <div className="flex gap-2">
           <Input
             ref={inputRef}
@@ -303,7 +303,7 @@ export function VastuCoachInterface({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask about layout, zones, corrections..."
-            className="flex-1 bg-white border-amber-200 text-slate-800 placeholder:text-slate-500 focus:border-amber-400"
+            className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-amber-400"
             disabled={isLoading || !user}
           />
           <Button

@@ -4,6 +4,7 @@ import { getUserProfile } from '@/lib/firebase'
 import { analyzeSpreadCombinations, generateFallbackInterpretation } from '@/lib/lenormandCombinations'
 import { callTextAI } from '@/lib/aiStructuredOutput'
 import { devLog } from '@/lib/devLogger'
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 export async function POST(request: NextRequest) {
   try {
@@ -120,7 +121,7 @@ Write in a warm, practical voice addressing ${displayName} directly.`
 
       const result = await callTextAI({
         label: 'lenormand-reading',
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_DEFAULT_TEXT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

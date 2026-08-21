@@ -309,7 +309,7 @@ export default function KabbalisticAstrologySeerChatInterface({
           )}
         </div>
 
-        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+        <div className="shrink-0 border-t border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -323,7 +323,7 @@ export default function KabbalisticAstrologySeerChatInterface({
               onKeyDown={handleKeyPress}
               placeholder="Ask about Tikkun, karmic patterns, or spiritual correction..."
               disabled={isLoading}
-              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
+              className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-amber-400 focus:ring-amber-200"
             />
             <Button
               type="submit"

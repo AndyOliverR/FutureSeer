@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { CHART_SVG_FONT_FAMILY } from "@/lib/charts/svgTypography";
 
 // Match the same interface as North/East Indian charts
 interface PlanetData {
@@ -202,7 +203,7 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
                 fill="#6D28D9"
                 fontWeight="bold"
                 opacity="0.8"
-                  fontFamily="Arial, Helvetica, 'Segoe UI Symbol', sans-serif"
+                  fontFamily={CHART_SVG_FONT_FAMILY}
               >
                 {zodiacSymbol}
               </text>
@@ -222,7 +223,7 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
                     fontSize={fontSize}
                       fill={planetColor}
                     fontWeight="600"
-                    fontFamily="Arial, Helvetica, 'Segoe UI Symbol', sans-serif"
+                    fontFamily={CHART_SVG_FONT_FAMILY}
                     >
                     {planetSymbol} {positionText}{retrogradeText}
                     </text>

@@ -8,6 +8,7 @@ import { callTextStream } from '@/lib/aiStructuredOutput';
 import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
 import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { buildAstrocartographySeerSystemPrompt } from '@/lib/astrocartographySeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-astrocartography-seer';
@@ -152,7 +153,7 @@ export async function POST(request: NextRequest) {
       ),
     });
 
-    const { stream } = await callTextStream({ label: 'ask-astrocartography-seer', model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'ask-astrocartography-seer', model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,

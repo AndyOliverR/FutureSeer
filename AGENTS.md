@@ -8,9 +8,9 @@ FutureSeer is an AI-powered divination platform that unifies 50+ occult and divi
 
 1. **Sign-in / Sign-up**: User signs in (existing) or creates a new account via Firebase Auth.
 2. **Profile completion** (new users): Redirected to the profile page to fill in required details (birth date/time/place, name, etc.). This data is the foundation for all readings.
-3. **Mystical profile generation**: Once the profile is complete and the user clicks "Generate my mystical profile", **all divination tools generate their reports simultaneously**. This is a comprehensive, one-time generation that produces detailed reports for every occult field.
-4. **Persistent storage**: All generated reports are stored in Firebase Firestore under the user's profile. When the same user signs back in, they see their previously generated information — nothing is lost.
-5. **Tool-specific views**: When a user navigates to a specific tool (e.g., `/tools/tarot`), they see the **detailed report for that specific tool** — generated according to that tool's own rules and methodology.
+3. **Generate Full Report**: Once the profile is complete (including photos, gender, and display name), the user clicks Generate. This **commits the profile and natal charts** (Vedic + Western, no 42-tool LLM catalog). Remaining tools generate **when the user opens them** and persist on the profile.
+4. **Persistent storage**: Generated reports are stored in Firebase Firestore (`comprehensiveMysticalProfiles/{uid}`). When the same user signs back in, previously generated tool reports are still there.
+5. **Tool-specific views**: When a user navigates to a specific tool (e.g., `/tools/tarot`), that tool’s report is loaded if stored, or generated on visit according to that tool's own rules and methodology.
 6. **Per-tool Ask the Seer**: Each divination tool has its own AI expert ("Ask the Seer") that answers questions **specific to that tool's domain and the user's report**. The Tarot expert only speaks about Tarot, the Vedic expert only about Vedic astrology, etc.
 7. **Main Ask the Seer**: A unified AI expert (`/seer`) that draws from **all tools** to answer questions holistically — like consulting a master who understands every system.
 8. **Community page**: Users can interact, converse, share information, and discuss insights with other users.

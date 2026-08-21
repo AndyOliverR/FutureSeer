@@ -340,7 +340,7 @@ export default function MundaneSeerChatInterface({
               onKeyDown={handleKeyPress}
               placeholder="Ask about national cycles, risk bands, or geopolitical context..."
               disabled={isLoading}
-              className="flex-1 bg-white border-purple-200 text-slate-800 placeholder-slate-500 focus:border-purple-400 focus:ring-purple-200"
+              className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-purple-400 focus:ring-purple-200"
             />
             <Button
               type="submit"

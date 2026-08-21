@@ -184,14 +184,14 @@ export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps)
             )}
           </div>
 
-          <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4 flex gap-2">
+          <div className="shrink-0 border-t border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] p-4 flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="e.g. What health tendencies does my chart show?"
               disabled={isLoading}
-              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
+              className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-amber-400 focus:ring-amber-200"
             />
             <Button
               onClick={() => handleSend()}

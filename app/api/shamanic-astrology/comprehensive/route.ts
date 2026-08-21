@@ -13,6 +13,7 @@ import {
   buildShamanicProfileContext,
 } from '@/lib/shamanicSeerPrompts';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -328,7 +329,7 @@ export async function POST(request: NextRequest) {
       tryLlm: async () => {
         const aiRun = await runStructuredReportAI({
           label: 'shamanic-comprehensive',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           messages: [
             {
               role: 'system',

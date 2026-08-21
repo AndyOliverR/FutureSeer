@@ -17,7 +17,7 @@ Do not lead with “AI + astrology + numerology + tarot + …” in public copy.
 | Asset | Location | Use for growth |
 |--------|----------|----------------|
 | Tool share cards | `components/report-viral/ShareCard.tsx`, `TeaserView` | Pattern for golden branded cards |
-| Mystical snippets | `lib/mysticalProfilePositiveSnippet.ts`, `app/mystical-profile/page.tsx` | Source text for user share cards |
+| Mystical snippets | `lib/mysticalProfilePositiveSnippet.ts`, tool pages / share card panel | Source text for user share cards |
 | App referral share | `components/ShareAppModal.tsx` | Referral links (`?ref=`) |
 | Analytics | `lib/analytics.ts` (PostHog) | Track shares, signups, `ref` |
 | Marketing workflow | [MARKETING_AND_ASSET_WORKFLOW.md](./MARKETING_AND_ASSET_WORKFLOW.md) | Voice, assets, channels |
@@ -163,7 +163,7 @@ One page can bring users for years; one IG post dies in 24h.
 3. For automation: **Ayrshare** (fast) vs **native Meta + YouTube APIs** (more control, more work).  
 4. WhatsApp Sunday: accept **manual** status with app-generated image + caption copy button in admin.
 
-**Phase A (shipped):** `app/mystical-profile/page.tsx` renders `MysticalShareCardPanel` when the user has at least one ready report. Payload from `lib/growth/mysticalShareCard.ts` (`buildMysticalSharePayload`); export UI in `components/growth/MysticalShareCardPanel.tsx` + `MysticalShareCardVisual.tsx` (540×540 gold cosmic card, `html-to-image` PNG, native share, copy `?ref=` link). PostHog: `mystical_share_card_*` via `analytics.trackMysticalShareCard`.
+**Phase A (shipped):** Share card UI in `components/growth/MysticalShareCardPanel.tsx` + `MysticalShareCardVisual.tsx`. Payload from `lib/growth/mysticalShareCard.ts`. `/mystical-profile` is a bookmark redirect to `/tools`; cards render on tool/report surfaces.
 
 **Phase B (shipped):** Admin copy-only post generator at `/admin/social-posts` (link from Admin Dashboard → Support Tools). Templates in `lib/growth/socialPostTemplates.ts` (weekly channel calendar). Groq via `lib/growth/generateSocialPostCopy.ts` + `POST /api/admin/social/generate-post` (`verifyAdminRequest`, `callStructuredAI`, JSON fields: headline, primary, bullets, hashtags, cta, notes). UI: `components/admin/SocialPostGenerator.tsx` — per-field and “copy all”. No auto-publish.
 

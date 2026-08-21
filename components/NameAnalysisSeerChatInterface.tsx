@@ -204,7 +204,7 @@ export function NameAnalysisSeerChatInterface({
     ? "border-t border-amber-200 p-4 bg-white/90"
     : "border-t border-slate-700/50 p-4 bg-amber-950/40"
   const inputClass = isLight
-    ? "flex-1 bg-white border-amber-200 text-slate-800 placeholder:text-slate-500 focus:border-amber-400"
+    ? "flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-amber-400"
     : "flex-1 bg-amber-950/40 border-slate-600 text-white placeholder:text-slate-400 focus:border-amber-500"
   const sendBtnClass = isLight
     ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"

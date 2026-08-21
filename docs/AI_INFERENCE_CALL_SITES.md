@@ -7,7 +7,7 @@ Central completion helper: [`lib/aiGateway.ts`](../lib/aiGateway.ts) — `create
 ## Seer chat (tiered model + caps)
 
 - Route: [`app/api/seer/chat/route.ts`](../app/api/seer/chat/route.ts)
-- Model: [`lib/seerModel.ts`](../lib/seerModel.ts) — free/trial → `llama-3.1-8b-instant` (default), paid plans → `llama-3.3-70b-versatile` (default). Override with `SEER_CHAT_MODEL` (all tiers) or `SEER_CHAT_MODEL_FAST` / `SEER_CHAT_MODEL_FULL`.
+- Model: [`lib/seerModel.ts`](../lib/seerModel.ts) — free/trial → `openai/gpt-oss-20b` (default), paid plans → `openai/gpt-oss-120b` (default). Llama 3.3 70B / 3.1 8B IDs are aliased. Override with `SEER_CHAT_MODEL` (all tiers), `SEER_CHAT_MODEL_FAST` / `SEER_CHAT_MODEL_FULL`, or `GROQ_TEXT_MODEL` / `GROQ_FAST_TEXT_MODEL`.
 - Daily token caps (optional): `SEER_DAILY_TOKEN_CAP_FREE`, `SEER_DAILY_TOKEN_CAP_PAID` (unset = no cap).
 - Max output tokens: `SEER_MAX_TOKENS_FREE` (default 400), `SEER_MAX_TOKENS_PAID` (default 500).
 

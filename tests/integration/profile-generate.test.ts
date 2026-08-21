@@ -44,6 +44,7 @@ const mockBatchSetDocuments = jest.fn();
 const mockGenerateAllReports = jest.fn();
 const mockClearCachedDivinationData = jest.fn();
 const mockTryResumeMysticalStageB = jest.fn();
+const mockGenerateAndPersistToolReports = jest.fn();
 const mockEnsureAdminAvailable = jest.fn();
 const mockAfterOutputs: Array<void | Promise<void>> = [];
 
@@ -114,6 +115,11 @@ jest.mock('@/lib/mysticalStageB', () => ({
   tryResumeMysticalStageB: (...args: unknown[]) => mockTryResumeMysticalStageB(...args),
 }));
 
+jest.mock('@/lib/onDemandToolReports', () => ({
+  NATAL_CHART_SLUGS: ['vedic', 'western'],
+  generateAndPersistToolReports: (...args: unknown[]) => mockGenerateAndPersistToolReports(...args),
+}));
+
 jest.mock('@/lib/rateLimitFirestore', () => ({
   checkRateLimitWithOptionalFirestore: async (
     limiter: { check: (identifier: string) => { allowed: boolean; remaining: number; resetTime: number } },
@@ -171,6 +177,11 @@ describe('Profile generate-mystical API', () => {
       aggregateUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     });
     mockTryResumeMysticalStageB.mockResolvedValue({ started: true });
+    mockGenerateAndPersistToolReports.mockResolvedValue({
+      readySlugs: ['vedic', 'western'],
+      failedSlugs: [],
+      toolReports: {},
+    });
   });
 
   afterEach(() => {
@@ -227,9 +238,9 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).toBe(true);
-      expect(data.skipReason).toBe('unchanged_hash_all_ready');
+      expect(data.skipReason).toBe('unchanged_hash_committed');
       expect(data.decision).toBe('skipped');
-      expect(data.decisionReason).toBe('unchanged_hash_all_ready');
+      expect(data.decisionReason).toBe('unchanged_hash_committed');
       expect(mockGenerateAllReports).not.toHaveBeenCalled();
       expect(mockSetDocument).not.toHaveBeenCalledWith('generationLocks', expect.anything(), expect.anything());
       expect(mockSetDocument).not.toHaveBeenCalledWith('generationJobs', expect.anything(), expect.anything());
@@ -260,7 +271,7 @@ describe('Profile generate-mystical API', () => {
       const data = await res.json();
       expect(res.status).toBe(200);
       expect(data.alreadyGenerated).toBe(true);
-      expect(data.decisionReason).toBe('unchanged_hash_all_ready');
+      expect(data.decisionReason).toBe('unchanged_hash_committed');
       expect(mockSetDocument).not.toHaveBeenCalledWith('generationLocks', expect.anything(), expect.anything());
       expect(mockSetDocument).not.toHaveBeenCalledWith('generationJobs', expect.anything(), expect.anything());
     });
@@ -278,27 +289,26 @@ describe('Profile generate-mystical API', () => {
       const res = await callGenerate();
       const data = await res.json();
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).not.toBe(true);
-      expect(data.generationState).toBe('running');
+      expect(data.generationState).toBe('completed');
       expect(data.decision).toBe('rerun');
       expect(data.decisionReason).toBe('profile_hash_changed');
-      expect(data.phase).toBe('running');
-      expect(data.allReportsReady).toBe(false);
+      expect(data.phase).toBe('completed');
+      expect(data.allReportsReady).toBe(true);
       expect(Array.isArray(data.pendingToolSlugs)).toBe(true);
+      expect(data.pendingToolSlugs).toEqual([]);
       expect(typeof data.message).toBe('string');
-      expect(String(data.message)).toContain('Reports will unlock one by one');
-      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
-      expect(mockAfterOutputs).toHaveLength(1);
-      expect(mockAfterOutputs[0]).toBeInstanceOf(Promise);
+      expect(mockGenerateAndPersistToolReports).toHaveBeenCalled();
+      expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
       expect(mockSetDocument).toHaveBeenCalledWith(
-        'generationJobs',
+        'generationLocks',
         uid,
         expect.objectContaining({
-          status: 'queued',
-          phase: 'running',
-          pipelineMode: 'unified',
+          status: 'running',
+          phase: 'natal',
+          pipelineMode: 'on_demand',
         }),
       );
     });
@@ -321,15 +331,16 @@ describe('Profile generate-mystical API', () => {
       const res = await callGenerate();
       const data = await res.json();
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).not.toBe(true);
       expect(data.decision).toBe('rerun');
       expect(data.decisionReason).toBe('profile_hash_changed');
-      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
+      expect(mockGenerateAndPersistToolReports).toHaveBeenCalled();
+      expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
     });
 
-    it('allows only missing-tools backfill when hash matches but reports are incomplete', async () => {
+    it('skips catalog backfill when hash matches even if some tools are missing', async () => {
       const profile = { ...baseProfile };
       const hash = calculateProfileDataHash(profile);
       mockGetDocument.mockImplementation((collection: string) => {
@@ -351,10 +362,12 @@ describe('Profile generate-mystical API', () => {
 
       const res = await callGenerate();
       const data = await res.json();
-      expect(res.status).toBe(202);
-      expect(data.decision).toBe('rerun');
-      expect(data.decisionReason).toBe('missing_tools_backfill');
-      expect(mockSetDocument).toHaveBeenCalledWith(
+      expect(res.status).toBe(200);
+      expect(data.alreadyGenerated).toBe(true);
+      expect(data.decision).toBe('skipped');
+      expect(data.decisionReason).toBe('unchanged_hash_committed');
+      expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
+      expect(mockSetDocument).not.toHaveBeenCalledWith(
         'generationJobs',
         uid,
         expect.objectContaining({
@@ -441,10 +454,11 @@ describe('Profile generate-mystical API', () => {
 
       const res = await callGenerate('fake-token', { mode: 'full' });
       const data = await res.json();
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.blockReason).toBeUndefined();
-      expect(mockTryResumeMysticalStageB).toHaveBeenCalled();
+      expect(mockGenerateAndPersistToolReports).toHaveBeenCalled();
+      expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
     });
   });
 
@@ -481,7 +495,7 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(200);
       expect(data.inProgress).toBe(true);
       expect(data.generationState).toBe('running');
-      expect(data.partialReady).toBe(true);
+      expect(data.partialReady).toBe(false);
       expect(data.completed).toBe(false);
     });
 
@@ -505,7 +519,7 @@ describe('Profile generate-mystical API', () => {
       expect(data.allReportsReady).toBe(true);
     });
 
-    it('returns partial_ready when some snippets exist but pipeline is not active', async () => {
+    it('returns completed when profile is committed even if the catalog is incomplete', async () => {
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
         if (collection === 'generationLocks') return Promise.resolve({ status: 'failed', phase: 'failed', updatedAt: Date.now() });
@@ -518,9 +532,9 @@ describe('Profile generate-mystical API', () => {
 
       expect(res.status).toBe(200);
       expect(data.inProgress).toBe(false);
-      expect(data.partialReady).toBe(true);
-      expect(data.completed).toBe(false);
-      expect(data.generationState).toBe('partial_ready');
+      expect(data.partialReady).toBe(false);
+      expect(data.completed).toBe(true);
+      expect(data.generationState).toBe('completed');
       expect(data.readyToolsCount).toBeGreaterThan(0);
     });
 
@@ -553,9 +567,8 @@ describe('Profile generate-mystical API', () => {
       expect(data.pendingToolSlugs).not.toContain('vastu');
     });
 
-    it('recovers stale running lock and returns partial_ready without endless inProgress', async () => {
-      // Must exceed route `mysticalLockStaleMs` (= maxDuration 600s + 120s grace) so lock is treated stale.
-      const staleTs = Date.now() - (600_000 + 120_000 + 60_000);
+    it('recovers stale running lock and returns completed without endless inProgress', async () => {
+      const staleTs = Date.now() - (180_000 + 60_000);
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') {
           return Promise.resolve({
@@ -587,8 +600,8 @@ describe('Profile generate-mystical API', () => {
 
       expect(res.status).toBe(200);
       expect(data.inProgress).toBe(false);
-      expect(data.partialReady).toBe(true);
-      expect(data.generationState).toBe('partial_ready');
+      expect(data.partialReady).toBe(false);
+      expect(data.generationState).toBe('completed');
       expect(data.lockStaleRecovered).toBe(true);
       expect(mockSetDocument).toHaveBeenCalledWith(
         'generationLocks',
@@ -600,7 +613,7 @@ describe('Profile generate-mystical API', () => {
       );
     });
 
-    it('resumes queued stageB job from status polling', async () => {
+    it('does not resume a queued Stage B job from status polling', async () => {
       const profileSnapshot = {
         ...baseProfile,
         uid,
@@ -628,7 +641,8 @@ describe('Profile generate-mystical API', () => {
 
       expect(res.status).toBe(200);
       expect(data.generationJobStatus).toBe('queued');
-      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
+      expect(data.resumeAttempted).toBe(false);
+      expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
     });
 
     it('returns current tool slug and queue position for live progress UI', async () => {
@@ -664,7 +678,7 @@ describe('Profile generate-mystical API', () => {
       });
     });
 
-    it('marks running job with stale heartbeat recoverable and attempts resume', async () => {
+    it('does not treat a stale heartbeat as a catalog job to resume', async () => {
       const staleHeartbeat = Date.now() - 60_000;
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
@@ -692,18 +706,10 @@ describe('Profile generate-mystical API', () => {
       const data = await res.json();
       expect(res.status).toBe(200);
       expect(data.inProgress).toBe(false);
-      expect(data.resumeAttempted).toBe(true);
+      expect(data.resumeAttempted).toBe(false);
       expect(data.lastHeartbeatAt).toBe(staleHeartbeat);
       expect(data.currentToolElapsedMs).toBe(92000);
-      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
-      expect(mockSetDocument).toHaveBeenCalledWith(
-        'generationJobs',
-        uid,
-        expect.objectContaining({
-          status: 'stale_running',
-          phase: 'stale_heartbeat',
-        }),
-      );
+      expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
     });
 
     it('reconciles user allReportsReady false when profile shows all tools ready', async () => {
@@ -757,9 +763,9 @@ describe('Profile generate-mystical API', () => {
       const res = await callGenerate();
       const data = await res.json();
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.generationState).toBe('running');
+      expect(data.generationState).toBe('completed');
     });
 
     it('preserves zero-value coordinates in overrides (0 is valid)', async () => {
@@ -786,8 +792,9 @@ describe('Profile generate-mystical API', () => {
       });
 
       const res = await POST(req);
-      expect(res.status).toBe(202);
-      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
+      expect(res.status).toBe(200);
+      expect(mockGenerateAndPersistToolReports).toHaveBeenCalled();
+      expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
     });
   });
 });

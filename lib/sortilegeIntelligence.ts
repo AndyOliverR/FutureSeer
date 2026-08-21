@@ -11,6 +11,7 @@ import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore'
 import { UserProfile } from './firebase'
 import { callTextAI } from './aiStructuredOutput'
 import { getAllDivinationData } from './universalDataAggregator'
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 
 export type CastingMethod = 'dice' | 'stones' | 'cards' | 'coins' | 'sticks'
@@ -693,7 +694,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
 
       const result = await callTextAI({
         label: 'sortilege-comprehensive',
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_DEFAULT_TEXT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

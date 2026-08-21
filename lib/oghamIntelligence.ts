@@ -17,6 +17,7 @@ import {
   OghamReport
 } from './ogham/oghamReportGenerator'
 import { isProfileComplete } from './firebase'
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 
 class OghamIntelligence {
@@ -228,7 +229,7 @@ Practices:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_DEFAULT_TEXT_MODEL,
         temperature: 0.7,
         maxTokens: 2000,
         maxAttempts: 2,

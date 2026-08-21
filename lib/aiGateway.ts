@@ -14,6 +14,7 @@ import {
   recordAiCircuitFailure,
   recordAiCircuitSuccess,
 } from '@/lib/aiCircuitBreakerControl';
+import { aliasDeprecatedGroqModel, isGroqHostedGptOss, toAiGatewayModelId } from '@/lib/groqModels';
 import { devLog } from '@/lib/devLogger';
 import Groq from 'groq-sdk';
 import OpenAI from 'openai';
@@ -82,38 +83,31 @@ async function withRetry<T>(fn: () => Promise<T>, label = 'AI call'): Promise<T>
   throw lastError;
 }
 
-// Map model names to AI Gateway format (provider/model)
-const mapModelToGateway = (model: string): string => {
-  // If already in provider/model format, return as-is
-  if (model.includes('/')) {
-    return `groq/${model}`;
-  }
-  
-  // Map common models
-  if (model === 'llama-3.3-70b-versatile') {
-    return 'groq/llama-3.3-70b-versatile';
-  }
-  if (model === 'llama-3.1-8b-instant') {
-    return 'groq/llama-3.1-8b-instant';
-  }
-  if (model === 'gpt-4' || model === 'gpt-4o' || model === 'gpt-4-turbo') {
-    return `openai/${model}`;
-  }
-  if (model === 'gpt-4o-mini') {
-    return 'openai/gpt-4o-mini';
-  }
-  
-  // Default: assume Groq for unknown models
-  return `groq/${model}`;
-};
+function mapModelToGateway(model: string): string {
+  return toAiGatewayModelId(model);
+}
 
-// Map model back to provider SDK format
-const getProviderFromModel = (model: string): 'groq' | 'openai' => {
-  if (model.startsWith('openai/') || model === 'gpt-4' || model === 'gpt-4o' || model === 'gpt-4-turbo' || model === 'gpt-4o-mini') {
+function getProviderFromModel(model: string): 'groq' | 'openai' {
+  const aliased = aliasDeprecatedGroqModel(model);
+  if (isGroqHostedGptOss(aliased)) return 'groq';
+  if (aliased.startsWith('qwen/') || aliased.startsWith('meta-llama/') || aliased.startsWith('groq/')) {
+    return 'groq';
+  }
+  if (aliased.startsWith('openai/') || aliased === 'gpt-4' || aliased === 'gpt-4o' || aliased === 'gpt-4-turbo' || aliased === 'gpt-4o-mini') {
     return 'openai';
   }
   return 'groq';
-};
+}
+
+/** Groq SDK wants vendor IDs (openai/gpt-oss-120b, qwen/...). Strip only groq/. */
+function toDirectSdkModelName(model: string, provider: 'groq' | 'openai'): string {
+  let modelName = aliasDeprecatedGroqModel(model);
+  if (modelName.startsWith('groq/')) modelName = modelName.slice(5);
+  if (provider === 'openai' && modelName.startsWith('openai/')) {
+    return modelName.slice(7);
+  }
+  return modelName;
+}
 
 export interface AIStreamOptions {
   model: string;
@@ -188,16 +182,9 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
   }
 
   // Fallback to direct SDK
-  const provider = getProviderFromModel(options.model);
-  
-  // Extract model name: strip provider prefixes (groq/, openai/) but keep vendor prefixes (meta-llama/)
-  let modelName = options.model;
-  if (options.model.startsWith('groq/')) {
-    modelName = options.model.substring(5); // Remove "groq/" prefix
-  } else if (options.model.startsWith('openai/')) {
-    modelName = options.model.substring(7); // Remove "openai/" prefix
-  }
-  // Keep meta-llama/ and other vendor prefixes intact
+  const resolvedModel = aliasDeprecatedGroqModel(options.model);
+  const provider = getProviderFromModel(resolvedModel);
+  const modelName = toDirectSdkModelName(resolvedModel, provider);
 
   if (provider === 'groq') {
     if (!process.env.GROQ_API_KEY) {
@@ -311,16 +298,9 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
 
   // Fallback to direct SDK
   try {
-  const provider = getProviderFromModel(options.model);
-  
-  // Extract model name: strip provider prefixes (groq/, openai/) but keep vendor prefixes (meta-llama/)
-  let modelName = options.model;
-  if (options.model.startsWith('groq/')) {
-    modelName = options.model.substring(5); // Remove "groq/" prefix
-  } else if (options.model.startsWith('openai/')) {
-    modelName = options.model.substring(7); // Remove "openai/" prefix
-  }
-  // Keep meta-llama/ and other vendor prefixes intact
+  const resolvedModel = aliasDeprecatedGroqModel(options.model);
+  const provider = getProviderFromModel(resolvedModel);
+  const modelName = toDirectSdkModelName(resolvedModel, provider);
 
   if (provider === 'groq') {
     if (!process.env.GROQ_API_KEY) {

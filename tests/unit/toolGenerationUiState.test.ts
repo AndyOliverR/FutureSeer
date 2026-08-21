@@ -19,10 +19,10 @@ describe('tools generation UI state', () => {
     expect(toolSlugForPath('hellenistic-astrology', byPath)).toBe('hellenistic');
   });
 
-  it('treats only pending or running reports as active generation', () => {
-    expect(isReportGenerationActive('pending')).toBe(true);
+  it('treats only running reports as active generation', () => {
+    expect(isReportGenerationActive('pending')).toBe(false);
     expect(isReportGenerationActive('running')).toBe(true);
-    expect(isReportGenerationActive(undefined)).toBe(true);
+    expect(isReportGenerationActive(undefined)).toBe(false);
     expect(isReportGenerationActive('ready')).toBe(false);
     expect(isReportGenerationActive('failed')).toBe(false);
     expect(isReportGenerationActive('placeholder')).toBe(false);

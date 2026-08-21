@@ -10,6 +10,7 @@ import { universalOccultService, BirthData } from '@/lib/universalOccultService'
 import { computeNatalWealthProfile } from '@/lib/financialAstrology/natalWealthEngine';
 import { computeMarketCycleProfile } from '@/lib/financialAstrology/marketCycleEngine';
 import { computeAlignment } from '@/lib/financialAstrology/integrationEngine';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   buildFinancialReportSystemPrompt,
   getFinancialDisclaimer,
@@ -233,7 +234,7 @@ export async function POST(request: NextRequest) {
       tryLlm: async () => {
         const structured = await callStructuredAI({
           label: 'financial-comprehensive',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           userId,
           messages: [
             {

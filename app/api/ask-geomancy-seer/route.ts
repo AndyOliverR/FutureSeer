@@ -8,6 +8,7 @@ import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import { buildGeomancySeerSystemPrompt } from '@/lib/geomancySeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   buildGeomancyState,
   classifyGeomancyQuestion,
@@ -208,7 +209,7 @@ export async function POST(request: NextRequest) {
 
             const { stream } = await callTextStream({
               label: 'ask-geomancy-seer',
-              model: 'llama-3.3-70b-versatile',
+              model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
               messages,

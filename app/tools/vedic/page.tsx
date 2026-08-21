@@ -41,6 +41,7 @@ import {
 import type { AdditionalProfile } from "@/lib/types/profileTypes";
 import { extractPersistedCareerAnalysis } from "@/lib/vedic/vedicCareerReport";
 import { extractPersistedRelationshipAnalysis } from "@/lib/vedic/vedicRelationshipReport";
+import { parseGrahaName } from "@/lib/vedic/planetaryGuidance";
 import { DevotionistStyleCard } from "@/components/western/DevotionistStyleCard";
 import { ToolReportStatusChips } from "@/components/tool-status/ToolReportStatusChips";
 import {
@@ -112,14 +113,26 @@ function VedicAstrologyPageContent() {
   const { report: vedicToolReport, reportUpdatedAt, reportGeneratedAt, reportUnchanged } = useToolReport("vedic");
   const [activeTab, setActiveTab] = useState('introduction');
   const [seerFocusLens, setSeerFocusLens] = useState<VedicSeerFocusLens | null>(null);
+  const [planetFocus, setPlanetFocus] = useState<string | null>(null);
   const [relationshipPartner, setRelationshipPartner] = useState<AdditionalProfile | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
+    const planet = searchParams.get('planet');
+    const graha = parseGrahaName(planet);
     if (tab && VEDIC_TAB_VALUES.has(tab)) {
       setActiveTab(tab);
       if (tab === 'career') setSeerFocusLens('career');
       else if (tab === 'relationships') setSeerFocusLens('relationships');
+      else if ((tab === 'remedies' || tab === 'ask-the-seer') && graha) {
+        setSeerFocusLens('remedies');
+      }
+    }
+    if (graha) {
+      setPlanetFocus(graha);
+      if (!tab || tab === 'ask-the-seer' || tab === 'remedies') {
+        setSeerFocusLens('remedies');
+      }
     }
   }, [searchParams]);
   const freshnessLabel = useMemo(() => {
@@ -623,6 +636,7 @@ function VedicAstrologyPageContent() {
                     userProfile={userProfile}
                     vedicChartData={vedicProfileData ?? undefined}
                     focusLens={seerFocusLens}
+                    planetFocus={planetFocus}
                   />
                 </div>
               ) : (

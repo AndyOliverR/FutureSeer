@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from 'react'
+import { PlanetaryGuidanceExperience } from '@/components/remedies/PlanetaryGuidanceExperience'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,6 +38,7 @@ export default function RemediesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedElement, setSelectedElement] = useState('all')
   const [selectedPlanet, setSelectedPlanet] = useState('all')
+  const [pageMode, setPageMode] = useState<'for-you' | 'library'>('for-you')
   const isMobileLayout = useIsMobileLayout()
 
   const categories = [
@@ -65,7 +67,9 @@ export default function RemediesPage() {
     { id: 'mercury', name: 'Mercury' },
     { id: 'jupiter', name: 'Jupiter' },
     { id: 'venus', name: 'Venus' },
-    { id: 'saturn', name: 'Saturn' }
+    { id: 'saturn', name: 'Saturn' },
+    { id: 'rahu', name: 'Rahu' },
+    { id: 'ketu', name: 'Ketu' }
   ]
 
   const q = searchTerm.trim().toLowerCase()
@@ -87,6 +91,53 @@ export default function RemediesPage() {
   const cardTitleClass = isMobileLayout ? 'text-xl font-bold text-amber-400' : 'text-xl capitalize text-amber-400'
   const textMuted = isMobileLayout ? 'text-surface-on-variant' : 'text-white/80'
   const badgeOutline = isMobileLayout ? 'border-outline-variant text-surface-on-variant' : 'text-gray-300 border-gray-600'
+
+  const modeToggle = (
+    <div
+      className={
+        isMobileLayout
+          ? 'grid grid-cols-2 gap-1 rounded-2xl bg-surface-container-low p-1'
+          : 'mx-auto mb-10 flex max-w-md gap-2 rounded-full border border-amber-500/30 bg-slate-950/40 p-1'
+      }
+      role="tablist"
+      aria-label="Remedies modes"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={pageMode === 'for-you'}
+        onClick={() => setPageMode('for-you')}
+        className={
+          isMobileLayout
+            ? pageMode === 'for-you'
+              ? 'h-11 rounded-xl bg-primary text-sm font-medium text-primary-foreground'
+              : 'h-11 rounded-xl text-sm font-medium text-surface-on'
+            : pageMode === 'for-you'
+              ? 'flex-1 rounded-full bg-amber-500/25 px-4 py-2 font-heading text-xs uppercase tracking-[0.16em] text-amber-100'
+              : 'flex-1 rounded-full px-4 py-2 font-heading text-xs uppercase tracking-[0.16em] text-white/70'
+        }
+      >
+        For You
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={pageMode === 'library'}
+        onClick={() => setPageMode('library')}
+        className={
+          isMobileLayout
+            ? pageMode === 'library'
+              ? 'h-11 rounded-xl bg-primary text-sm font-medium text-primary-foreground'
+              : 'h-11 rounded-xl text-sm font-medium text-surface-on'
+            : pageMode === 'library'
+              ? 'flex-1 rounded-full bg-amber-500/25 px-4 py-2 font-heading text-xs uppercase tracking-[0.16em] text-amber-100'
+              : 'flex-1 rounded-full px-4 py-2 font-heading text-xs uppercase tracking-[0.16em] text-white/70'
+        }
+      >
+        Remedy Library
+      </button>
+    </div>
+  )
 
   const emptyState = (
     <Card className={cardBase}>
@@ -440,22 +491,32 @@ export default function RemediesPage() {
             </div>
           </div>
           <p className="text-sm text-surface-on-variant">
-            Gemstones, mantras, mudras, colors & numerology.
+            Chart-grounded Navagraha guidance, plus the searchable remedy library.
           </p>
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-on-variant opacity-50" />
-            <input
-              type="text"
-              placeholder="Search remedies..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-11 bg-surface-container-high rounded-2xl border border-outline-variant text-surface-on text-sm"
-            />
-          </div>
+          {modeToggle}
         </div>
 
+        {pageMode === 'for-you' ? (
+          <div className="px-4 pb-6">
+            <PlanetaryGuidanceExperience />
+          </div>
+        ) : (
+          <>
+          <div className="px-4">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-on-variant opacity-50" />
+              <input
+                type="text"
+                placeholder="Search remedies..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-12 pl-11 bg-surface-container-high rounded-2xl border border-outline-variant text-surface-on text-sm"
+              />
+            </div>
+          </div>
+
         <Tabs defaultValue="gemstones" className="flex-1 px-4 pb-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto bg-surface-container-low p-1 rounded-2xl gap-1 mb-8">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto bg-surface-container-low p-1 rounded-2xl gap-1 mb-8 mt-4">
             <TabsTrigger value="gemstones" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl text-sm font-medium">
               <Gem className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Gemstones</span>
@@ -502,7 +563,7 @@ export default function RemediesPage() {
                 For personalized recommendations, use Ask the Seer with your profile.
               </p>
               <Button
-                onClick={() => window.location.href = '/ask-the-seer'}
+                onClick={() => setPageMode('for-you')}
                 className="w-full bg-primary text-primary-foreground rounded-xl"
               >
                 Get Personalized Remedies
@@ -510,6 +571,8 @@ export default function RemediesPage() {
             </CardContent>
           </Card>
         </div>
+          </>
+        )}
       </div>
     )
   }
@@ -519,16 +582,20 @@ export default function RemediesPage() {
     <div className="starfield-ultra-sharp min-h-screen py-12 px-4 overflow-hidden">
       <div className="max-w-7xl mx-auto pt-20">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Mystical <span className="text-amber-400">Remedies</span> Database
+            Work With Your <span className="text-amber-400">Planets</span>
           </h1>
           <p className="text-xl text-white/80 mb-8 max-w-4xl mx-auto">
-            Explore our comprehensive collection of ancient remedies, gemstones, mantras, mudras, and mystical practices. 
-            Each remedy is designed to address specific life challenges and enhance your spiritual journey.
+            Chart-grounded Navagraha guidance from your Vedic report, plus the searchable traditional remedy library.
           </p>
+          {modeToggle}
         </div>
 
+        {pageMode === 'for-you' ? (
+          <PlanetaryGuidanceExperience />
+        ) : (
+          <>
         {/* Search and Filters - full width to match other containers */}
         <div className="mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-4 w-full">
@@ -656,7 +723,7 @@ export default function RemediesPage() {
                 astrological and numerological profile.
               </p>
               <Button 
-                onClick={() => window.location.href = '/ask-the-seer'}
+                onClick={() => setPageMode('for-you')}
                 className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
               >
                 Get Personalized Remedies
@@ -664,6 +731,8 @@ export default function RemediesPage() {
             </CardContent>
           </Card>
         </div>
+          </>
+        )}
       </div>
     </div>
   )

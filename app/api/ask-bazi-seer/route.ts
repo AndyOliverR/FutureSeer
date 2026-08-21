@@ -4,7 +4,8 @@ import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { callTextStream } from '@/lib/aiStructuredOutput';
 import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
-import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder'
+import { historyFromSeerBody } from '@/lib/seerChatVoice';
 import {
   buildBaziChartState,
   classifyBaziQuestion,
@@ -12,6 +13,7 @@ import {
 } from '@/lib/baziSeerState';
 import type { BaziReading } from '@/lib/baziIntelligence';
 import { buildBaziSeerSystemPrompt } from '@/lib/baziSeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-bazi-seer';
@@ -125,9 +127,10 @@ export async function POST(request: NextRequest) {
     const { messages } = buildToolSeerMessages({
       systemContent: buildBaziSeerSystemPrompt(chartSlice, questionType),
       userMessage: question.trim(),
+      history: historyFromSeerBody(body),
     });
 
-    const { stream } = await callTextStream({ label: 'ask-bazi-seer', model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'ask-bazi-seer', model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,

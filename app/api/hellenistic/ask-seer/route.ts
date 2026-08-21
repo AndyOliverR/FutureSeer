@@ -10,6 +10,9 @@ import {
   type HellenisticQuestionType,
 } from '@/lib/hellenisticSeerState';
 import { buildHellenisticSeerSystemPrompt } from '@/lib/hellenisticSeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
+import { historyFromSeerBody } from '@/lib/seerChatVoice';
 
 interface HellenisticSeerRequest {
   userId: string;
@@ -71,16 +74,16 @@ export async function POST(request: NextRequest) {
     const state = buildHellenisticState(hellenisticContext);
     const chartSlice = getHellenisticSliceForQuestionType(questionType, state);
 
-    const { stream } = await callTextStream({ label: 'hellenistic-ask-seer', model: 'llama-3.3-70b-versatile',
+    const { messages } = buildToolSeerMessages({
+      systemContent: buildHellenisticSeerSystemPrompt(chartSlice, questionType),
+      userMessage: question.trim(),
+      history: historyFromSeerBody(body),
+    });
+
+    const { stream } = await callTextStream({ label: 'hellenistic-ask-seer', model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
-      messages: [
-        {
-          role: 'system',
-          content: buildHellenisticSeerSystemPrompt(chartSlice, questionType),
-        },
-        { role: 'user', content: question.trim() },
-      ],
+      messages,
       temperature: 0.7,
       maxTokens: 1000,
     });

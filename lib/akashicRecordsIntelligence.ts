@@ -11,6 +11,7 @@ import { userSubdocGet, userSubdocSet, userSubcollectionQueryOrdered } from '@/l
 import { UserProfile } from './firebase'
 import { callTextAI } from './aiStructuredOutput'
 import { REPORT_VOICE_RULE } from './reportVoiceRule'
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 
 export interface PastLife {
@@ -386,7 +387,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
 
       const result = await callTextAI({
         label: 'akashic-records-reading',
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_DEFAULT_TEXT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
