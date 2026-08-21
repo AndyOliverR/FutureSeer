@@ -1159,18 +1159,13 @@ async function runTool(
 
       case 'ogham': {
         try {
-          const res = await fetch(`${baseUrl}/api/tools/ogham/generate-report`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, userProfile: profile }),
-          });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error((err as { error?: string })?.error ?? `Ogham API: ${res.status}`);
-          }
-          const json = await res.json();
-          const data = json.data ?? json;
-          return { status: 'success', data: (data as Record<string, unknown>) ?? {}, generatedAt, _usage: json._usage ?? json.usage };
+          const { oghamIntelligence } = await import('@/lib/oghamIntelligence');
+          const report = await oghamIntelligence.generateReading(userId, profile);
+          return {
+            status: 'success',
+            data: { report, generatedAt } as unknown as Record<string, unknown>,
+            generatedAt,
+          };
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           devLog.warn('[ProfileOrchestrator] Ogham failed:', msg, 'profileGenerationOrchestrator');
