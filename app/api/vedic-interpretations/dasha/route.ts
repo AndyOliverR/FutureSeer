@@ -1,25 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
+import { authorizeVedicInterpretationRequest } from '@/lib/vedicInterpretationsRouteGuard';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 
-export async function POST(request: NextRequest) {
+async function handleDasha(request: NextRequest) {
   try {
-    const { dashaData, chartData, userId } = await request.json();
-    
-    if (!userId || !chartData || !dashaData) {
+    const gate = await authorizeVedicInterpretationRequest(request, 'vedic-interpretations-dasha');
+    if (!gate.ok) return gate.response;
+
+    const { dashaData, chartData } = gate.body;
+    const userId = gate.userId;
+
+    if (!chartData || !dashaData) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     const enhancer = new VedicInterpretationEnhancer();
     const interpretation = await enhancer.generateDashaInterpretation(
       dashaData,
       chartData,
       userId
     );
-    
+
     return NextResponse.json({ interpretation });
   } catch (error) {
     devLog.error('Dasha interpretation error:', error, 'route');
@@ -29,3 +35,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(handleDasha, rateLimiters.ai, 'vedic_interpretations_dasha_post');

@@ -2,19 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
 import { getUserProfile } from '@/lib/firebase';
+import { authorizeVedicInterpretationRequest } from '@/lib/vedicInterpretationsRouteGuard';
+import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 
-export async function POST(request: NextRequest) {
+async function handleDivisional(request: NextRequest) {
   try {
-    const { chartType, chartData, userId } = await request.json();
-    
-    if (!chartType || !chartData || !userId) {
+    const gate = await authorizeVedicInterpretationRequest(request, 'vedic-interpretations-divisional');
+    if (!gate.ok) return gate.response;
+
+    const { chartType, chartData } = gate.body;
+    const userId = gate.userId;
+
+    if (!chartType || !chartData) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
-    
-    // Fetch user profile to get displayName/firstName
+
+    // Owned userId only — never load another user's profile for personalization.
     let userName: string | undefined;
     try {
       const userProfile = await getUserProfile(userId);
@@ -23,12 +29,11 @@ export async function POST(request: NextRequest) {
       devLog.warn('Could not fetch user profile for personalization:', error, 'route');
       // Continue without userName - will use "you" instead
     }
-    
+
     const enhancer = new VedicInterpretationEnhancer();
-    
-    // Generate interpretations based on chart type
-    let interpretations: any = {};
-    
+
+    let interpretations: Record<string, string> = {};
+
     if (chartType === 'D9') {
       interpretations = {
         marriageIndicators: await enhancer.generateDivisionalInsight(
@@ -54,7 +59,7 @@ export async function POST(request: NextRequest) {
         )
       };
     }
-    
+
     return NextResponse.json({ interpretations });
   } catch (error) {
     devLog.error('Error generating divisional interpretations:', error, 'route');
@@ -64,3 +69,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(handleDivisional, rateLimiters.ai, 'vedic_interpretations_divisional_post');
