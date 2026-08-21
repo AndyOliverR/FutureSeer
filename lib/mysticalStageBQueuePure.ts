@@ -1,4 +1,4 @@
-import { ALL_TOOL_SLUGS, classifyToolReportState } from '@/lib/profileGenerationOrchestrator';
+import { ALL_TOOL_SLUGS, classifyToolReportState } from '@/lib/toolReportReadiness';
 
 export type ToolQueueTaskStatus = 'pending' | 'running' | 'ready' | 'failed' | 'skipped';
 

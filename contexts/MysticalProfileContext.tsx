@@ -13,7 +13,7 @@ import {
   clearPersistentProfileCache,
   computeComprehensiveProfileVersionHash
 } from '@/lib/comprehensiveProfileCache'
-import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator'
+import { ALL_TOOL_SLUGS } from '@/lib/toolReportReadiness'
 import {
   isUsableStoredReport,
   resolveToolReportFromProfile,

@@ -91,7 +91,8 @@
       "ws": "^8.20.1",
       "websocket-driver": "^0.7.5",
       "@tootallnate/once": "^3.0.1",
-      "@isaacs/brace-expansion": "^5.0.1"
+      "@isaacs/brace-expansion": "^5.0.1",
+      "nanoid": "^3.3.18"
     }
   },
   "dependencies": {
@@ -191,7 +192,7 @@
     "baseline-browser-mapping": "^2.9.19",
     "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
-    "electron": "^39.8.10",
+    "electron": "^43.4.1",
     "eslint": "^9.33.0",
     "eslint-config-next": "16.2.11",
     "eslint-plugin-security": "^4.0.0",
