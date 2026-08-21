@@ -63,3 +63,7 @@ Be respectful. No harassment, no hate, no doxxing. Security issues go through [S
 ## License
 
 By contributing, you agree your contributions are licensed under the MIT License (see [LICENSE](LICENSE)).
+
+## Support / Sponsors
+
+Optional funding (GitHub Sponsors, Credits) is documented in [SUPPORT.md](SUPPORT.md). Code contributions follow this file; they are not required to sponsor.
