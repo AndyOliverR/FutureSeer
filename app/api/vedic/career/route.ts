@@ -28,7 +28,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
   if (!authorized.ok) return authorized.response;
 
   try {
-    const body = authorized.body as CareerRequest;
+    const body = authorized.body as unknown as CareerRequest;
     const userId = authorized.userId;
     const { vedicChartData, userProfile } = body;
 

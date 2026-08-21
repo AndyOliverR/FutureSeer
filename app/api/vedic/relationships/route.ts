@@ -30,7 +30,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
   if (!authorized.ok) return authorized.response;
 
   try {
-    const body = authorized.body as RelationshipsRequest;
+    const body = authorized.body as unknown as RelationshipsRequest;
     const userId = authorized.userId;
     const { vedicChartData, userProfile, partner } = body;
 
