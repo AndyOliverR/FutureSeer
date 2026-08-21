@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { devLog } from '@/lib/devLogger';
 import { createOrder } from '@/lib/razorpay';
 import {
@@ -7,8 +6,10 @@ import {
   getCreditPackOffer,
   getCreditPackPrice,
 } from '@/lib/billingConfig';
+import { resolveTrustedBillingCountryCode } from '@/lib/billingCountry';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import type { CreditPackId } from '@/lib/billingTypes';
+import { getDocument, isAdminAvailable } from '@/lib/firebase-admin';
 import { verifyUserRequest } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-dynamic';
@@ -28,11 +29,28 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const packId = typeof body.packId === 'string' ? body.packId.trim() : '';
-    const countryCode = typeof body.countryCode === 'string' ? body.countryCode.trim() : 'IN';
+    const requestedCountry =
+      typeof body.countryCode === 'string' ? body.countryCode.trim() : undefined;
 
     if (!PACK_IDS.includes(packId as CreditPackId)) {
       return NextResponse.json({ error: 'Invalid packId' }, { status: 400 });
     }
+
+    let profileCountry: unknown;
+    if (isAdminAvailable()) {
+      try {
+        const profileData = await getDocument('users', auth.uid);
+        if (profileData && typeof profileData === 'object') {
+          profileCountry = (profileData as Record<string, unknown>).country;
+        }
+      } catch (err) {
+        devLog.warn('[credits-create-order] Could not load profile country', err, 'route');
+      }
+    }
+    const countryCode = resolveTrustedBillingCountryCode({
+      profileCountry,
+      requestedCountry,
+    });
 
     const offer = getCreditPackOffer(countryCode, packId as CreditPackId);
     const price = getCreditPackPrice(countryCode, packId as CreditPackId);
@@ -51,6 +69,7 @@ export async function POST(request: NextRequest) {
         userId: auth.uid,
         packId,
         credits: String(offer.credits),
+        countryCode,
       },
     });
 
