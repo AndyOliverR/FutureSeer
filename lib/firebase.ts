@@ -1095,6 +1095,9 @@ export const calculateProfileDataHash = (profile: Partial<UserProfile>): string 
     birthDate: profile.birthDate,
     birthTime: profile.birthTime,
     birthPlace: profile.birthPlace,
+    // Coordinates affect chart houses/ascendant; omitting them skipped regen when only lat/lng changed.
+    birthLatitude: profile.birthLatitude ?? profile.latitude,
+    birthLongitude: profile.birthLongitude ?? profile.longitude,
     currentLocation: profile.currentLocation,
     gender: profile.gender,
     fullName: profile.fullName,

@@ -19,6 +19,10 @@ import {
   resolveToolReportFromProfile,
 } from '@/lib/mysticalProfilePositiveSnippet'
 import { shouldSubscribeMysticalProfile } from '@/lib/mysticalProfileRouteGate'
+import {
+  getComprehensiveProfileFreshnessMs,
+  shouldApplyComprehensiveProfileUpdate,
+} from '@/lib/comprehensiveProfileFreshness'
 
 export interface ComprehensiveMysticalProfile {
   vedic: {
@@ -153,7 +157,8 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const userProfileRef = useRef(userProfile)
   userProfileRef.current = userProfile
-  const lastAppliedGeneratedAtRef = useRef<string | null>(null)
+  /** Max applied freshness (generatedAt / lastProgressAt / toolStatus), not only metadata.generatedAt. */
+  const lastAppliedFreshnessMsRef = useRef<number | null>(null)
   const profileUserIdRef = useRef<string | null>(null)
   const noProfileLoggedForUserRef = useRef<string | null>(null)
   const lastWarnAtRef = useRef<Record<string, number>>({})
@@ -176,6 +181,10 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     console.warn(message)
   }, [])
 
+  const resetFreshnessMarker = useCallback(() => {
+    lastAppliedFreshnessMsRef.current = null
+  }, [])
+
   const applyFirestoreProfile = useCallback((userId: string, data: ComprehensiveMysticalProfile | null) => {
     // Always apply incoming server data so that real-time updates (e.g. after generate-mystical)
     // are shown immediately. isReportsStale is used for cache and UI only; do not discard
@@ -183,8 +192,8 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     // (profileDataHash) has refreshed and the report would never appear.
     profileUserIdRef.current = userId
     if (data) {
-      const at = data.metadata?.generatedAt
-      if (at) lastAppliedGeneratedAtRef.current = at
+      const freshnessMs = getComprehensiveProfileFreshnessMs(data)
+      if (freshnessMs > 0) lastAppliedFreshnessMsRef.current = freshnessMs
       const version = computeComprehensiveProfileVersionHash(data)
       setProfile(data)
       profileCache.set(userId, { data, timestamp: Date.now() })
@@ -209,9 +218,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
             profileCache.delete(userId)
             clearPersistentProfileCache(userId)
           } else if (profileHasUsableReports(cached.data)) {
-            const incomingAt = cached.data.metadata?.generatedAt
-            const lastAt = lastAppliedGeneratedAtRef.current
-            if (!(incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime())) {
+            if (shouldApplyComprehensiveProfileUpdate(cached.data, lastAppliedFreshnessMsRef.current)) {
               setProfile(cached.data)
             }
             if (!background) setLoading(false)
@@ -267,9 +274,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
 
       if (profileSnap.exists()) {
         const data = profileSnap.data() as ComprehensiveMysticalProfile
-        const incomingAt = data.metadata?.generatedAt
-        const lastAt = lastAppliedGeneratedAtRef.current
-        if (incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime()) {
+        if (!shouldApplyComprehensiveProfileUpdate(data, lastAppliedFreshnessMsRef.current)) {
           if (!background) setLoading(false)
           return
         }
@@ -367,9 +372,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
           }
           if (cacheSnap?.exists()) {
             const data = cacheSnap.data() as ComprehensiveMysticalProfile
-            const incomingAt = data.metadata?.generatedAt
-            const lastAt = lastAppliedGeneratedAtRef.current
-            if (!(incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime())) {
+            if (shouldApplyComprehensiveProfileUpdate(data, lastAppliedFreshnessMsRef.current)) {
               applyFirestoreProfile(userId, data)
             }
             setError(null)
@@ -407,12 +410,14 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       setLoading(false)
       setProfile(null)
       profileUserIdRef.current = null
+      resetFreshnessMarker()
       return
     }
     if (!user?.uid) {
       setLoading(false)
       setProfile(null)
       profileUserIdRef.current = null
+      resetFreshnessMarker()
       return
     }
 
@@ -424,6 +429,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       setProfile(null)
       setLoading(true)
       profileCache.delete(profileUserIdRef.current)
+      resetFreshnessMarker()
     }
     profileUserIdRef.current = uid
 
@@ -463,9 +469,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
           }
           if (snapshot.exists()) {
             const data = snapshot.data() as ComprehensiveMysticalProfile
-            const incomingAt = data.metadata?.generatedAt
-            const lastAt = lastAppliedGeneratedAtRef.current
-            if (incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime()) {
+            if (!shouldApplyComprehensiveProfileUpdate(data, lastAppliedFreshnessMsRef.current)) {
               return
             }
             applyFirestoreProfile(uid, data)
@@ -501,7 +505,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         }
       }
     }
-  }, [user?.uid, userProfile, stale, fetchProfile, applyFirestoreProfile, pathname])
+  }, [user?.uid, userProfile, stale, fetchProfile, applyFirestoreProfile, pathname, resetFreshnessMarker])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !user?.uid) return
@@ -528,11 +532,12 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       if (detail?.userId !== user.uid) return
       clearComprehensiveMysticalProfileCache(user.uid)
       clearPersistentProfileCache(user.uid)
+      resetFreshnessMarker()
       setProfile(null)
     }
     window.addEventListener('futureSeer:profileInvalidated', handler)
     return () => window.removeEventListener('futureSeer:profileInvalidated', handler)
-  }, [user?.uid])
+  }, [user?.uid, resetFreshnessMarker])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
