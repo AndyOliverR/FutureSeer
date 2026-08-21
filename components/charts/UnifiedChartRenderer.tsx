@@ -5,6 +5,7 @@ import { adaptVedicToUnified, adaptWesternToUnified } from '@/lib/charts/adapter
 import { isGroqChartExperimentEnabled } from '@/lib/charts/featureFlags';
 import { applyGroqStyleVariant, validateGeometryIntegrity } from '@/lib/charts/groqVisualExperiments';
 import { getChartTokens, getChartVisualSpec } from '@/lib/charts/visualTokens';
+import { CHART_SVG_FONT_FAMILY } from '@/lib/charts/svgTypography';
 import type { UnifiedChartData } from '@/lib/charts/schema';
 
 const ZODIAC_SYMBOLS = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
@@ -30,7 +31,7 @@ function WesternWheel({ chart }: { chart: UnifiedChartData }) {
     return { point, idx, clusterIndex, clusterSize: nearby.length };
   });
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} preserveAspectRatio="xMidYMid meet" className="w-full h-auto">
+    <svg viewBox={`0 0 ${size} ${size}`} preserveAspectRatio="xMidYMid meet" className="w-full h-auto" style={{ fontFamily: CHART_SVG_FONT_FAMILY }}>
       <rect width={size} height={size} fill={tokens.background} />
       <circle cx={center} cy={center} r={220} fill="none" stroke={tokens.ringStroke} strokeWidth={visual.ringStrokeWidth} />
       <circle cx={center} cy={center} r={165} fill="none" stroke={tokens.ringStroke} strokeWidth={visual.secondaryStrokeWidth} />
@@ -42,7 +43,7 @@ function WesternWheel({ chart }: { chart: UnifiedChartData }) {
         return (
           <g key={`z-${a}`}>
             <line x1={center} y1={center} x2={p.x} y2={p.y} stroke={tokens.ringStroke} strokeWidth={visual.secondaryStrokeWidth * 0.8} opacity="0.35" />
-            <text x={t.x} y={t.y} textAnchor="middle" dominantBaseline="middle" fontSize={visual.baseFont + 5} fill={tokens.textPrimary}>{symbol}</text>
+            <text x={t.x} y={t.y} textAnchor="middle" dominantBaseline="middle" fontSize={visual.baseFont + 5} fontFamily={CHART_SVG_FONT_FAMILY} fill={tokens.textPrimary}>{symbol}</text>
           </g>
         );
       })}
@@ -60,7 +61,7 @@ function WesternWheel({ chart }: { chart: UnifiedChartData }) {
         return (
           <g key={point.id}>
             <circle cx={p.x} cy={p.y} r={12.5} fill={tokens.background} stroke={tokens.ringStroke} strokeWidth={visual.secondaryStrokeWidth + 0.3} />
-            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fontSize={visual.pointFont + 1} fontFamily="Arial, Helvetica, sans-serif" fontWeight="700" fill={tokens.textPrimary}>{point.shortLabel ?? point.label.slice(0, 2)}</text>
+            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fontSize={visual.pointFont + 1} fontFamily={CHART_SVG_FONT_FAMILY} fontWeight="700" fill={tokens.textPrimary}>{point.shortLabel ?? point.label.slice(0, 2)}</text>
           </g>
         );
       })}
@@ -77,7 +78,7 @@ function VedicGrid({ chart, south }: { chart: UnifiedChartData; south?: boolean 
     ? { 1: { row: 2, col: 1 }, 2: { row: 3, col: 0 }, 3: { row: 2, col: 0 }, 4: { row: 1, col: 0 }, 5: { row: 0, col: 0 }, 6: { row: 0, col: 1 }, 7: { row: 0, col: 2 }, 8: { row: 0, col: 3 }, 9: { row: 1, col: 3 }, 10: { row: 2, col: 3 }, 11: { row: 3, col: 3 }, 12: { row: 3, col: 2 } }
     : { 1: { row: 0, col: 1 }, 2: { row: 0, col: 0 }, 3: { row: 1, col: 0 }, 4: { row: 2, col: 0 }, 5: { row: 3, col: 0 }, 6: { row: 3, col: 1 }, 7: { row: 3, col: 2 }, 8: { row: 3, col: 3 }, 9: { row: 2, col: 3 }, 10: { row: 1, col: 3 }, 11: { row: 0, col: 3 }, 12: { row: 0, col: 2 } };
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} preserveAspectRatio="xMidYMid meet" className="w-full h-auto">
+    <svg viewBox={`0 0 ${size} ${size}`} preserveAspectRatio="xMidYMid meet" className="w-full h-auto" style={{ fontFamily: CHART_SVG_FONT_FAMILY }}>
       <rect width={size} height={size} fill={tokens.background} />
       {Array.from({ length: 16 }, (_, i) => {
         const row = Math.floor(i / 4);
@@ -112,7 +113,7 @@ function NakshatraWheel({ chart }: { chart: UnifiedChartData }) {
   const tokens = getChartTokens('nakshatra', chart.tokens);
   const visual = getChartVisualSpec('nakshatra');
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} preserveAspectRatio="xMidYMid meet" className="w-full h-auto">
+    <svg viewBox={`0 0 ${size} ${size}`} preserveAspectRatio="xMidYMid meet" className="w-full h-auto" style={{ fontFamily: CHART_SVG_FONT_FAMILY }}>
       <rect width={size} height={size} fill={tokens.background} />
       <circle cx={center} cy={center} r={225} fill="none" stroke={tokens.ringStroke} strokeWidth={visual.ringStrokeWidth} />
       <circle cx={center} cy={center} r={170} fill="none" stroke={tokens.ringStroke} strokeWidth={visual.secondaryStrokeWidth + 0.1} />

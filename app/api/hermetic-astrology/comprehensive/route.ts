@@ -8,6 +8,7 @@ import {
 } from '@/lib/adminComprehensiveCache';
 import { buildHermeticReportSystemPrompt } from '@/lib/hermeticSeerPrompts';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   determineSect,
   calculateLotOfFortune,
@@ -248,7 +249,7 @@ export async function POST(request: NextRequest) {
       tryLlm: async () => {
         const aiRun = await runStructuredReportAI({
           label: 'hermetic-comprehensive',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           messages: [
             {
               role: 'system',

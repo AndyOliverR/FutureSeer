@@ -12,6 +12,7 @@ import {
   truncateToTokenBudget,
   type BudgetedChunk,
 } from '@/lib/aiTokenBudget';
+import { SEER_TOOL_CHAT_VOICE } from '@/lib/seerChatVoice';
 
 export type PromptSlotKind =
   | 'system'
@@ -48,6 +49,8 @@ export interface BuildSeerMessagesOptions {
   maxInputTokens?: number;
   /** Per history message cap when trimming (default 500 tokens). */
   maxHistoryMessageTokens?: number;
+  /** When true, prepend the shared conversational chat-voice contract. */
+  injectChatVoice?: boolean;
 }
 
 export interface BuildSeerMessagesResult {
@@ -110,7 +113,10 @@ export function mapQuestionAnswerHistory(
  */
 export function buildToolSeerMessages(options: BuildToolSeerMessagesOptions): BuildSeerMessagesResult {
   return buildSeerMessages({
-    slots: [{ kind: 'system', content: options.systemContent, id: 'tool-system' }],
+    slots: [
+      { kind: 'constraints', content: SEER_TOOL_CHAT_VOICE, id: 'seer-chat-voice' },
+      { kind: 'system', content: options.systemContent, id: 'tool-system' },
+    ],
     userMessage: options.userMessage,
     history: mapQuestionAnswerHistory(options.history ?? [], {
       truncateAnswers: options.truncateHistoryAnswers,
@@ -133,7 +139,18 @@ export function buildSeerMessages(options: BuildSeerMessagesOptions): BuildSeerM
   );
   const systemBudget = Math.max(512, maxInputTokens - userTokens - historyReserve);
 
-  const systemChunks: BudgetedChunk[] = options.slots
+  const slots = options.injectChatVoice
+    ? [
+        {
+          kind: 'constraints' as const,
+          content: SEER_TOOL_CHAT_VOICE,
+          id: 'seer-chat-voice',
+        },
+        ...options.slots,
+      ]
+    : options.slots;
+
+  const systemChunks: BudgetedChunk[] = slots
     .filter((s) => s.content.trim())
     .map((s, i) => ({
       id: s.id ?? `${s.kind}-${i}`,

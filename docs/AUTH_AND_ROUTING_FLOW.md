@@ -20,7 +20,6 @@ flowchart LR
     SignUp["/signup"]
     ProfileSetup["/profile-setup"]
     Profile["/profile"]
-    MysticalProfile["/mystical-profile"]
     Tools["/tools"]
     Home["/"]
   end
@@ -28,7 +27,6 @@ flowchart LR
   AuthProvider --> SignUp
   AuthProvider --> ProfileSetup
   AuthProvider --> Profile
-  AuthProvider --> MysticalProfile
   AuthProvider --> Tools
 ```
 
@@ -42,8 +40,8 @@ flowchart LR
 | Google | `getSafeAuthRedirectAfterSignIn(redirect) ?? (returning ? getReturningUserWithReportsDestination() : "/profile")` | `handleGoogleSignIn`: `isReturningUser(user)`; `router.push(destination)`. |
 | Email | Same formula | `handleSubmit`: `router.push(destination)`. |
 | **AuthModal** ([components/auth/AuthModal.tsx](../components/auth/AuthModal.tsx)) | | |
-| Google | Returning → `/mystical-profile`, new → `/profile` | `router.push(returning ? getReturningUserWithReportsDestination() : '/profile')`. Uses `isReturningUser(user)`. |
-| Email sign-in | → `/mystical-profile` (same helper) | `router.push(getReturningUserWithReportsDestination())` when returning heuristic matches. |
+| Google | Returning → `/tools`, new → `/profile` | `router.push(returning ? getReturningUserWithReportsDestination() : '/profile')`. Uses `isReturningUser(user)`. |
+| Email sign-in | → `/tools` (same helper) | `router.push(getReturningUserWithReportsDestination())` when returning heuristic matches. |
 
 **Note**: The sign-in page reads `redirect` from `useSearchParams()` and validates it with [lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts) (allowlisted paths; unknown `/community/*` → `/community/attribution`). AuthModal is **not currently imported or used** anywhere else in the app; entry points use `/signin` and `/signup` (e.g. [hero-section.tsx](../components/hero-section.tsx)).
 
@@ -74,7 +72,7 @@ flowchart LR
 - **Route**: [app/profile/page.tsx](../app/profile/page.tsx).
 - **Guard**: `useEffect`: if `!authLoading && !user` → `router.push("/signin")` (lines 281–284). If `!user` after loading, render returns `null` (lines 711–713) while the effect performs the redirect.
 - **Save**: `handleSave` updates profile and stays on `/profile` (no navigation).
-- **Generate mystical profile**: On success → `router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)` (currently `/mystical-profile`; see [lib/authRouting.ts](../lib/authRouting.ts)).
+- **Generate Full Report**: On success → `router.push("/tools")`. `/mystical-profile` is a bookmark redirect to `/tools` only.
 
 ---
 
@@ -94,13 +92,13 @@ So logout **always** does a full page reload to `/`, not `router.push`.
 
 | User type | Typical path |
 | --------- | ------------- |
-| **Returning** (Google) | Sign-in or sign-up → `/mystical-profile` by default (`getReturningUserWithReportsDestination()`); allowlisted `?redirect=` or proxy-provided redirect ([lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts)). If `userProfile.mysticalProfileGenerated`, profile-setup and similar send users to `RETURNING_USER_WITH_REPORTS_DESTINATION`. |
-| **Returning** (with reports) | profile-setup → `router.replace` to [lib/authRouting.ts](../lib/authRouting.ts) `RETURNING_USER_WITH_REPORTS_DESTINATION` (currently `/mystical-profile`). |
+| **Returning** (Google) | Sign-in or sign-up → `/tools` by default (`getReturningUserWithReportsDestination()`); allowlisted `?redirect=` or proxy-provided redirect ([lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts)). If `userProfile.mysticalProfileGenerated`, profile-setup and similar send users to `/tools`. |
+| **Returning** (with reports) | profile-setup → `router.replace` to [lib/authRouting.ts](../lib/authRouting.ts) `RETURNING_USER_WITH_REPORTS_DESTINATION` (`/tools`). |
 | **New** (Google) | Sign-in or sign-up → `/profile` by default; may use `/profile-setup` for onboarding. |
 | **New** (Email) | Sign-up → `/profile` after SignupFlow. |
-| **Edited** (profile) | User edits on `/profile` → Save → remains on `/profile`; or "Generate mystical profile" success → `/mystical-profile` (same constant). |
+| **Edited** (profile) | User edits on `/profile` → Save → remains on `/profile`; or Generate Full Report success → `/tools`. |
 
-**Canonical default for returning users with reports**: When profile is complete and reports exist (`userProfile.mysticalProfileGenerated === true`), the app redirects to `RETURNING_USER_WITH_REPORTS_DESTINATION` in [lib/authRouting.ts](../lib/authRouting.ts) (currently `/mystical-profile`). Profile-setup enforces this.
+**Canonical default for returning users with reports**: When profile is complete and `userProfile.mysticalProfileGenerated === true`, the app redirects to `/tools`. Old `/mystical-profile` bookmarks still redirect there.
 
 ---
 
@@ -109,7 +107,7 @@ So logout **always** does a full page reload to `/`, not `router.push`.
 ### 8.1 `router.push(...)` (client-side)
 
 - **Auth**: [app/signin/page.tsx](../app/signin/page.tsx) → `getReturningUserWithReportsDestination()`, `/profile`, or allowlisted `?redirect=`. [app/signup/page.tsx](../app/signup/page.tsx) → same for Google; email → `/profile`. [AuthModal](../components/auth/AuthModal.tsx) → returning destination or `/profile`.
-- **Guarded pages**: [profile-setup](../app/profile-setup/page.tsx) → `/signin` when `!user`; if `mysticalProfileGenerated` → canonical default; on complete → `/profile`. [profile](../app/profile/page.tsx) → `/signin` when `!user`; after generate success → `RETURNING_USER_WITH_REPORTS_DESTINATION` (`/mystical-profile`). [proxy.ts](../proxy.ts) treats `/mystical-profile` as protected (with `/profile`, etc.). There is no top-level [app/dashboard/page.tsx](../app/dashboard/page.tsx); admin overview is `/admin/dashboard`.
+- **Guarded pages**: [profile-setup](../app/profile-setup/page.tsx) → `/signin` when `!user`; if `mysticalProfileGenerated` → `/tools`; on complete → `/profile`. [profile](../app/profile/page.tsx) → `/signin` when `!user`; after generate success → `/tools`. [proxy.ts](../proxy.ts) still treats `/mystical-profile` as protected so old bookmarks auth-redirect, then the page redirects to `/tools`.
 - **Marketing / global**: [hero-section](../components/hero-section.tsx) → `/signup`, `/signin`. [how-it-works](../components/how-it-works.tsx), [sticky-cta](../components/sticky-cta.tsx) → `/signup`.
 - **Subscribe**: [useSubscribe](../hooks/useSubscribe.ts); when `!user` → `/signin?redirect=/subscribe` (sign-in validates `redirect` via [lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts)).
 - **Tools**: Many tool pages push `/profile-setup` or `/profile` or `/signin` when profile is missing or user wants to complete profile. Some use `router.push('/profile-setup')`, others `window.location.href = '/profile-setup'`.

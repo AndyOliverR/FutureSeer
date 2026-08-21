@@ -24,6 +24,7 @@ import {
   Zap
 } from "lucide-react"
 import { storeChart, storeCurrentChart, getCurrentChart } from '@/lib/chartStorage'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 import HorarySeerChatInterface from '@/components/HorarySeerChatInterface'
 import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
 import { useViralReportBypass } from '@/hooks/useViralReportBypass'
@@ -298,6 +299,22 @@ export default function HoraryAstrologyPage() {
         
         // Store as temporary data (question-specific analysis)
         storeChart(user.uid, 'horary-astrology', result.data)
+
+        void fetchWithFirebaseAuthRequired('/api/profile/ensure-tool-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toolSlug: 'horary',
+            extraInputs: {
+              question: question.trim(),
+              questionDate: datePart,
+              questionTime: normalizedTime,
+              questionPlace: questionPlace,
+              latitude: userProfile?.birthLatitude || 12.2958,
+              longitude: userProfile?.birthLongitude || 76.6394,
+            },
+          }),
+        }).catch(() => undefined)
         
         // Also load current transits
         await loadCurrentTransits()

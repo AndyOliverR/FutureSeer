@@ -7,6 +7,7 @@ import { callStructuredAI } from '@/lib/aiStructuredOutput';
 import { devLog } from '@/lib/devLogger';
 import type { MundaneChart } from './mundaneChartService';
 import type { RiskScores } from './riskScoring';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 export interface MundaneReportInput {
   countryName: string;
@@ -123,7 +124,7 @@ export async function buildMundaneReport(input: MundaneReportInput): Promise<Mun
 
   const structured = await callStructuredAI({
     label: 'mundane-comprehensive',
-    model: 'llama-3.3-70b-versatile',
+    model: GROQ_DEFAULT_TEXT_MODEL,
     messages: [
       { role: 'system', content: MUNDANE_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },

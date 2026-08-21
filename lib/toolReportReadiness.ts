@@ -103,7 +103,7 @@ export function isReadyToolReport(report: unknown, toolSlug?: string): boolean {
   return classifyToolReportState(report, toolSlug) === 'ready';
 }
 
-/** List of all tools to run at profile generation time. No lazy loading. */
+/** Catalog slugs. Generate commits natal charts; other tools run on visit. */
 export const ALL_TOOL_SLUGS = [
   // Highest-priority unlocks first (critical user wow path)
   'vedic',

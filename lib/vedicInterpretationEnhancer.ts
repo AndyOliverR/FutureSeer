@@ -8,6 +8,7 @@ import {
   userSubdocSet,
 } from '@/lib/userSubcollectionFirestore';
 import { VERIFIED_VEDIC_FALLBACKS } from './verifiedFallbacks';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 // Remove top-level Groq initialization - will be done inside methods
 
@@ -350,7 +351,7 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
         devLog.debug(`🔄 Calling AI Gateway/Groq API (attempt ${attempt}/${maxRetries})...`);
         const result = await callTextAI({
           label: 'vedic-interpretation-enhancer',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.8,
           maxTokens: 1000,

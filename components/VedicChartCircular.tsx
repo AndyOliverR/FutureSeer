@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
+import { CHART_SVG_FONT_FAMILY } from "@/lib/charts/svgTypography";
 
 // 27 Nakshatras in traditional order
 const NAKSHATRAS = [
@@ -198,7 +199,7 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
               dominantBaseline="middle"
               fontSize="31"
               fill="#FFFFFF"
-              fontFamily="Arial, sans-serif"
+              fontFamily={CHART_SVG_FONT_FAMILY}
               fontWeight="bold"
             >
               {sign.symbol}
@@ -222,7 +223,7 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
               dominantBaseline="middle"
               fontSize="13.5"
               fill="#334155"
-              fontFamily="Arial, sans-serif"
+              fontFamily={CHART_SVG_FONT_FAMILY}
             >
               {i + 1}
             </text>
@@ -245,7 +246,7 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
               dominantBaseline="middle"
               fontSize="12.5"
               fill="#0F172A"
-              fontFamily="Arial, sans-serif"
+              fontFamily={CHART_SVG_FONT_FAMILY}
               transform={`rotate(${angle}, ${pos.x}, ${pos.y})`}
             >
               {NAKSHATRA_SHORT[i]}
@@ -282,7 +283,7 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
                 dominantBaseline="middle"
                 fontSize="23"
                 fill={planetColor}
-                fontFamily="Arial, sans-serif"
+                fontFamily={CHART_SVG_FONT_FAMILY}
                 fontWeight="bold"
               >
                 {planetSymbol}

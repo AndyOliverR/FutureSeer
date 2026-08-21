@@ -16,6 +16,7 @@ import {
   type NameAnalysisPayload,
 } from '@/lib/nameAnalysisSeerState';
 import { buildNameAnalysisSeerSystemPrompt } from '@/lib/nameAnalysisSeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-name-analysis-seer';
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest) {
       history: conversationHistory,
     });
 
-    const { stream } = await callTextStream({ label: 'ask-name-analysis-seer', model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'ask-name-analysis-seer', model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,

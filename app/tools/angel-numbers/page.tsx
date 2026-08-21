@@ -22,6 +22,7 @@ import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
 import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
 import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
 import { cn } from "@/lib/utils"
+import { fetchWithFirebaseAuthRequired } from "@/lib/clientFirebaseFetch"
 
 export default function AngelNumbersPage() {
   const {
@@ -100,6 +101,17 @@ export default function AngelNumbersPage() {
 
   const handleLookupComplete = useCallback((result: ReturnType<typeof lookupAngelNumber>) => {
     setLastLookupResult(result)
+    const observed = result?.originalInput != null ? String(result.originalInput) : ''
+    if (observed) {
+      void fetchWithFirebaseAuthRequired('/api/profile/ensure-tool-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolSlug: 'angelNumbers',
+          extraInputs: { observedNumber: observed },
+        }),
+      }).catch(() => undefined)
+    }
   }, [])
 
   return (

@@ -70,7 +70,6 @@ const STATIC_PATHS = [
   "/",
   "/about",
   "/catalog",
-  "/community/attribution",
   "/contact",
   "/pricing",
   "/privacy",

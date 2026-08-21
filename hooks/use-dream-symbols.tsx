@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./use-auth";
 import { useToolData } from "./useToolData";
 import { dreamSymbolsIntelligence, DreamData, DreamAnalysis, DreamSymbol } from "@/lib/dreamSymbolsIntelligence";
+import { fetchWithFirebaseAuthRequired } from "@/lib/clientFirebaseFetch";
 
 export interface DreamSymbolsHookResult {
   // Profile data (from comprehensive profile)
@@ -212,6 +213,14 @@ export function useDreamSymbols(): DreamSymbolsHookResult {
       
       setAnalysis(result);
       setAnalysisError(null);
+      void fetchWithFirebaseAuthRequired('/api/profile/ensure-tool-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolSlug: 'dreamSymbols',
+          extraInputs: { dreamDescription: dreamDescription.trim() },
+        }),
+      }).catch(() => undefined);
     } catch (err: any) {
       console.error('Error analyzing dream:', err);
       setAnalysisError(err.message || 'Failed to analyze dream. Please try again.');

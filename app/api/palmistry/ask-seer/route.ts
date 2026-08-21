@@ -10,6 +10,9 @@ import {
   type PalmQuestionType,
 } from '@/lib/palmSeerState';
 import { buildPalmSeerSystemPrompt } from '@/lib/palmSeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
+import { historyFromSeerBody } from '@/lib/seerChatVoice';
 
 const REFUSAL_MESSAGE =
   'Palmistry shows tendencies, not events. It does not determine timing, health outcomes, or exact life events. I can speak to your tendencies, strengths, and relationship style instead.';
@@ -56,13 +59,16 @@ export async function POST(request: NextRequest) {
     const state = buildPalmState(palmistryContext ?? null, userProfile);
     const chartSlice = getPalmSliceForQuestionType(questionType, state);
 
-    const { stream } = await callTextStream({ label: 'palmistry-ask-seer', model: 'llama-3.3-70b-versatile',
+    const { messages } = buildToolSeerMessages({
+      systemContent: buildPalmSeerSystemPrompt(chartSlice, questionType),
+      userMessage: question.trim(),
+      history: historyFromSeerBody(body),
+    });
+
+    const { stream } = await callTextStream({ label: 'palmistry-ask-seer', model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
-      messages: [
-        { role: 'system', content: buildPalmSeerSystemPrompt(chartSlice, questionType) },
-        { role: 'user', content: question.trim() },
-      ],
+      messages,
       temperature: 0.7,
       maxTokens: 800,
     });

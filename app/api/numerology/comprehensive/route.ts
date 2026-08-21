@@ -9,6 +9,7 @@ import { devLog, devWarn } from '@/lib/devLogger';
 import { computeChaldeanProfile } from '@/lib/numerology/chaldean';
 import { calcPersonalYear } from '@/lib/numerology/personalYear';
 import { calcDriver, calcConductor } from '@/lib/numerology/driverConductor';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -420,7 +421,7 @@ export async function POST(request: NextRequest) {
       tryLlm: async () => {
         const structured = await callStructuredAI({
           label: 'numerology-comprehensive',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           userId,
           messages: [
             {

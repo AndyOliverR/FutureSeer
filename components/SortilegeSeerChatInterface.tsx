@@ -493,7 +493,7 @@ export default function SortilegeSeerChatInterface({
             onKeyPress={handleKeyPress}
             placeholder="Ask the Sortilege diviner about your cast, symbols, or guidance..."
             disabled={isLoading}
-            className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-amber-500"
+            className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] rounded-xl focus:ring-2 focus:ring-amber-500"
           />
           <Button
             onClick={() => sendMessage()}

@@ -7,6 +7,7 @@ import { tarotIntelligence } from '@/lib/tarotIntelligence';
 import { calculateLifePathNumber, calculateDestinyNumber, calculateSoulNumber, calculatePersonalityNumber, calculatePersonalYearNumber } from '@/lib/numerologyCalculations';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
 import { devLog } from '@/lib/devLogger';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -374,7 +375,7 @@ Format as JSON with keys: overview, integration, timing, guidance`;
       tryLlm: async () => {
         const aiRun = await runStructuredReportAI({
           label: 'tarot-combined-analysis',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           messages: [{ role: 'user', content: analysisPrompt }],
           maxTokens: 800,
           temperature: 0.7,

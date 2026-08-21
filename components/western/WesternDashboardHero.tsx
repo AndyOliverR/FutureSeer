@@ -129,13 +129,13 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg rounded-2xl overflow-hidden text-slate-900">
+        <Card className="overflow-hidden rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
           <CardContent className="p-3 sm:p-6">
-            <div className="text-center mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-amber-900 mb-2">
+            <div className="mb-4 text-center sm:mb-6">
+              <h2 className="mb-2 text-xl font-medium tracking-wide text-amber-200 sm:text-2xl">
                 Your Birth Chart
               </h2>
-              <p className="text-slate-700 text-xs sm:text-sm">
+              <p className="text-xs text-[var(--m3-on-surface-variant)] sm:text-sm">
                 {userProfile?.birthPlace && `Born in ${userProfile.birthPlace}`}
                 {userProfile?.birthDate && ` • ${new Date(userProfile.birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
               </p>
@@ -183,7 +183,7 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
                 }}
               />
             ) : (
-              <div className="text-center py-12 text-slate-600">
+              <div className="py-12 text-center text-[var(--m3-on-surface-variant)]">
                 Loading chart visualization...
               </div>
             )}
@@ -266,32 +266,32 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <Card className="bg-gradient-to-r from-slate-100 to-slate-50 border-2 border-slate-300 shadow-lg rounded-3xl text-slate-900">
+        <Card className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
           <CardContent className="p-4">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 justify-center min-w-0">
+            <div className="flex min-w-0 flex-wrap items-center justify-center gap-2 sm:gap-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-slate-700" />
-                <span className="text-sm font-semibold text-slate-900">Quick Insights:</span>
+                <Sparkles className="h-5 w-5 text-amber-400" />
+                <span className="text-sm font-medium text-amber-200">Quick Insights:</span>
               </div>
               
-              <Badge variant="secondary" className="bg-purple-300 text-purple-900 border border-purple-500 font-medium">
+              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
                 {planets.length} Planets
               </Badge>
               
-              <Badge variant="secondary" className="bg-pink-300 text-pink-900 border border-pink-500 font-medium">
+              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
                 {aspects.length} Aspects
               </Badge>
               
-              <Badge variant="secondary" className="bg-blue-300 text-blue-900 border border-blue-500 font-medium">
+              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
                 {dominantElement.element} Dominant
               </Badge>
               
-              <Badge variant="secondary" className="bg-emerald-300 text-emerald-900 border border-emerald-500 font-medium">
+              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
                 {getModalityName(dominantModality.modality)}
               </Badge>
               
               {transits.length > 0 && (
-                <Badge variant="secondary" className="bg-amber-300 text-amber-900 border border-amber-500 font-medium">
+                <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
                   {transits.length} Active Transits
                 </Badge>
               )}

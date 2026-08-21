@@ -16,6 +16,7 @@ import {
   type KabbalisticAnalysisPayload,
 } from '@/lib/kabbalisticNumerologySeerState';
 import { buildKabbalisticNumerologySeerSystemPrompt } from '@/lib/kabbalisticNumerologySeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-kabbalistic-numerology-seer';
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
       history: conversationHistory,
     });
 
-    const { stream } = await callTextStream({ label: 'ask-kabbalistic-numerology-seer', model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'ask-kabbalistic-numerology-seer', model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,

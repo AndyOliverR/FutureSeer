@@ -8,6 +8,7 @@ import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStr
 import { devLog, devWarn } from '@/lib/devLogger';
 import { getVedicReading } from '@/lib/vedicIntelligence';
 import { geocodePlace } from '@/services/geocoding';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -650,7 +651,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
               },
               { role: 'user', content: prompt },
             ],
-            model: 'llama-3.3-70b-versatile',
+            model: GROQ_DEFAULT_TEXT_MODEL,
             temperature: 0.7,
             maxTokens: 4000,
             responseFormat: { type: 'json_object' },

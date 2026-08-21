@@ -5,6 +5,7 @@ import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import { extractUserContext, buildContextString } from '@/lib/energyHealing/userProfileExtractor';
 import { getAllDivinationData } from '@/lib/universalDataAggregator';
 import { devLog } from '@/lib/devLogger';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 interface EnergyHealingRequest {
   method: 'chakra' | 'aura' | 'reiki' | 'crystal' | 'energy';
@@ -225,7 +226,7 @@ Return JSON.`;
       tryLlm: async () => {
         const aiRun = await runStructuredReportAI({
           label: `energy-healing-${method}`,
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           messages: [{ role: 'user', content: analysisPrompt }],
           temperature: 0.3,
           maxTokens: method === 'aura' ? 800 : 500,

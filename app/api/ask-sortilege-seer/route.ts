@@ -5,6 +5,7 @@ import { getFirebaseDB } from '@/lib/firebase';
 import { callTextStream } from '@/lib/aiStructuredOutput';
 import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
 import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
+import { historyFromSeerBody } from '@/lib/seerChatVoice';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import { SortilegeReading } from '@/lib/sortilegeIntelligence';
@@ -18,6 +19,7 @@ import {
   type SortilegeQuestionType,
 } from '@/lib/sortilegeSeerState';
 import { buildSortilegeSeerSystemPrompt } from '@/lib/sortilegeSeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-sortilege-seer';
@@ -179,13 +181,14 @@ export async function POST(request: NextRequest) {
         async start(controller) {
           try {
             const { messages } = buildToolSeerMessages({
-      systemContent: systemPrompt,
-      userMessage: question,
-    });
+              systemContent: systemPrompt,
+              userMessage: question,
+              history: historyFromSeerBody(body),
+            });
 
     const { stream } = await callTextStream({
       label: 'ask-sortilege-seer',
-      model: 'llama-3.3-70b-versatile',
+      model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,

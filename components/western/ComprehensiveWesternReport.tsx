@@ -38,6 +38,13 @@ import {
   Activity
 } from 'lucide-react'
 
+const REPORT_SECTION_ITEM =
+  'rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] px-3 sm:px-4'
+const REPORT_SECTION_TRIGGER =
+  'py-4 text-[var(--m3-on-surface)] hover:text-amber-200 [&[data-state=open]]:text-amber-200 [&>svg]:text-[var(--m3-on-surface-variant)]'
+const REPORT_SUMMARY_CARD =
+  'rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]'
+
 interface ComprehensiveWesternReportProps {
   userId?: string
   chartData?: any
@@ -213,7 +220,7 @@ export default function ComprehensiveWesternReport({
         transition={{ duration: 0.6 }}
         className="text-center mb-8"
       >
-        <h2 className="text-3xl font-bold gold-glow mb-4">🌟 Comprehensive Western Astrology Report</h2>
+        <h2 className="mb-4 text-3xl font-medium tracking-wide text-amber-200">Comprehensive Western Astrology Report</h2>
         <p className="text-slate-200 leading-relaxed">
           Complete analysis of your Tropical Zodiac birth chart
         </p>
@@ -221,63 +228,57 @@ export default function ComprehensiveWesternReport({
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-200 shadow-lg rounded-3xl">
-          <CardContent className="p-3 sm:p-6 text-center">
-            <div className="w-16 h-16 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sun className="w-8 h-8 text-yellow-600" />
+        <Card className={REPORT_SUMMARY_CARD}>
+          <CardContent className="p-3 text-center sm:p-6">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
+              <Sun className="h-8 w-8 text-amber-300" />
             </div>
-            <div className="text-slate-700 text-sm mb-2">Sun Sign</div>
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Sun Sign</div>
+            <div className="mb-2 flex items-center justify-center gap-2">
               {sun?.sign?.signName || sun?.sign ? (
-                <div style={{ filter: 'brightness(0) saturate(100%) invert(75%) sepia(100%) saturate(500%) hue-rotate(25deg) brightness(120%)' }}>
-                  <ZodiacIcon sign={sun?.sign?.signName || sun?.sign} size={24} className="" />
-                </div>
+                <ZodiacIcon sign={sun?.sign?.signName || sun?.sign} size={24} className="text-amber-300" />
               ) : null}
-              <div className="text-2xl font-bold text-yellow-800">
+              <div className="text-2xl font-medium text-amber-200">
                 {sun?.sign?.signName || sun?.sign || 'Unknown'}
               </div>
             </div>
-            <div className="text-xs text-slate-600">House {sun?.house || 'N/A'}</div>
+            <div className="text-xs text-[var(--m3-on-surface-variant)]">House {sun?.house || 'N/A'}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 shadow-lg rounded-3xl">
-          <CardContent className="p-3 sm:p-6 text-center">
-            <div className="w-16 h-16 bg-blue-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Moon className="w-8 h-8 text-blue-600" />
+        <Card className={REPORT_SUMMARY_CARD}>
+          <CardContent className="p-3 text-center sm:p-6">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
+              <Moon className="h-8 w-8 text-amber-300" />
             </div>
-            <div className="text-slate-700 text-sm mb-2">Moon Sign</div>
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Moon Sign</div>
+            <div className="mb-2 flex items-center justify-center gap-2">
               {moon?.sign?.signName || moon?.sign ? (
-                <div style={{ filter: 'brightness(0) saturate(100%) invert(45%) sepia(100%) saturate(500%) hue-rotate(190deg) brightness(110%)' }}>
-                  <ZodiacIcon sign={moon?.sign?.signName || moon?.sign} size={24} className="" />
-                </div>
+                <ZodiacIcon sign={moon?.sign?.signName || moon?.sign} size={24} className="text-amber-300" />
               ) : null}
-              <div className="text-2xl font-bold text-blue-800">
+              <div className="text-2xl font-medium text-amber-200">
                 {moon?.sign?.signName || moon?.sign || 'Unknown'}
               </div>
             </div>
-            <div className="text-xs text-slate-600">House {moon?.house || 'N/A'}</div>
+            <div className="text-xs text-[var(--m3-on-surface-variant)]">House {moon?.house || 'N/A'}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-3xl">
-          <CardContent className="p-3 sm:p-6 text-center">
-            <div className="w-16 h-16 bg-purple-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ArrowUp className="w-8 h-8 text-purple-600" />
+        <Card className={REPORT_SUMMARY_CARD}>
+          <CardContent className="p-3 text-center sm:p-6">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
+              <ArrowUp className="h-8 w-8 text-amber-300" />
             </div>
-            <div className="text-slate-700 text-sm mb-2">Rising Sign</div>
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Rising Sign</div>
+            <div className="mb-2 flex items-center justify-center gap-2">
               {rising?.sign?.signName || rising?.sign ? (
-                <div style={{ filter: 'brightness(0) saturate(100%) invert(55%) sepia(100%) saturate(500%) hue-rotate(250deg) brightness(110%)' }}>
-                  <ZodiacIcon sign={rising?.sign?.signName || rising?.sign} size={24} className="" />
-                </div>
+                <ZodiacIcon sign={rising?.sign?.signName || rising?.sign} size={24} className="text-amber-300" />
               ) : null}
-              <div className="text-2xl font-bold text-purple-800">
+              <div className="text-2xl font-medium text-amber-200">
                 {rising?.sign?.signName || rising?.sign || 'Unknown'}
               </div>
             </div>
-            <div className="text-xs text-slate-600">Ascendant</div>
+            <div className="text-xs text-[var(--m3-on-surface-variant)]">Ascendant</div>
           </CardContent>
         </Card>
       </div>
@@ -386,18 +387,18 @@ export default function ComprehensiveWesternReport({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-slate-200 shadow-lg rounded-3xl">
+          <Card className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-slate-800">
-                <Sparkles className="w-6 h-6 text-amber-600" />
+              <CardTitle className="flex items-center gap-2 text-amber-200">
+                <Sparkles className="h-6 w-6 text-amber-300" />
                 Comprehensive Chart Analysis
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {/* Chart Overview */}
-                <AccordionItem value="overview" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-3 sm:px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-700 [&>svg]:text-slate-600">
+                <AccordionItem value="overview" className={REPORT_SECTION_ITEM}>
+                  <AccordionTrigger className={REPORT_SECTION_TRIGGER}>
                     <div className="flex items-center gap-3">
                       <Star className="w-5 h-5 text-amber-600" />
                       <span className="text-left font-semibold">Chart Overview</span>
@@ -442,8 +443,8 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* Planetary Analysis */}
-                <AccordionItem value="planets" className="border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 px-3 sm:px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-blue-700 py-4 [&[data-state=open]]:text-blue-700 [&>svg]:text-slate-600">
+                <AccordionItem value="planets" className={REPORT_SECTION_ITEM}>
+                  <AccordionTrigger className={REPORT_SECTION_TRIGGER}>
                     <div className="flex items-center gap-3">
                       <Activity className="w-5 h-5 text-blue-600" />
                       <span className="text-left font-semibold">Planetary Analysis</span>
@@ -474,8 +475,8 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* House Analysis */}
-                <AccordionItem value="houses" className="border-2 border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 px-3 sm:px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-purple-700 py-4 [&[data-state=open]]:text-purple-700 [&>svg]:text-slate-600">
+                <AccordionItem value="houses" className={REPORT_SECTION_ITEM}>
+                  <AccordionTrigger className={REPORT_SECTION_TRIGGER}>
                     <div className="flex items-center gap-3">
                       <Home className="w-5 h-5 text-purple-600" />
                       <span className="text-left font-semibold">House Analysis</span>
@@ -512,8 +513,8 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* Aspect Analysis */}
-                <AccordionItem value="aspects" className="border-2 border-pink-200 rounded-lg bg-gradient-to-br from-pink-50 to-rose-50 px-3 sm:px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-pink-700 py-4 [&[data-state=open]]:text-pink-700 [&>svg]:text-slate-600">
+                <AccordionItem value="aspects" className={REPORT_SECTION_ITEM}>
+                  <AccordionTrigger className={REPORT_SECTION_TRIGGER}>
                     <div className="flex items-center gap-3">
                       <Zap className="w-5 h-5 text-pink-600" />
                       <span className="text-left font-semibold">Aspect Analysis</span>
@@ -547,8 +548,8 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* Transit Analysis */}
-                <AccordionItem value="transits" className="border-2 border-green-200 rounded-lg bg-gradient-to-br from-green-50 to-teal-50 px-3 sm:px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-green-700 py-4 [&[data-state=open]]:text-green-700 [&>svg]:text-slate-600">
+                <AccordionItem value="transits" className={REPORT_SECTION_ITEM}>
+                  <AccordionTrigger className={REPORT_SECTION_TRIGGER}>
                     <div className="flex items-center gap-3">
                       <TrendingUp className="w-5 h-5 text-green-600" />
                       <span className="text-left font-semibold">Current Transits</span>
@@ -583,8 +584,8 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* Predictive Insights */}
-                <AccordionItem value="predictive" className="border-2 border-cyan-200 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 px-3 sm:px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-cyan-700 py-4 [&[data-state=open]]:text-cyan-700 [&>svg]:text-slate-600">
+                <AccordionItem value="predictive" className={REPORT_SECTION_ITEM}>
+                  <AccordionTrigger className={REPORT_SECTION_TRIGGER}>
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-cyan-600" />
                       <span className="text-left font-semibold">Predictive Insights</span>

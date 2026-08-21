@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { normalizeBirthTime } from '@/lib/birthTimeUtils'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 
 export interface PersonData {
   name: string
@@ -141,6 +142,19 @@ export function useSynastry() {
       console.log('💕 Aspects count:', compatibility.aspects.length)
       
       setAnalysis(compatibility)
+      void fetchWithFirebaseAuthRequired('/api/profile/ensure-tool-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolSlug: 'synastry',
+          extraInputs: {
+            partnerName: birthData2.name,
+            partnerBirthDate: birthData2.birthDate,
+            partnerBirthTime: normalizeBirthTime(birthData2.birthTime),
+            partnerBirthPlace: birthData2.birthLocation,
+          },
+        }),
+      }).catch(() => undefined)
       setIsLoading(false)
       console.log('💕 Analysis state updated successfully')
     } catch (err) {

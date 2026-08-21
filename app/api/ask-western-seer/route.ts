@@ -16,6 +16,7 @@ import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
 import { getWesternReportChunksForUser, getSectionsForIntent, formatChunksForPrompt } from '@/lib/westernSeerRetrieval';
 import { buildWesternRetrievalSystemPrompt } from '@/lib/westernSeerPrompts';
 import { searchKnowledge, formatKnowledgeForPrompt, extractKeyTopics } from '@/lib/knowledgeLoader';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-western-seer';
@@ -360,7 +361,7 @@ export async function POST(request: NextRequest) {
 
     const { stream } = await callTextStream({
       label: 'ask-western-seer',
-      model: 'llama-3.3-70b-versatile',
+      model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,

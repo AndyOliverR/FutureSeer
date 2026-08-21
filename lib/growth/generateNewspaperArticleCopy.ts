@@ -4,6 +4,7 @@
 
 import { callStructuredAI } from '@/lib/aiStructuredOutput';
 import { getNewspaperOutlet } from '@/lib/growth/newspaperOutlets';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   buildNewspaperArticlePromptMessages,
   parseGeneratedNewspaperArticleCopy,
@@ -18,7 +19,7 @@ export {
   parseGeneratedNewspaperArticleCopy,
 } from '@/lib/growth/newspaperArticleCopyHelpers';
 
-export const ADMIN_NEWSPAPER_ARTICLE_MODEL = 'llama-3.3-70b-versatile';
+export const ADMIN_NEWSPAPER_ARTICLE_MODEL = GROQ_DEFAULT_TEXT_MODEL;
 
 const OUTPUT_SCHEMA = {
   requiredKeys: ['headline', 'body'] as string[],

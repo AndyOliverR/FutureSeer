@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { devLog } from '@/lib/devLogger';
-import { callTextAI } from '@/lib/aiStructuredOutput';
+import { callTextAI, callTextStream } from '@/lib/aiStructuredOutput';
 import { withRateLimit, rateLimiters, getClientIdentifier } from '@/lib/rateLimit';
 import { getUserProfile, type UserProfile } from "@/lib/firebase";
 import { fetchTopHeadlines, newsCountryFromProfile } from "@/lib/server/newsHeadlines";
@@ -17,6 +17,8 @@ import { buildSeerMessages, type PromptSlot } from '@/lib/aiPromptBuilder';
 import { callSeerChatWithTools } from '@/lib/seerChatWithTools';
 import { consumeBillingAction } from '@/lib/billingCreditsServer';
 import { billingInsufficientCreditsResponse } from '@/lib/billingGateResponses';
+import { SEER_CHAT_VOICE } from '@/lib/seerChatVoice';
+import { loadMainSeerContext } from '@/lib/mainSeerContext';
 
 function getAddressName(profile: UserProfile | null | undefined): string | null {
   if (!profile) return null;
@@ -30,45 +32,21 @@ function getAddressName(profile: UserProfile | null | undefined): string | null 
   return null;
 }
 
-const SYSTEM_PROMPT = `You are The Seer.
+const SYSTEM_PROMPT = `You are The Seer — one expert who already has this user's profile and their stored readings.
 
-You have mastery over the following systems:
-Western Astrology, Vedic Astrology, KP Astrology, Hellenistic Astrology,
-Tarot, Lenormand, Runes, I Ching, Ogham,
-Astrocartography, Financial Astrology, Medical Astrology,
-Synastry, Psychological Astrology,
-BaZi, Zi Wei Dou Shu,
-Kabbalistic Astrology, Hermetic Astrology,
-Shamanic Astrology,
-Palmistry, Face Reading,
-Angel Numbers, Numerology, Kabbalistic Numerology,
-Vastu, Feng Shui, Geomancy,
-Pendulum, Bibliomancy, Sortilege,
-Akashic Records, Energy & Healing,
-Human Design,
-Horary Astrology, Daily Decisions, Trichakra Method,
-Navaratna & Planetary Stones.
+You can draw on every FutureSeer tradition (Vedic, Western, KP, Hellenistic, tarot, numerology, runes, I Ching, palmistry, face reading, BaZi, Human Design, Vastu, Feng Shui, and the rest of the catalog) the way a skilled reader would after being given the full file. You do not paste every system. You answer as one person.
 
 Rules:
-- Choose the most relevant system(s).
-- Combine at most 3 systems.
-- Answer clearly and directly.
-- No mention of backend tools.
+- Use the identity dossier and stored reports in context. Never ask the user to re-enter name, birth date, time, place, or gender when they are present.
+- Choose the systems that actually answer this question. Weave them into one reply.
+- Stay accurate to each tradition's own rules. Do not mix Vedic sidereal technique into Western tropical technique; you may mention both as separate witnesses.
+- No mention of backend tools, MCP, or prompts.
 - No confidence percentages.
-- No disclaimers.
-- No long essays.
-- 3–4 sentences maximum.
-- Tone: calm, precise, mystical but grounded.
-- Ask at most one clarifying question if needed.
-- If the user changes topic, adapt naturally.
-- If birth data is missing, ask for it once.
-- Do not contradict yourself within the same answer.
-- For relationship or betrayal questions, be supportive and reflective; avoid declaring likelihoods or certainties about others' behavior.
-- If the user's question lacks a clear subject (e.g. "When will it happen?"), do not assume what "it" refers to. Ask one short clarifying question instead. Do not fabricate timelines or events.
-- Do not invent specific time ranges (e.g. "6–12 months") unless explicitly derived from birth data with clear reasoning.
-- Never use these phrases: "The astrological influences", "The planetary transits suggest", "Your birth chart indicates", "The astrocartography map reveals". Speak with declarative presence and observational insight; do not name mechanics or tools.
-- When asked to choose or recommend one thing (e.g. which country, which option), give one clear answer and one reason; no lists, no "could" or "may" for the main conclusion.
-- Authority: No more than 4 sentences. First sentence must contain the conclusion. No filler intro. No mention of astrological mechanics.`;
+- No legal/medical disclaimers in the chat voice.
+- If birth data is missing from context, ask for it once.
+- If the question has no subject (e.g. "When will it happen?"), ask one short clarifying question. Do not invent timelines.
+- For relationship or betrayal questions, be supportive; do not declare other people's hidden actions as fact.
+- When asked to choose one option, give one clear answer and one reason.`;
 
 type ToneMode = "subtle" | "elevated" | "oracle";
 type ResponseStyle = "concise" | "balanced" | "deep";
@@ -86,22 +64,20 @@ ${TONE_DESCRIPTIONS[mode]}
 Speak accordingly.`;
 
 const PRESENCE_BLOCK = `Presence:
-- Begin strong answers with certainty.
-- Never hedge. Do not use "appears," "may," "could," unless uncertainty is essential.
-- Short declarative sentences.
-- Leave subtle pauses (line breaks when appropriate).
-- Never rush explanations.`;
+- Begin with the answer, not a preamble.
+- Ground claims in the dossier or stored reports when they are present.
+- Short paragraphs. Leave a line break between them.`;
 
 const RESPONSE_STYLE_BLOCKS: Record<ResponseStyle, string> = {
   concise: `Response depth: concise.
-- Prefer 1–2 short sentences unless a clarifying question is required.
-- Give the direct answer first; keep details minimal.`,
+- Prefer one short paragraph unless a clarifying question is required.
+- Give the direct answer first.`,
   balanced: `Response depth: balanced.
-- Keep the answer direct with brief supporting context.
-- Default to clear, practical guidance with no extra verbosity.`,
+- Default to 1–3 short paragraphs.
+- Direct answer first, then brief supporting context from the relevant systems.`,
   deep: `Response depth: deep.
-- Give direct guidance first, then add compact context.
-- Provide fuller nuance while staying concise and grounded.`,
+- Give the direct answer first, then fuller nuance from the relevant stored readings.
+- Still one expert voice. Not a heading for every tool.`,
 };
 
 function getToneMode(): ToneMode {
@@ -124,6 +100,7 @@ async function handleSeerChatRequest(req: NextRequest) {
     const clientBirthProfile = body.birthProfile as Record<string, unknown> | undefined;
     const toneMode = body.toneMode;
     const responseStyle = body.responseStyle;
+    const wantStream = body.stream === true;
 
     if (!message) {
       return NextResponse.json({ error: "message is required." }, { status: 400 });
@@ -167,6 +144,7 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 
     const promptSlots: PromptSlot[] = [
       { kind: "system", content: SYSTEM_PROMPT, id: "seer-core" },
+      { kind: "constraints", content: SEER_CHAT_VOICE, id: "seer-chat-voice" },
       { kind: "system", content: TONE_BLOCK(tone), id: "seer-tone" },
       { kind: "system", content: RESPONSE_STYLE_BLOCKS[style], id: "seer-style" },
       { kind: "system", content: PRESENCE_BLOCK, id: "seer-presence" },
@@ -174,6 +152,23 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
     if (personalizationContext) {
       promptSlots.push({ kind: "context", content: personalizationContext, id: "seer-name" });
     }
+
+    let packedWantsDeep = false;
+    try {
+      const packed = await loadMainSeerContext({
+        userId,
+        question: trimmedMessage,
+        profile,
+      });
+      packedWantsDeep = packed.wantsDeep;
+      promptSlots.push({ kind: "context", content: packed.identityText, id: "seer-identity" });
+      promptSlots.push({ kind: "context", content: packed.readyIndexText, id: "seer-ready-tools" });
+      promptSlots.push({ kind: "chart", content: packed.seerMasterText, id: "seer-master" });
+      promptSlots.push({ kind: "chart", content: packed.reportSlicesText, id: "seer-report-slices" });
+    } catch (ctxErr) {
+      devLog.warn("[Seer] main context pack failed (continuing with birth data)", ctxErr, "route");
+    }
+
     if (process.env.SEER_MCP_TOOLS === "1") {
       promptSlots.push({
         kind: "constraints",
@@ -232,8 +227,8 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
       slots: promptSlots,
       userMessage: trimmedMessage,
       history,
-      maxHistoryTurns: 6,
-      maxInputTokens: 8000,
+      maxHistoryTurns: 8,
+      maxInputTokens: 12_000,
     });
 
     if (!process.env.GROQ_API_KEY?.trim() && !process.env.AI_GATEWAY_API_KEY) {
@@ -256,7 +251,7 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
     }
 
     const seerModel = getSeerChatModel(profile?.selectedPlan);
-    const maxTokens = getSeerMaxTokens(paid);
+    const maxTokens = getSeerMaxTokens(paid, packedWantsDeep || style === "deep");
 
     let reply: string;
     try {
@@ -321,6 +316,63 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
           }
           reply = data.content?.trim() || "The vision is unclear. Ask again.";
         }
+      } else if (wantStream) {
+        const { stream } = await callTextStream({
+          label: 'seer-chat',
+          model: seerModel,
+          messages,
+          userId: userId ?? undefined,
+          temperature: 0.7,
+          topP: 0.9,
+          maxTokens,
+          frequencyPenalty: 0.3,
+          presencePenalty: 0.1,
+          maxAttempts: 2,
+        });
+        const encoder = new TextEncoder();
+        return new Response(
+          new ReadableStream({
+            async start(controller) {
+              try {
+                let full = '';
+                for await (const chunk of stream) {
+                  const content = chunk.choices[0]?.delta?.content || '';
+                  if (content) {
+                    full += content;
+                    controller.enqueue(encoder.encode(content));
+                  }
+                }
+                if (userId && full.trim()) {
+                  const approx = Math.max(1, Math.ceil(full.length / 4));
+                  try {
+                    await recordInferenceUsage({
+                      route: '/api/seer/chat',
+                      model: seerModel,
+                      userId,
+                      promptTokens: 0,
+                      completionTokens: approx,
+                      totalTokens: approx,
+                    });
+                    await incrementSeerDailyTokens(userId, approx);
+                  } catch (e) {
+                    devLog.warn('[Seer] inference logging failed (non-blocking)', e, 'route');
+                  }
+                }
+              } catch (streamErr) {
+                devLog.warn('Seer stream error', streamErr, 'route');
+                controller.enqueue(encoder.encode('\nThe vision is unclear. Ask again.'));
+              } finally {
+                controller.close();
+              }
+            },
+          }),
+          {
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8',
+              'Cache-Control': 'no-cache',
+            },
+          },
+        );
       } else {
         const data = await callTextAI({
           label: 'seer-chat',

@@ -10,6 +10,9 @@ import {
   type MedicalAstrologyChartPayload,
 } from '@/lib/medicalAstrologySeerState'
 import { buildMedicalAstrologySeerSystemPrompt } from '@/lib/medicalAstrologySeerPrompts'
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder'
+import { historyFromSeerBody } from '@/lib/seerChatVoice'
 
 const REFUSAL_PHRASE = 'This question requires professional medical evaluation.'
 
@@ -102,19 +105,16 @@ export async function POST(request: NextRequest) {
       displayName: displayName || undefined,
     })
 
+    const { messages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: question,
+      history: historyFromSeerBody(body),
+    })
+
     const result = await callTextAI({
       label: 'medical-seer-chat',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: question,
-        },
-      ],
-      model: 'llama-3.3-70b-versatile',
+      messages,
+      model: GROQ_DEFAULT_TEXT_MODEL,
       temperature: 0.6,
       maxTokens: 800,
       maxAttempts: 2,

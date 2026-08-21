@@ -6,13 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Sparkles, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 import type { UserProfile } from '@/lib/firebase';
+import { SEER_COMPOSER_BAR_CLASS, SEER_COMPOSER_INPUT_CLASS } from '@/lib/ui/seerComposerChrome';
 
-export type VedicSeerFocusLens = 'career' | 'relationships';
+export type VedicSeerFocusLens = 'career' | 'relationships' | 'remedies';
 
 interface VedicSeerChatInterfaceProps {
   userId: string;
@@ -20,8 +20,10 @@ interface VedicSeerChatInterfaceProps {
   vedicChartData?: Record<string, unknown> | null;
   vedicNumerologyData?: Record<string, unknown>;
   sessionId?: string;
-  /** Ground answers in the career or relationships focused report when set. */
+  /** Ground answers in the career, relationships, or remedies focused report when set. */
   focusLens?: VedicSeerFocusLens | null;
+  /** When set, starter questions and the Seer request stay on this graha. */
+  planetFocus?: string | null;
 }
 
 interface Message {
@@ -52,6 +54,40 @@ const VEDIC_STARTER_QUESTIONS_RELATIONSHIPS = [
   'When is a supportive window for clarity or commitment?',
 ];
 
+const VEDIC_STARTER_QUESTIONS_REMEDIES = [
+  'Which traditional upayas fit my current dasha without over-strengthening a malefic?',
+  'What lifestyle practices should I start with before mantras or gems?',
+  'How should I work with a weak planet without treating it as a punishment?',
+  'What does my chart say I should avoid in gemstone or ritual work?',
+];
+
+function starterQuestionsForPlanet(planet: string): string[] {
+  return [
+    `What is ${planet} teaching in my Vedic chart right now?`,
+    `Which traditional upayas fit my ${planet} placement, and what should I not do?`,
+    `How should I work with ${planet} during this dasha without forcing results?`,
+    `Does my chart support a ${planet} gemstone, or should I stay with conduct and mantra?`,
+  ];
+}
+
+function starterQuestionsForLens(focusLens: VedicSeerFocusLens | null, planetFocus: string | null): string[] {
+  if (planetFocus) return starterQuestionsForPlanet(planetFocus);
+  switch (focusLens) {
+    case 'career':
+      return VEDIC_STARTER_QUESTIONS_CAREER;
+    case 'relationships':
+      return VEDIC_STARTER_QUESTIONS_RELATIONSHIPS;
+    case 'remedies':
+      return VEDIC_STARTER_QUESTIONS_REMEDIES;
+    case null:
+      return VEDIC_STARTER_QUESTIONS_DEFAULT;
+    default: {
+      const _exhaustive: never = focusLens;
+      return _exhaustive;
+    }
+  }
+}
+
 export default function VedicSeerChatInterface({
   userId,
   userProfile,
@@ -59,13 +95,9 @@ export default function VedicSeerChatInterface({
   vedicNumerologyData,
   sessionId,
   focusLens = null,
+  planetFocus = null,
 }: VedicSeerChatInterfaceProps) {
-  const starterQuestions =
-    focusLens === 'career'
-      ? VEDIC_STARTER_QUESTIONS_CAREER
-      : focusLens === 'relationships'
-        ? VEDIC_STARTER_QUESTIONS_RELATIONSHIPS
-        : VEDIC_STARTER_QUESTIONS_DEFAULT;
+  const starterQuestions = starterQuestionsForLens(focusLens, planetFocus);
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -143,6 +175,7 @@ export default function VedicSeerChatInterface({
           vedicNumerologyData,
           sessionId: currentSessionId,
           ...(focusLens ? { focusLens } : {}),
+          ...(planetFocus ? { planetFocus } : {}),
         })
       });
 
@@ -247,7 +280,7 @@ export default function VedicSeerChatInterface({
         animate={{ opacity: 1, x: 0 }}
         className="flex justify-start"
       >
-        <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
+        <div className="max-w-[80%] rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-4 text-[var(--m3-on-surface)]">
           <div className="whitespace-pre-wrap leading-relaxed">
             {isStreaming ? (
               displayContent
@@ -262,7 +295,7 @@ export default function VedicSeerChatInterface({
               type="button"
               variant="ghost"
               size="sm"
-              className="mt-2 text-amber-700 hover:text-amber-900 hover:bg-amber-100 p-0 h-auto font-normal flex items-center gap-1"
+              className="mt-2 h-auto p-0 font-normal flex items-center gap-1 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
               onClick={() => toggleExpanded(message.id)}
             >
               {isExpanded ? (
@@ -284,9 +317,9 @@ export default function VedicSeerChatInterface({
   };
 
   return (
-    <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
-      <CardHeader className="border-b border-amber-200 bg-white/80 shrink-0 flex flex-row items-center justify-between gap-2">
-        <CardTitle className="flex items-center gap-2 text-amber-900">
+    <Card className="flex h-full min-h-[50vh] max-h-[85vh] flex-col overflow-hidden border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] transition-all duration-300">
+      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+        <CardTitle className="flex items-center gap-2 text-amber-200">
           <Sparkles className="w-5 h-5 text-amber-700" />
           Vedic Consultation
         </CardTitle>
@@ -295,7 +328,7 @@ export default function VedicSeerChatInterface({
             type="button"
             variant="ghost"
             size="sm"
-            className="text-slate-600 hover:text-amber-900 hover:bg-amber-100 shrink-0"
+            className="shrink-0 text-[var(--m3-on-surface-variant)] hover:bg-amber-500/10 hover:text-amber-200"
             onClick={() => setMessages([])}
           >
             <Trash2 className="w-4 h-4 mr-1" />
@@ -308,12 +341,12 @@ export default function VedicSeerChatInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" />
-              <p className="text-amber-900 font-medium mb-2">Ask me anything about your destiny, timing, and life path…</p>
-              <p className="text-slate-700 text-sm mt-1 mb-2">
+              <p className="mb-2 font-medium text-amber-200">Ask me anything about your destiny, timing, and life path…</p>
+              <p className="mt-1 mb-2 text-sm text-[var(--m3-on-surface-variant)]">
                 I&apos;ll consult your Vedic birth chart, planetary periods, and yogas to reveal outcomes, timing, and karmic patterns.
               </p>
               <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
-              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+              <ul className="mx-auto mb-4 max-w-md list-inside list-disc space-y-0.5 text-left text-sm text-[var(--m3-on-surface-variant)]">
                 <li>Life events and outcomes (marriage, career, health tendencies, wealth, education, relocation)</li>
                 <li>Timing (favorable periods, when a phase improves, when to act vs wait, which dasha supports which goal)</li>
                 <li>Karmic and pattern questions (why struggles repeat, strengths from past karma, major life themes)</li>
@@ -326,7 +359,7 @@ export default function VedicSeerChatInterface({
                     size="sm"
                     onClick={() => sendMessage(q)}
                     disabled={isLoading}
-                    className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
+                    className="border-[var(--m3-outline-variant)] text-xs text-amber-200 hover:bg-amber-500/10"
                   >
                     {q}
                   </Button>
@@ -343,8 +376,8 @@ export default function VedicSeerChatInterface({
               </AnimatePresence>
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-700">
+                  <div className="rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-4">
+                    <div className="flex items-center gap-2 text-[var(--m3-on-surface-variant)]">
                       <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
                       Consulting your chart…
                     </div>
@@ -355,7 +388,7 @@ export default function VedicSeerChatInterface({
             </div>
           )}
         </div>
-        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+        <div className={SEER_COMPOSER_BAR_CLASS}>
           <form
             onSubmit={e => {
               e.preventDefault();
@@ -369,7 +402,7 @@ export default function VedicSeerChatInterface({
               onKeyPress={handleKeyPress}
               placeholder="Ask about timing, career, marriage, dashas, or remedies..."
               disabled={isLoading}
-              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+              className={SEER_COMPOSER_INPUT_CLASS}
             />
             <Button
               type="submit"

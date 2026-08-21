@@ -9,6 +9,7 @@ import { devLog } from '@/lib/devLogger';
 import { UserProfile } from '@/lib/firebase';
 import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 import { callTextAI } from '@/lib/aiStructuredOutput';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 export interface HumanDesignReport {
   overview: {
@@ -189,7 +190,7 @@ async function generateAIReport(
     
     const result = await callTextAI({
       label: 'human-design-report',
-      model: 'llama-3.3-70b-versatile',
+      model: GROQ_DEFAULT_TEXT_MODEL,
       temperature: 0.7,
       maxTokens: 2400,
       maxAttempts: 2,
@@ -244,7 +245,7 @@ async function generateAIReport(
     
     const parsedResponse = parseAIResponse(cleanedResponse);
     parsedResponse._provider = 'groq';
-    parsedResponse._model = 'llama-3.3-70b-versatile';
+    parsedResponse._model = GROQ_DEFAULT_TEXT_MODEL;
     
     // Post-process each extracted field to remove any user name
     return cleanAIResponseFields(parsedResponse, userProfile);

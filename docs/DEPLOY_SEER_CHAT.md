@@ -25,6 +25,14 @@ git push origin main
 - Enable for **Production** and **Preview**
 - Save
 
+After Groq decommissioned Llama 3.3 70B / 3.1 8B Instant (16 Aug 2026), set these on Vercel (Production + Preview) if they still point at Llama IDs. Leftover Llama values still work via an alias in `lib/groqModels.ts`, but explicit IDs avoid confusion:
+
+- `SEER_CHAT_MODEL_FAST` = `openai/gpt-oss-20b`
+- `SEER_CHAT_MODEL_FULL` = `openai/gpt-oss-120b`
+- Optional: `GROQ_TEXT_MODEL` = `openai/gpt-oss-120b`, `GROQ_FAST_TEXT_MODEL` = `openai/gpt-oss-20b`
+
+Then **Redeploy** so the new build picks them up.
+
 ### 3. Redeploy
 
 After pushing, Vercel will deploy automatically. If you only changed env vars, use **Deployments** → … → **Redeploy** so the new build picks up the variable.

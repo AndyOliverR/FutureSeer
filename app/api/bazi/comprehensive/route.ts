@@ -3,6 +3,7 @@ import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { callTextAI } from '@/lib/aiStructuredOutput';
 import { BaziReading } from '@/lib/baziIntelligence';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 /**
  * API Route: /api/bazi/comprehensive
@@ -290,7 +291,7 @@ Write in second person, be insightful and practical. Avoid generic statements.`;
 
   const chartOverviewResult = await callTextAI({
     label: 'bazi-chart-overview',
-    model: 'groq/llama-3.3-70b-versatile',
+    model: GROQ_DEFAULT_TEXT_MODEL,
     messages: [
       {
         role: 'system',
@@ -326,7 +327,7 @@ Be specific, actionable, and inspiring. 3-4 paragraphs.`;
 
   const lifePathResult = await callTextAI({
     label: 'bazi-life-path',
-    model: 'groq/llama-3.3-70b-versatile',
+    model: GROQ_DEFAULT_TEXT_MODEL,
     messages: [
       {
         role: 'system',
@@ -368,7 +369,7 @@ Be practical and specific with actionable guidance. 2-3 paragraphs.`;
 
   const elementResult = await callTextAI({
     label: 'bazi-element-harmonization',
-    model: 'groq/llama-3.3-70b-versatile',
+    model: GROQ_DEFAULT_TEXT_MODEL,
     messages: [
       {
         role: 'system',
@@ -404,7 +405,7 @@ Be specific with ages/years and explain the elemental reasoning. 2-3 paragraphs.
 
   const timingResult = await callTextAI({
     label: 'bazi-timing',
-    model: 'groq/llama-3.3-70b-versatile',
+    model: GROQ_DEFAULT_TEXT_MODEL,
     messages: [
       {
         role: 'system',

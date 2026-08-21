@@ -28,11 +28,10 @@ import {
   toolSlugForPath,
 } from "@/lib/report-viral/toolSlugToPath"
 import { GENERATION_ETA_TOOLS_BANNER } from "@/lib/generationEtaCopy"
+import { ToolSymbol } from "@/components/MysticalSymbol"
 import {
   isReportGenerationActive,
   resolveReportGenerationState,
-  shouldPollGeneration,
-  TOOLS_GENERATION_RESUME_POLL_MS,
 } from "@/lib/toolsGenerationState"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
@@ -43,7 +42,7 @@ function ToolsPageContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, requiresReturningPaymentCommit } = useAuth();
-  const { profile: comprehensiveProfile, refreshProfile: refreshMysticalProfile } = useComprehensiveMysticalProfile();
+  const { profile: comprehensiveProfile } = useComprehensiveMysticalProfile();
   const { tools, searchTerm, setSearchTerm } = useTools();
   const readiness = useMemo(
     () => summarizeToolReadiness((comprehensiveProfile as Record<string, unknown> | null) ?? null, ALL_TOOL_SLUGS),
@@ -76,7 +75,6 @@ function ToolsPageContent() {
   const generationHasPendingTools =
     Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && activePendingToolSlugs.length > 0
   const generatingParam = searchParams.get("generating") === "1"
-  const shouldPollGenerationStatus = shouldPollGeneration(generatingParam, generationHasPendingTools)
   const [sessionGeneratingInitial] = useState(() => {
     if (typeof window === "undefined") return false
     try {
@@ -166,8 +164,8 @@ function ToolsPageContent() {
   }
   const canOpenTool = (toolSlug: string, isComingSoon?: boolean) => {
     if (isComingSoon) return false
+    if (Boolean(userProfile?.mysticalProfileGenerated)) return true
     if (!isToolPending(toolSlug)) return true
-    // Temporary rollout bypass: allow Numerology-only validation while readiness gate is active.
     if (numerologyPreviewBypassEnabled && toolSlug === 'numerology') return true
     return false
   }
@@ -192,66 +190,14 @@ function ToolsPageContent() {
     }
   }, [generationHasPendingTools, userProfile?.mysticalProfileGenerated])
 
-  /** Drop ?generating=1 once generation is done (or idle with nothing pending). */
+  /** Drop leftover ?generating=1 from older clients. */
   useEffect(() => {
     if (!generatingParam) return
-    const idle =
-      allReportsReady ||
-      (!generationHasPendingTools && Boolean(userProfile?.mysticalProfileGenerated))
-    if (!idle) return
     const params = new URLSearchParams(searchParams.toString())
     params.delete("generating")
     const q = params.toString()
     router.replace(q ? `/tools?${q}` : "/tools")
-  }, [
-    generatingParam,
-    generationHasPendingTools,
-    allReportsReady,
-    userProfile?.mysticalProfileGenerated,
-    router,
-    searchParams,
-  ])
-
-  /** While generation is still filling tools, gently refresh profile (Firestore snapshot may lag). */
-  useEffect(() => {
-    if (!user?.uid || !shouldPollGenerationStatus) return
-    void refreshMysticalProfile()
-    const id = window.setInterval(() => {
-      void refreshMysticalProfile()
-    }, 12_000)
-    return () => window.clearInterval(id)
-  }, [user?.uid, shouldPollGenerationStatus, refreshMysticalProfile])
-
-  /**
-   * Resume stalled generation while the user stays on /tools (GET promotes stale jobs).
-   * Poll promptly while reports are active so stalled jobs recover without a long wait.
-   */
-  useEffect(() => {
-    if (!user || !shouldPollGenerationStatus) return
-    let cancelled = false
-    const run = async () => {
-      try {
-        const idToken = await user.getIdToken()
-        if (cancelled) return
-        await fetch("/api/profile/generate-mystical", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${idToken}` },
-          cache: "no-store",
-        })
-        if (!cancelled) void refreshMysticalProfile()
-      } catch {
-        // best-effort; Firestore listener + soft refresh handle the rest
-      }
-    }
-    void run()
-    const id = window.setInterval(() => {
-      void run()
-    }, TOOLS_GENERATION_RESUME_POLL_MS)
-    return () => {
-      cancelled = true
-      window.clearInterval(id)
-    }
-  }, [user, shouldPollGenerationStatus, refreshMysticalProfile])
+  }, [generatingParam, router, searchParams])
 
   useEffect(() => {
     if (
@@ -402,7 +348,9 @@ function ToolsPageContent() {
                             : "bg-surface-container-high border-outline-variant shadow-md",
                       )}
                     >
-                      <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest shadow-inner">
+                        <ToolSymbol toolName={tool.slug} size="lg" />
+                      </div>
                       <div className="flex-1 min-w-0 pr-6">
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
@@ -444,7 +392,9 @@ function ToolsPageContent() {
                         : "bg-surface-container-high border-outline-variant shadow-md",
                   )}
                 >
-                  <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest shadow-inner">
+                    <ToolSymbol toolName={tool.slug} size="lg" />
+                  </div>
                   <div className="flex-1 min-w-0 pr-6">
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
@@ -542,7 +492,9 @@ function ToolsPageContent() {
                     >
                       <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="relative z-10 h-full flex flex-col items-center text-center">
-                        <div className="text-6xl mb-6 transition-transform">{tool.icon}</div>
+                        <div className="mb-6 flex justify-center transition-transform">
+                          <ToolSymbol toolName={tool.slug} size="xl" />
+                        </div>
                         <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
                         {isToolPending(tool.slug) ? (
                           <span className="mb-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
@@ -586,7 +538,9 @@ function ToolsPageContent() {
             >
               <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10 h-full flex flex-col items-center text-center">
-                <div className="text-6xl mb-6 transition-transform">{tool.icon}</div>
+                <div className="mb-6 flex justify-center transition-transform">
+                  <ToolSymbol toolName={tool.slug} size="xl" />
+                </div>
                 <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
                 {isToolPending(tool.slug) ? (
                   <span className="mb-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">

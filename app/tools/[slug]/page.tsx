@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { notFound, useParams } from 'next/navigation'
 import { useTools } from '@/hooks/useTools'
 import { useAnalytics } from '@/lib/analytics'
 import { ToolSymbol } from '@/components/MysticalSymbol'
@@ -40,19 +40,7 @@ export default function ToolPage() {
   }, [tool, slug, trackToolAccess, trackPageView])
 
   if (!tool) {
-    return (
-      <div className="min-h-screen p-4 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Tool Not Found</h1>
-          <p className="text-gray-400 mb-6">The mystical tool you're looking for doesn't exist.</p>
-          <Link href="/tools">
-            <Button className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600">
-              Back to Tools
-            </Button>
-          </Link>
-        </div>
-      </div>
-    )
+    notFound()
   }
 
   return (

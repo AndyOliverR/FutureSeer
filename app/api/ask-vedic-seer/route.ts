@@ -32,6 +32,7 @@ import {
   readVedicRelationshipCache,
 } from '@/lib/vedic/vedicRelationshipReport';
 import type { VedicBirthProfile } from '@/lib/vedic/vedicReportFirestore';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-vedic-seer';
@@ -74,7 +75,7 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 type VedicChartPayload = Record<string, unknown>;
 
-type VedicSeerFocusLens = 'career' | 'relationships';
+type VedicSeerFocusLens = 'career' | 'relationships' | 'remedies';
 
 interface VedicSeerRequest {
   userId: string;
@@ -85,6 +86,7 @@ interface VedicSeerRequest {
   sessionId?: string;
   /** When set, inject the matching focused Vedic report into the system prompt. */
   focusLens?: VedicSeerFocusLens;
+  planetFocus?: string;
 }
 
 interface VedicSeerStoredPayload {
@@ -123,7 +125,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as VedicSeerRequest;
     const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_vedic_seer');
     if (__toolSeerGate) return __toolSeerGate;
-    const { userId, question, userProfile, vedicChartData, vedicNumerologyData, sessionId, focusLens } =
+    const { userId, question, userProfile, vedicChartData, vedicNumerologyData, sessionId, focusLens, planetFocus } =
       body;
 
     if (!userId || !question || !userProfile) {
@@ -154,6 +156,9 @@ export async function POST(request: NextRequest) {
     }
     if (focusLens === 'relationships' && (questionType === 'general' || questionType === 'career')) {
       questionType = 'marriage';
+    }
+    if ((focusLens === 'remedies' || Boolean(planetFocus)) && questionType === 'general') {
+      questionType = 'remedies';
     }
     if (questionType === 'refusal') {
       const refusalMessage =
@@ -218,6 +223,7 @@ export async function POST(request: NextRequest) {
     let knowledgeContext = '';
     try {
       const topics = extractKeyTopics(question);
+      if (planetFocus) topics.push(planetFocus, 'upaya', 'remedies');
       const kbResults = searchKnowledge(topics.join(' '), ['astrology/vedic', 'astrology']);
       knowledgeContext = formatKnowledgeForPrompt(kbResults);
     } catch { /* KB is optional; do not fail the request */ }
@@ -252,7 +258,7 @@ export async function POST(request: NextRequest) {
 
     const { stream } = await callTextStream({
       label: 'ask-vedic-seer',
-      model: 'llama-3.3-70b-versatile',
+      model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,

@@ -313,7 +313,7 @@ export default function AstrocartographySeerChatInterface({
               onKeyDown={handleKeyPress}
               placeholder="Ask about a city, country, or where to move…"
               disabled={isLoading}
-              className="flex-1 bg-white border-cyan-200 text-slate-800 placeholder-slate-500 focus:border-cyan-400 focus:ring-cyan-200"
+              className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-cyan-400 focus:ring-cyan-200"
             />
             <Button type="submit" disabled={isLoading || !question.trim()} className="bg-cyan-600 hover:bg-cyan-700 text-white">
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

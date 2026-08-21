@@ -301,6 +301,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
             userId: userId,
             question: question,
             userProfile: userProfile,
+            conversationHistory: conversationHistoryRef.current,
             ...(isFaceReading && { faceReadingAnalysis: contextData?.faceReadingAnalysis }),
             ...(isDreamSymbols && { dreamSymbolsAnalysis: contextData?.dreamSymbolsAnalysis }),
             ...(isFengShui && { fengShuiAnalysis: contextData }),
@@ -1022,7 +1023,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
                 : "Ask me anything about your life, purpose, relationships, career, health, or future...") :
               "Complete your profile first to ask questions..."
             }
-            className={isDevotionist ? 'flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400' : 'flex-1 bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400 focus:border-amber-500'}
+            className={isDevotionist ? 'flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-amber-400' : 'flex-1 bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400 focus:border-amber-500'}
             disabled={isLoading || !isProfileReady}
           />
           <Button 

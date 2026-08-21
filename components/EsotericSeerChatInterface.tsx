@@ -323,7 +323,7 @@ export default function EsotericSeerChatInterface({
               onKeyDown={handleKeyPress}
               placeholder="Ask about soul purpose, spiritual lessons, or higher path..."
               disabled={isLoading}
-              className="flex-1 bg-white border-violet-200 text-slate-800 placeholder-slate-500 focus:border-violet-400 focus:ring-violet-200"
+              className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-violet-400 focus:ring-violet-200"
             />
             <Button
               type="submit"

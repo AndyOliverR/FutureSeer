@@ -6,6 +6,7 @@ import { normalizeTimeString, normalizeDateString } from './timeUtils';
 import { getServerBaseUrl } from './serverBaseUrl';
 import { universalInterpretationEngine } from './universalInterpretationEngine';
 import { callTextAI } from './aiStructuredOutput';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 export interface VedicReading {
   id: string;
@@ -248,7 +249,7 @@ class VedicIntelligence {
     try {
       const completion = await callTextAI({
         label: 'vedic-intelligence-interpretation',
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_DEFAULT_TEXT_MODEL,
         temperature: 0.7,
         maxTokens: 1400,
         maxAttempts: 2,

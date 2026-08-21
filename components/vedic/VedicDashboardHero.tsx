@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CosmicMetricCard } from '../western/CosmicMetricCard'
+import { ChartFrame } from '@/components/charts/ChartFrame'
 import NorthIndianVedicChart from '@/components/NorthIndianVedicChart'
 import SouthIndianVedicChart from '@/components/SouthIndianVedicChart'
 import {
@@ -124,26 +125,25 @@ export function VedicDashboardHero({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="rounded-2xl overflow-hidden border-2 border-amber-200/80 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg">
-          <CardContent className="p-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 mb-2">
+        <Card className="overflow-hidden rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+          <CardContent className="p-4 sm:p-6">
+            <div className="mb-6 text-center">
+              <h2 className="mb-2 text-xl font-medium tracking-wide text-amber-200 sm:text-2xl">
                 Your Vedic Birth Chart
               </h2>
-              <p className="text-slate-600 text-sm">
+              <p className="text-sm text-[var(--m3-on-surface-variant)]">
                 {userProfile?.birthPlace && `Born in ${userProfile.birthPlace}`}
                 {userProfile?.birthDate && ` • ${new Date(userProfile.birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
               </p>
-              <p className="text-slate-600 text-xs mt-1">
-                Sidereal Zodiac • {ayanamsha} Ayanamsha
+              <p className="mt-1 text-xs text-[var(--m3-on-surface-variant)]">
+                Sidereal Zodiac · {ayanamsha} Ayanamsha
               </p>
             </div>
             
             {planets.length > 0 && ascendantSignNumber > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
                 {/* Birth Chart (D1) */}
-                <div className="flex flex-col items-center">
-                  <p className="text-amber-700 text-sm font-semibold mb-3">Birth Chart (D1)</p>
+                <ChartFrame title="Birth Chart (D1)">
                   {chartStyle === 'north-indian' ? (
                     <NorthIndianVedicChart
                       planets={transformedPlanets}
@@ -159,12 +159,11 @@ export function VedicDashboardHero({
                       chartType="D1"
                     />
                   )}
-                </div>
+                </ChartFrame>
                 
                 {/* Navamsa Chart (D9) - if available */}
                 {chartData?.navamsa && chartData.navamsa.planets && (
-                  <div className="flex flex-col items-center">
-                    <p className="text-purple-700 text-sm font-semibold mb-3">Navamsa Chart (D9)</p>
+                  <ChartFrame title="Navamsa Chart (D9)">
                     {(() => {
                       const navamsaAscSign = getSignNumber(chartData.navamsa.ascendant?.sign || chartData.navamsa.ascendant?.signName || ascendantSignName)
                       const navamsaPlanets = chartData.navamsa.planets.map((p: any) => ({
@@ -190,13 +189,13 @@ export function VedicDashboardHero({
                         />
                       )
                     })()}
-                  </div>
+                  </ChartFrame>
                 )}
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-600">
+              <div className="py-12 text-center text-[var(--m3-on-surface-variant)]">
                 <p>Loading chart visualization...</p>
-                <p className="text-xs text-slate-600 mt-2">
+                <p className="mt-2 text-xs">
                   {planets.length === 0 && 'Waiting for planetary data...'}
                   {planets.length > 0 && ascendantSignNumber === 0 && 'Calculating ascendant position...'}
                 </p>
@@ -283,34 +282,34 @@ export function VedicDashboardHero({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <Card className="bg-gradient-to-r from-amber-100/80 to-orange-100/80 border-2 border-amber-200 shadow-lg rounded-3xl">
+        <Card className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
           <CardContent className="p-4">
-            <div className="flex flex-wrap items-center gap-4 justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-600" />
-                <span className="text-sm font-semibold text-amber-900">Quick Insights:</span>
+                <Sparkles className="h-5 w-5 text-amber-400" />
+                <span className="text-sm font-medium text-amber-200">Quick Insights:</span>
               </div>
               
-              <Badge variant="secondary" className="bg-amber-200/50 text-amber-900">
+              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
                 {planets.length} Grahas (Planets)
               </Badge>
               
-              <Badge variant="secondary" className="bg-orange-200/50 text-orange-900">
+              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
                 Moon: {formatNakshatra(moonNakshatra)}
               </Badge>
               
-              <Badge variant="secondary" className="bg-yellow-200/50 text-yellow-900">
+              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
                 Tithi: {tithi}
               </Badge>
               
               {currentDasha.hasData && (
-                <Badge variant="secondary" className="bg-purple-200/50 text-purple-900">
+                <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
                   {currentDasha.planet} Dasha
                 </Badge>
               )}
               
               {vedicReading?.yogas && vedicReading.yogas.length > 0 && (
-                <Badge variant="secondary" className="bg-pink-200/50 text-pink-900">
+                <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
                   {vedicReading.yogas.length} Yogas
                 </Badge>
               )}

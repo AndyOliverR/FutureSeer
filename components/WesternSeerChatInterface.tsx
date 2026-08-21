@@ -10,6 +10,7 @@ import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
+import { SEER_COMPOSER_BAR_CLASS, SEER_COMPOSER_INPUT_CLASS } from '@/lib/ui/seerComposerChrome';
 
 interface WesternSeerChatInterfaceProps {
   userId: string;
@@ -223,10 +224,10 @@ export default function WesternSeerChatInterface({
         animate={{ opacity: 1, x: 0 }}
         className="flex justify-start"
       >
-        <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
+        <div className="max-w-[80%] rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-4 text-[var(--m3-on-surface)]">
           <div className="whitespace-pre-wrap leading-relaxed">
             {isStreaming ? (
-              <SlowRevealText content={displayContent} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+              <SlowRevealText content={displayContent} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-[var(--m3-on-surface)]" />
             ) : (
               displayContent
             )}
@@ -236,7 +237,7 @@ export default function WesternSeerChatInterface({
               type="button"
               variant="ghost"
               size="sm"
-              className="mt-2 text-amber-700 hover:text-amber-900 hover:bg-amber-100 p-0 h-auto font-normal flex items-center gap-1"
+              className="mt-2 h-auto p-0 font-normal flex items-center gap-1 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
               onClick={() => toggleExpanded(message.id)}
             >
               {isExpanded ? (
@@ -258,9 +259,9 @@ export default function WesternSeerChatInterface({
   };
 
   return (
-    <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
-      <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
-        <CardTitle className="text-amber-900 flex items-center gap-2">
+    <Card className="flex h-full min-h-[50vh] max-h-[85vh] flex-col overflow-hidden border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] transition-all duration-300">
+      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+        <CardTitle className="flex items-center gap-2 text-amber-200">
           <Sparkles className="w-5 h-5 text-amber-700" />
           Mystical Consultation
         </CardTitle>
@@ -269,7 +270,7 @@ export default function WesternSeerChatInterface({
             type="button"
             variant="ghost"
             size="sm"
-            className="text-slate-600 hover:text-amber-900 hover:bg-amber-100 shrink-0"
+            className="shrink-0 text-[var(--m3-on-surface-variant)] hover:bg-amber-500/10 hover:text-amber-200"
             onClick={() => setMessages([])}
           >
             <Trash2 className="w-4 h-4 mr-1" />
@@ -283,10 +284,10 @@ export default function WesternSeerChatInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" />
-              <p className="text-amber-900 font-medium mb-2">Ask me anything about your future…</p>
-              <p className="text-slate-700 text-sm mt-1 mb-2">I'll consult your natal chart to interpret life themes, tendencies, and favorable periods.</p>
+              <p className="mb-2 font-medium text-amber-200">Ask me anything about your future…</p>
+              <p className="mt-1 mb-2 text-sm text-[var(--m3-on-surface-variant)]">I'll consult your natal chart to interpret life themes, tendencies, and favorable periods.</p>
               <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
-              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+              <ul className="mx-auto mb-4 max-w-md list-inside list-disc space-y-0.5 text-left text-sm text-[var(--m3-on-surface-variant)]">
                 <li>Relationships, marriage, compatibility</li>
                 <li>Career direction and growth phases</li>
                 <li>Strengths, challenges, personality traits</li>
@@ -300,7 +301,7 @@ export default function WesternSeerChatInterface({
                     size="sm"
                     onClick={() => sendMessage(q)}
                     disabled={isLoading}
-                    className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
+                    className="border-[var(--m3-outline-variant)] text-xs text-amber-200 hover:bg-amber-500/10"
                   >
                     {q}
                   </Button>
@@ -319,8 +320,8 @@ export default function WesternSeerChatInterface({
               </AnimatePresence>
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-700">
+                  <div className="rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-4">
+                    <div className="flex items-center gap-2 text-[var(--m3-on-surface-variant)]">
                       <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
                       Consulting the mystical forces...
                     </div>
@@ -332,7 +333,7 @@ export default function WesternSeerChatInterface({
           )}
         </div>
 
-        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+        <div className={SEER_COMPOSER_BAR_CLASS}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -346,7 +347,7 @@ export default function WesternSeerChatInterface({
               onKeyPress={handleKeyPress}
               placeholder="Ask about relationships, career, favorable periods, or life themes..."
               disabled={isLoading}
-              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+              className={SEER_COMPOSER_INPUT_CLASS}
             />
             <Button
               type="submit"

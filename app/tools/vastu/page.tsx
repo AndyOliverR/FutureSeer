@@ -38,6 +38,7 @@ import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
 import { cn } from '@/lib/utils'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
 import { useViralReportBypass } from '@/hooks/useViralReportBypass'
 import { Phase2VisualPanel } from '@/components/charts/Phase2VisualPanel'
@@ -219,6 +220,24 @@ export default function VastuPage() {
       setPersonalizedDirections(personalized)
     }
   }, [userProfile])
+
+  useEffect(() => {
+    if (!facingDirection) return
+    const cleanLayout = Object.fromEntries(
+      Object.entries(layout).filter(([, v]) => typeof v === 'string' && v.trim()),
+    )
+    void fetchWithFirebaseAuthRequired('/api/profile/ensure-tool-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        toolSlug: 'vastu',
+        extraInputs: {
+          facingDirection,
+          layout: Object.keys(cleanLayout).length > 0 ? cleanLayout : undefined,
+        },
+      }),
+    }).catch(() => undefined)
+  }, [facingDirection, layout])
 
   const [vastuTiming, setVastuTiming] = useState<any>(null)
   const [aayaCalculation, setAayaCalculation] = useState<any>(null)

@@ -10,6 +10,7 @@ import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
+import { seerConversationHistoryFromMessages } from '@/lib/seerChatVoice';
 import { PalmistryAnalysis } from '@/lib/palmistryIntelligence';
 
 interface PalmistrySeerChatInterfaceProps {
@@ -115,6 +116,7 @@ export default function PalmistrySeerChatInterface({
         body: JSON.stringify({
           userId,
           question: messageToSend,
+          conversationHistory: seerConversationHistoryFromMessages(messages),
           palmistryContext: palmistryAnalysis ?? null,
           sessionId,
           userProfile: {
@@ -316,7 +318,7 @@ export default function PalmistrySeerChatInterface({
             </div>
           )}
         </div>
-        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+        <div className="shrink-0 border-t border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -330,7 +332,7 @@ export default function PalmistrySeerChatInterface({
               onKeyPress={handleKeyPress}
               placeholder="Ask about personality, career tendencies, relationship style, or growth…"
               disabled={isLoading}
-              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
+              className="flex-1 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-amber-400 focus:ring-amber-200"
             />
             <Button
               type="submit"

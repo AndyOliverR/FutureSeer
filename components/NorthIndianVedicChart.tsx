@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { CHART_SVG_FONT_FAMILY } from "@/lib/charts/svgTypography";
 
 interface PlanetData {
   name: string;
@@ -193,7 +194,7 @@ const NorthIndianVedicChart: React.FC<NorthIndianVedicChartProps> = ({
               fill="#4B5563"
               fontWeight="bold"
               textAnchor="middle"
-              fontFamily="Arial, Helvetica, 'Segoe UI', sans-serif"
+              fontFamily={CHART_SVG_FONT_FAMILY}
             >
               {houseNum}
             </text>
@@ -208,7 +209,7 @@ const NorthIndianVedicChart: React.FC<NorthIndianVedicChartProps> = ({
           fill="#EF4444"
           fontWeight="bold"
           textAnchor="middle"
-          fontFamily="Arial, Helvetica, 'Segoe UI', sans-serif"
+          fontFamily={CHART_SVG_FONT_FAMILY}
         >
           AS {Math.floor(ascendantDegree)}° {Math.floor((ascendantDegree % 1) * 60)}'
         </text>
@@ -238,7 +239,7 @@ const NorthIndianVedicChart: React.FC<NorthIndianVedicChartProps> = ({
               fill={planetColor}
               fontWeight="600"
               textAnchor="middle"
-              fontFamily="Arial, Helvetica, 'Segoe UI Symbol', sans-serif"
+              fontFamily={CHART_SVG_FONT_FAMILY}
             >
               {planetText}
             </text>

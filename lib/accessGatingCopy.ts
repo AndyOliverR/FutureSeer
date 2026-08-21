@@ -10,12 +10,11 @@ export const PROFILE_PLAN_REQUIRED_BODY =
 export const PROFILE_PLAN_PRICING_CTA_LABEL = 'View pricing and plans'
 
 /**
- * When a tool report is not yet generated (full mystical profile not run or missing).
- * Plan vs. profile: this is the profile-generation path, not the membership path.
+ * When a tool report is not yet generated (profile not committed).
  */
 export function toolReportMissingBody(toolLabel?: string): string {
   if (toolLabel) {
-    return `Your ${toolLabel.toLowerCase()} reading is still processing. Ready reports appear automatically as the pipeline completes.`
+    return `Generate your full report on Profile first, then return here for your ${toolLabel.toLowerCase()} reading.`
   }
-  return 'Your readings are still processing. Ready reports appear automatically as the pipeline completes.'
+  return 'Generate your full report on Profile first, then open this tool for its reading.'
 }

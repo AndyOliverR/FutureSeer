@@ -43,14 +43,18 @@ function hashString(s: string): number {
 export function buildBirthHexagram(birthDate: string): IChingHexagram {
   const num = (hashString(birthDate || '') % 64) + 1;
   const meta = HEXAGRAM_NAMES[num] ?? { name: `Hexagram ${num}`, meaning: 'Guidance' };
-  const lines = [1, 2, 3, 4, 5, 6].map((position) => ({
-    position,
-    text: '',
-    meaning: '',
-    changing: false,
-    yinYang: 'yang' as const,
-    element: 'Metal',
-  }));
+  const bits = (num - 1).toString(2).padStart(6, '0');
+  const lines = [1, 2, 3, 4, 5, 6].map((position) => {
+    const yang = bits[6 - position] === '1';
+    return {
+      position,
+      text: yang ? 'Nine' : 'Six',
+      meaning: yang ? 'Yang line — firm, initiating' : 'Yin line — yielding, receptive',
+      changing: false,
+      yinYang: (yang ? 'yang' : 'yin') as 'yang' | 'yin',
+      element: yang ? 'Metal' : 'Earth',
+    };
+  });
   return {
     number: num,
     name: meta.name,

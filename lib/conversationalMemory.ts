@@ -2,6 +2,7 @@
 // Implements Working, Short-term, Long-term, Episodic, and Procedural memory
 
 import { devLog } from '@/lib/devLogger';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   userSubdocGet,
   userSubdocSet,
@@ -1033,7 +1034,7 @@ Respond in JSON format:
 
       const structured = await callStructuredAI({
         label: 'conversation-memory-summary',
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_DEFAULT_TEXT_MODEL,
         messages: [
           { role: 'system', content: 'You are a helpful assistant that summarizes conversations in JSON format.' },
           { role: 'user', content: prompt }

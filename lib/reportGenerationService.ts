@@ -1,7 +1,7 @@
 /**
  * Central report generation service.
- * This is the only public entry point for running the full report pipeline.
- * No tool or other module should call the orchestrator or tool APIs directly for generation.
+ * Natal/on-demand generation goes through lib/onDemandToolReports.ts.
+ * generateAllReports remains for admin/legacy full-catalog runs only.
  */
 
 import type { UserProfile } from './firebase';

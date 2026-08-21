@@ -2,10 +2,11 @@
 
 import React from 'react'
 import { devLog } from '@/lib/devLogger';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Sun, Orbit, Info } from 'lucide-react'
 import ChartMetadataComponent, { ChartMetadata } from './ChartMetadata'
 import { UnifiedChartRenderer, createWesternChartData } from '@/components/charts/UnifiedChartRenderer';
 import ColorfulWesternChart from './ColorfulWesternChart';
+import { ChartFrame } from '@/components/charts/ChartFrame';
 import { isUnifiedChartsEnabled } from '@/lib/charts/featureFlags';
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
 
@@ -64,145 +65,104 @@ export default function DualChartDisplay({
   const chartWidth = isMobileLayout ? 320 : _width;
   const chartHeight = isMobileLayout ? 300 : _height;
 
-  // Debug logs only in development
   if (process.env.NODE_ENV === 'development') {
     devLog.debug('DualChartDisplay: Received transit planets:', transitPlanets)
     devLog.debug('DualChartDisplay: Received transit houses:', transitHouses)
   }
-  
-  return (
-    <div className="w-full">
-      {/* Dual Chart Display - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
-        {/* Natal Chart */}
-        <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 shadow-lg">
-          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="text-center text-base sm:text-lg font-bold text-blue-800 flex items-center justify-center gap-2">
-              <span className="text-2xl">☉</span>
-              Natal Chart
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-                {/* Natal Chart Metadata */}
-                {natalMetadata && (
-                  <ChartMetadataComponent 
-                    metadata={natalMetadata}
-                  />
-                )}
-                
-                <div className="w-full h-full min-h-[280px] sm:min-h-[400px] flex items-center justify-center overflow-x-auto">
-                  {isUnifiedChartsEnabled() ? (
-                    <UnifiedChartRenderer
-                      chart={createWesternChartData({
-                        planets: natalPlanets as unknown as Array<Record<string, unknown>>,
-                        houses: natalHouses as unknown as Array<Record<string, unknown>>,
-                        aspects: natalAspects as unknown as Array<Record<string, unknown>>,
-                        title: 'Natal Chart',
-                      })}
-                      visualVariant="ivory-manuscript"
-                    />
-                  ) : (
-                    <ColorfulWesternChart
-                      planets={natalPlanets}
-                      houses={natalHouses}
-                      aspects={natalAspects}
-                      width={chartWidth}
-                      height={chartHeight}
-                      title=""
-                      backgroundColor="#f3f4f9"
-                    />
-                  )}
-                </div>
-          </CardContent>
-        </Card>
 
-        {/* Transit Chart */}
-        <Card className="bg-gradient-to-br from-green-50 to-teal-50 border-2 border-green-200 shadow-lg">
-          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="text-center text-base sm:text-lg font-bold text-green-800 flex items-center justify-center gap-2">
-              <span className="text-2xl">♅</span>
-              Transit Chart
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            {/* Transit Chart Metadata */}
-            {transitMetadata && (
-              <ChartMetadataComponent 
-                metadata={transitMetadata}
-              />
-            )}
-            
-            <div className="w-full h-full min-h-[280px] sm:min-h-[400px] flex items-center justify-center overflow-x-auto">
-              {isUnifiedChartsEnabled() ? (
-                <UnifiedChartRenderer
-                  chart={createWesternChartData({
-                    planets: transitPlanets as unknown as Array<Record<string, unknown>>,
-                    houses: transitHouses as unknown as Array<Record<string, unknown>>,
-                    aspects: [],
-                    title: 'Transit Chart',
-                  })}
-                  visualVariant="ivory-manuscript"
-                />
-              ) : (
-                <ColorfulWesternChart
-                  planets={transitPlanets}
-                  houses={transitHouses}
-                  aspects={[]}
-                  width={chartWidth}
-                  height={chartHeight}
-                  title=""
-                  backgroundColor="#f0fdf4"
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
+  const natalChart = isUnifiedChartsEnabled() ? (
+    <UnifiedChartRenderer
+      chart={createWesternChartData({
+        planets: natalPlanets as unknown as Array<Record<string, unknown>>,
+        houses: natalHouses as unknown as Array<Record<string, unknown>>,
+        aspects: natalAspects as unknown as Array<Record<string, unknown>>,
+        title: 'Natal Chart',
+      })}
+      visualVariant="ivory-manuscript"
+    />
+  ) : (
+    <ColorfulWesternChart
+      planets={natalPlanets}
+      houses={natalHouses}
+      aspects={natalAspects}
+      width={chartWidth}
+      height={chartHeight}
+      title=""
+      backgroundColor="#0b1220"
+    />
+  )
+
+  const transitChart = isUnifiedChartsEnabled() ? (
+    <UnifiedChartRenderer
+      chart={createWesternChartData({
+        planets: transitPlanets as unknown as Array<Record<string, unknown>>,
+        houses: transitHouses as unknown as Array<Record<string, unknown>>,
+        aspects: [],
+        title: 'Transit Chart',
+      })}
+      visualVariant="ivory-manuscript"
+    />
+  ) : (
+    <ColorfulWesternChart
+      planets={transitPlanets}
+      houses={transitHouses}
+      aspects={[]}
+      width={chartWidth}
+      height={chartHeight}
+      title=""
+      backgroundColor="#0b1220"
+    />
+  )
+
+  return (
+    <div className="w-full min-w-0">
+      <div className="mb-6 grid grid-cols-1 items-stretch gap-4 sm:gap-6 lg:grid-cols-2">
+        <ChartFrame
+          title="Natal Chart"
+          subtitle="Birth positions"
+          header={natalMetadata ? <ChartMetadataComponent metadata={natalMetadata} /> : undefined}
+        >
+          {natalChart}
+        </ChartFrame>
+        <ChartFrame
+          title="Transit Chart"
+          subtitle="Current sky"
+          header={transitMetadata ? <ChartMetadataComponent metadata={transitMetadata} /> : undefined}
+        >
+          {transitChart}
+        </ChartFrame>
       </div>
 
-      {/* Chart Information Panel */}
-      <Card className="bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200">
-        <CardHeader>
-          <CardTitle className="text-center text-lg font-semibold text-slate-700">
-            Chart Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Natal Chart Summary */}
-            <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">Natal Chart</h4>
-              <p className="text-sm text-blue-600">
-                Birth positions of planets and houses
-              </p>
-              <div className="mt-2 text-xs text-blue-500">
-                {natalPlanets.length} planets • {natalHouses.length} houses • {natalAspects.length} aspects
-              </div>
-            </div>
-
-            {/* Transit Chart Summary */}
-            <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">Transit Chart</h4>
-              <p className="text-sm text-green-600">
-                Current planetary positions
-              </p>
-              <div className="mt-2 text-xs text-green-500">
-                {transitPlanets.length} planets • {transitHouses.length} houses
-              </div>
-            </div>
-
-            {/* Chart Features */}
-            <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
-              <h4 className="font-semibold text-purple-800 mb-2">Features</h4>
-              <div className="text-xs text-purple-600 space-y-1">
-                <div>✨ Vibrant zodiac colors</div>
-                <div>📐 Aspect lines</div>
-                <div>📏 Degree markers</div>
-                <div>🔄 Retrograde indicators</div>
-              </div>
-            </div>
+      <div className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] p-4">
+        <p className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-amber-200">
+          <Info className="h-4 w-4" />
+          Chart information
+        </p>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-3 text-center">
+            <h4 className="mb-1 flex items-center justify-center gap-1.5 text-sm font-medium text-amber-200">
+              <Sun className="h-4 w-4" /> Natal
+            </h4>
+            <p className="text-xs text-[var(--m3-on-surface-variant)]">
+              {natalPlanets.length} planets · {natalHouses.length} houses · {natalAspects.length} aspects
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-3 text-center">
+            <h4 className="mb-1 flex items-center justify-center gap-1.5 text-sm font-medium text-amber-200">
+              <Orbit className="h-4 w-4" /> Transits
+            </h4>
+            <p className="text-xs text-[var(--m3-on-surface-variant)]">
+              {transitPlanets.length} planets · {transitHouses.length} houses
+            </p>
+          </div>
+          <div className="rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-3 text-center">
+            <h4 className="mb-1 text-sm font-medium text-amber-200">Includes</h4>
+            <p className="text-xs text-[var(--m3-on-surface-variant)]">
+              Zodiac ring · aspects · retrograde marks
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
 import { planetSymbols, getPlanetColor, formatPlanetDisplay } from "@/lib/chart-utils";
+import { CHART_SVG_FONT_FAMILY } from "@/lib/charts/svgTypography";
 
 interface VedicChartNorthProProps {
   chart: {
@@ -149,7 +150,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
               textAnchor="middle"
               fontSize="16"
               fill="#2C3E50"
-              fontFamily="Arial"
+              fontFamily={CHART_SVG_FONT_FAMILY}
               fontWeight="bold"
             >
               {h.house}
@@ -168,7 +169,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
               textAnchor="middle"
               fontSize="12"
               fill="#666666"
-              fontFamily="Arial"
+              fontFamily={CHART_SVG_FONT_FAMILY}
             >
               {h.signName}
             </text>
@@ -192,7 +193,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
                 textAnchor="middle"
                 fontSize="14"
                 fill={planetColor}
-                fontFamily="Arial"
+                fontFamily={CHART_SVG_FONT_FAMILY}
                 fontWeight="bold"
                 style={{ cursor: onPlanetClick ? "pointer" : "default" }}
                 onClick={() => onPlanetClick?.(planet, planetData)}
@@ -210,7 +211,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
           textAnchor="middle"
           fontSize="14"
           fill="#ffd87a"
-          fontFamily="Arial"
+          fontFamily={CHART_SVG_FONT_FAMILY}
           fontWeight="bold"
         >
           North Indian Chart

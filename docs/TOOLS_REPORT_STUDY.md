@@ -10,26 +10,27 @@ This document summarizes how **working** tools (Western Astrology, Human Design,
 flowchart LR
   subgraph profile [Profile page]
     A[User completes profile]
-    B[Clicks Generate my mystical profile]
+    B[Clicks Generate Full Report]
   end
   subgraph api [API]
     C[POST /api/profile/generate-mystical]
-    D[Orchestrator runs each tool]
-    E[Tool API e.g. /api/occult/universal or /api/tools/human-design/generate-report]
+    D[Commit profile plus Vedic and Western natal charts]
+    E[On tool visit POST /api/profile/ensure-tool-report]
     F[comprehensiveMysticalProfiles.uid.toolSlug]
   end
   subgraph toolPage [Tool page]
     G[useToolReport toolSlug]
     H[Read from Firestore via MysticalProfileContext]
-    I[Show report or CTA to /profile]
+    I[Show report or generate on visit]
   end
-  A --> B --> C --> D --> E --> F
+  A --> B --> C --> D
   G --> H --> I
+  I --> E --> F
   F --> H
 ```
 
 - **Single source of truth:** `comprehensiveMysticalProfiles/{uid}` in Firestore. Each tool’s result is stored under a top-level key matching the tool slug (e.g. `western`, `humanDesign`, `bazi`).
-- **No generate button on the tool page.** The user generates once on the **Profile** page; tool pages only **read** from the pipeline (and optionally call an on-demand API for extra data, then save back).
+- **Generate on Profile** commits natal charts. Tool pages **read** stored reports and **ensure** the current tool on visit (`POST /api/profile/ensure-tool-report`) if missing.
 
 ---
 

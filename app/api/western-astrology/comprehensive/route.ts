@@ -6,6 +6,7 @@ import type { StructuredFailureMode } from '@/lib/aiStructuredOutputParse';
 import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { transformComprehensiveToChunks } from '@/lib/westernReportChunks';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 import {
   elementModalityPolarityCounts,
   partOfFortuneFromPlanets,
@@ -772,7 +773,7 @@ export async function POST(request: NextRequest) {
       tryLlm: async () => {
         const structured = await callStructuredAI({
           label: 'western-comprehensive',
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_DEFAULT_TEXT_MODEL,
           userId,
           messages: [
             {

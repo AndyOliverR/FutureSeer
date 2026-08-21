@@ -1,10 +1,9 @@
 /**
  * Profile Generation Orchestrator
  *
- * ONE-TIME, ATOMIC profile generation.
- * Runs ALL tools, stores each report separately, builds Master Seer Database.
- * Rule: Generation is one-time. Interpretation is continuous.
- * Do not add partial or subset regeneration; edited-profile flow requires full pipeline only.
+ * Generate Full Report commits the profile and natal charts (vedic + western).
+ * Other tools run on visit via runProfileGenerationToolSlugs([slug]).
+ * Reports persist on comprehensiveMysticalProfiles/{uid}.
  *
  * Feng Shui practical guides (wealthTips, practicalChecklist from lib/fengshui/practicalGuides.ts)
  * are computed on the Feng Shui tool page for v1; they are not added to stored Firestore payloads
@@ -16,6 +15,11 @@ import { devLog } from '@/lib/devLogger';
 import { getServerBaseUrl } from './serverBaseUrl';
 import { calculateVedicNumerologyProfile } from './vedicNumerologyCalculations';
 import { normalizeBirthTime } from './birthTimeUtils';
+import {
+  mergeExtraInputsOntoProfile,
+  type ToolReportExtraInputs,
+} from './toolReportExtraInputs';
+import { collapseDuplicateReportFields } from './reportDedup';
 import {
   ALL_TOOL_SLUGS,
   classifyToolReportState,
@@ -256,13 +260,29 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 /** Run a single tool and return its report. Failures are caught; never throw. */
+function withDedupedSuccess(
+  data: Record<string, unknown>,
+  generatedAt: string,
+  extra?: { _usage?: ToolReportEntry['_usage'] },
+): ToolReportEntry {
+  return {
+    status: 'success',
+    data: collapseDuplicateReportFields(data),
+    generatedAt,
+    _usage: extra?._usage,
+  }
+}
+
 async function runTool(
   toolSlug: string,
   userId: string,
   profile: UserProfile,
-  baseUrl: string
+  baseUrl: string,
+  extraInputs?: ToolReportExtraInputs,
 ): Promise<ToolReportEntry> {
   const generatedAt = new Date().toISOString();
+  const extras = extraInputs
+  const extraQuestion = extras?.question?.trim()
   try {
     switch (toolSlug) {
       case 'vedic': {
@@ -496,25 +516,55 @@ async function runTool(
       case 'dreamSymbols': {
         const { dreamSymbolsIntelligence } = await import('./dreamSymbolsIntelligence');
         const symbols = dreamSymbolsIntelligence.getDreamSymbols();
-        return {
-          status: 'success',
-          data: {
+        const dreamText = extras?.dreamDescription?.trim()
+        if (dreamText) {
+          const analysis = await dreamSymbolsIntelligence.analyzeDream({
+            dreamDescription: dreamText,
+            symbols: [],
+            emotions: [],
+            dreamType: 'ordinary',
+          })
+          return withDedupedSuccess({
+            reading: analysis.spiritualMessage || analysis.overallTheme,
+            dreamDescription: dreamText,
+            analysis,
+            symbols: analysis.symbols,
+            framework: { categories: ['animals', 'objects', 'people', 'places', 'actions'] },
+            requiresNextStep: false,
+          }, generatedAt)
+        }
+        return withDedupedSuccess({
             reading: 'Dream symbols interpretation framework available.',
             symbols: Object.keys(symbols).length,
             framework: { categories: ['animals', 'objects', 'people', 'places', 'actions'] },
-          },
-          generatedAt,
-        };
+            baselineReady: true,
+            requiresNextStep: true,
+            nextStepCta: 'Describe a recent dream to store a full interpretation.',
+          }, generatedAt)
       }
 
       case 'tarot': {
         const { tarotIntelligence } = await import('./tarotIntelligence');
         const tarotProfile = tarotIntelligence.calculateProfileCards(profile.birthDate || '', profile.fullName || '');
-        return {
-          status: 'success',
-          data: { profile: tarotProfile },
-          generatedAt,
-        };
+        if (extraQuestion) {
+          const spreadType = extras?.spreadType || 'celtic-cross'
+          const res = await fetch(`${baseUrl}/api/tools/tarot/reading`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, question: extraQuestion, spreadType }),
+          }).catch(() => null)
+          let lastReading: Record<string, unknown> | undefined
+          if (res?.ok) {
+            const json = await res.json()
+            lastReading = (json.data ?? json) as Record<string, unknown>
+          }
+          return withDedupedSuccess({
+            profile: tarotProfile,
+            lastReading: lastReading ?? { question: extraQuestion, spreadType },
+            requiresNextStep: false,
+          }, generatedAt)
+        }
+        return withDedupedSuccess({ profile: tarotProfile }, generatedAt)
       }
 
       case 'kp': {
@@ -542,20 +592,36 @@ async function runTool(
       }
 
       case 'iching': {
+        if (extraQuestion) {
+          const { ichingIntelligence } = await import('./ichingIntelligence');
+          const method = (extras?.method === 'yarrow' || extras?.method === 'random' ? extras.method : 'coins') as 'coins' | 'yarrow' | 'random'
+          const analysis = await ichingIntelligence.consultIChing(extraQuestion, method)
+          const hexagram = analysis.hexagram as unknown as Record<string, unknown>
+          return withDedupedSuccess({
+            question: extraQuestion,
+            method,
+            hexagram,
+            relatingHexagram: hexagram.changingTo ?? null,
+            changingLines: analysis.changingLines,
+            interpretation: analysis.interpretation,
+            recommendations: analysis.recommendations,
+            requiresNextStep: false,
+          }, generatedAt)
+        }
         const { buildBirthHexagram } = await import('./ichingBirthHexagram');
         const hexagram = buildBirthHexagram(profile.birthDate || '');
-        return {
-          status: 'success',
-          data: { hexagram },
-          generatedAt,
-        };
+        return withDedupedSuccess({ hexagram }, generatedAt)
       }
 
       case 'runes': {
         const res = await fetch(`${baseUrl}/api/tools/runes/reading`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, question: 'Birth-path rune guidance', spreadType: 'three' }),
+          body: JSON.stringify({
+            userId,
+            question: extraQuestion || 'Birth-path rune guidance',
+            spreadType: extras?.spreadType || 'three',
+          }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -569,7 +635,11 @@ async function runTool(
         const res = await fetch(`${baseUrl}/api/tools/lenormand/reading`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, question: 'Birth-path Lenormand guidance', spreadType: 'three' }),
+          body: JSON.stringify({
+            userId,
+            question: extraQuestion || 'Birth-path Lenormand guidance',
+            spreadType: extras?.spreadType || 'three',
+          }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -583,7 +653,11 @@ async function runTool(
         const res = await fetch(`${baseUrl}/api/tools/pendulum/reading`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, question: 'What is the most supportive current focus?', pendulumType: 'crystal' }),
+          body: JSON.stringify({
+            userId,
+            question: extraQuestion || 'What is the most supportive current focus?',
+            pendulumType: extras?.pendulumType || 'crystal',
+          }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -597,7 +671,11 @@ async function runTool(
         const res = await fetch(`${baseUrl}/api/tools/geomancy/reading`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, question: 'Birth-path geomancy guidance', questionType: 'general' }),
+          body: JSON.stringify({
+            userId,
+            question: extraQuestion || 'Birth-path geomancy guidance',
+            questionType: 'general',
+          }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -614,8 +692,8 @@ async function runTool(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userId,
-              question: 'Birth-path sortilege guidance',
-              method: 'coins',
+              question: extraQuestion || 'Birth-path sortilege guidance',
+              method: extras?.method || 'coins',
               userProfile: profile,
             }),
           });
@@ -647,35 +725,15 @@ async function runTool(
             generatedAt,
           };
         }
-        try {
-          const { faceReadingIntelligence } = await import('./faceReadingIntelligence');
-          const age = profile.birthDate
-            ? Math.floor(
-                (Date.now() - new Date(profile.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-              )
-            : 30;
-          const gender = (profile.gender === 'non-binary' ? 'other' : profile.gender) || 'other';
-          const analysis = await faceReadingIntelligence.analyzeFace(
-            age,
-            gender as 'male' | 'female' | 'other',
-            profile.facePhotoUrl
-          );
-          return {
-            status: 'success',
-            data: { analysis, faceReadingContext: analysis },
-            generatedAt,
-          };
-        } catch (err) {
-          devLog.warn('[ProfileOrchestrator] Face reading analysis failed:', err, 'profileGenerationOrchestrator');
-          return {
-            status: 'success',
-            data: {
-              placeholder: true,
-              reason: 'Face reading failed. Try re-uploading a clearer image.',
-            },
-            generatedAt,
-          };
-        }
+        return {
+          status: 'success',
+          data: {
+            placeholder: true,
+            photoOnFile: true,
+            reason: 'Physiognomy is only stored when features can be read from the photo. Random face traits are not used.',
+          },
+          generatedAt,
+        };
       }
 
       case 'palmistry': {
@@ -695,7 +753,7 @@ async function runTool(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               imageUrl: profile.palmPhotoUrl,
-              dominantHand: 'right',
+              dominantHand: extras?.dominantHand || 'right',
               gender: profile.gender || 'other',
               age: profile.birthDate
                 ? Math.floor(
@@ -708,7 +766,7 @@ async function runTool(
           const json = await res.json();
           const aiData = json.data ?? json;
           if (!aiData?.lines || !aiData?.mounts) throw new Error('Incomplete palm analysis');
-          const dominantHand: 'left' | 'right' = 'right';
+          const dominantHand: 'left' | 'right' = extras?.dominantHand || 'right';
           const hand: 'left' | 'right' | 'both' =
             profile.gender === 'female' ? 'left' : profile.gender === 'male' ? 'right' : 'both';
           const age = profile.birthDate
@@ -880,7 +938,10 @@ async function runTool(
       }
 
       case 'synastry': {
-        const rec = profile as unknown as Record<string, unknown>;
+        const rec = mergeExtraInputsOntoProfile(
+          profile as unknown as Record<string, unknown>,
+          extras,
+        );
         const person2BirthDate = (rec.partnerBirthDate as string | undefined) ?? (rec.partnerDateOfBirth as string | undefined);
         const person2BirthTime = (rec.partnerBirthTime as string | undefined) ?? (rec.partnerTimeOfBirth as string | undefined);
         const person2BirthLocation = (rec.partnerBirthPlace as string | undefined) ?? (rec.partnerPlaceOfBirth as string | undefined);
@@ -914,10 +975,38 @@ async function runTool(
           throw new Error((err as { error?: string })?.error ?? `Synastry API: ${res.status}`);
         }
         const json = await res.json();
-        return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
+        return { status: 'success', data: collapseDuplicateReportFields((json.data ?? json) as Record<string, unknown>), generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'horary': {
+        if (extraQuestion && extras?.questionTime && extras?.questionPlace) {
+          const res = await fetch(`${baseUrl}/api/tools/horary-astrology/generate-custom`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              questionData: {
+                question: extraQuestion,
+                questionTime: extras.questionTime,
+                questionPlace: extras.questionPlace,
+                questionDate: extras.questionDate,
+                latitude: extras.latitude,
+                longitude: extras.longitude,
+                timezone: extras.timezone,
+              },
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { error?: string })?.error ?? `Horary API: ${res.status}`);
+          }
+          const json = await res.json();
+          return withDedupedSuccess({
+            ...((json.data ?? json) as Record<string, unknown>),
+            requiresNextStep: false,
+            baselineReady: false,
+          }, generatedAt, { _usage: json._usage ?? json.usage });
+        }
         return {
           status: 'success',
           data: buildBaselineReport('horary', profile),
@@ -931,10 +1020,22 @@ async function runTool(
             String(profile.fullName ?? profile.displayName ?? ''),
             String(profile.birthDate ?? '')
           );
+          const observed = extras?.observedNumber?.trim()
+          const base = buildBaselineReport('angelNumbers', profile)
+          if (observed) {
+            return withDedupedSuccess({
+              ...base,
+              observedNumber: observed,
+              reading: `The repeating number ${observed} is stored with your life-path angel signature.`,
+              requiresNextStep: false,
+              numerologyAnchor: profileData?.lifePathNumber ?? null,
+              enrichment: { status: 'observed_number_logged', observedNumber: observed },
+            }, generatedAt)
+          }
           return {
             status: 'success',
             data: {
-              ...buildBaselineReport('angelNumbers', profile),
+              ...base,
               numerologyAnchor: profileData?.lifePathNumber ?? null,
             },
             generatedAt,
@@ -949,19 +1050,29 @@ async function runTool(
       }
 
       case 'kabbalisticNumerology': {
-        return {
-          status: 'success',
-          data: buildBaselineReport('kabbalisticNumerology', profile),
-          generatedAt,
-        };
+        const { getKabbalisticAnalysis } = await import('./kabbalisticNumerologyIntelligence');
+        const report = await getKabbalisticAnalysis(userId, {
+          name: String(profile.fullName ?? profile.displayName ?? ''),
+          birthDate: String(profile.birthDate ?? ''),
+        });
+        return withDedupedSuccess({
+          ...(report as unknown as Record<string, unknown>),
+          requiresNextStep: false,
+          baselineReady: false,
+        }, generatedAt);
       }
 
       case 'nameAnalysis': {
-        return {
-          status: 'success',
-          data: buildBaselineReport('nameAnalysis', profile),
-          generatedAt,
-        };
+        const { computeChaldeanProfile } = await import('./numerology/chaldean');
+        const chaldean = computeChaldeanProfile(profile.fullName || String(profile.displayName ?? ''), profile.birthDate || '');
+        return withDedupedSuccess({
+          reading: 'Chaldean name analysis from your legal name.',
+          numbers: chaldean.numbers,
+          breakdown: chaldean.breakdown,
+          fullName: profile.fullName ?? profile.displayName,
+          requiresNextStep: false,
+          baselineReady: false,
+        }, generatedAt);
       }
 
       case 'ziweiDouShu': {
@@ -1278,14 +1389,17 @@ async function runTool(
               generatedAt,
             };
           }
+          const hasLayout = Boolean(extras?.facingDirection || extras?.layout)
           return {
             status: 'success',
             data: {
               ...(data as unknown as Record<string, unknown>),
               baselineReady: true,
-              requiresNextStep: true,
-              nextStepLabel: 'Complete Next Step',
-              nextStepCta: 'Add home layout details to unlock precision guidance.',
+              requiresNextStep: !hasLayout,
+              facingDirection: extras?.facingDirection,
+              layout: extras?.layout,
+              nextStepLabel: hasLayout ? undefined : 'Complete Next Step',
+              nextStepCta: hasLayout ? undefined : 'Add home layout details to unlock precision guidance.',
             },
             generatedAt,
           };
@@ -1318,7 +1432,13 @@ async function runTool(
           const reading = await generateFengShuiReading(profile, analysis);
           return {
             status: 'success',
-            data: { analysis, reading },
+            data: {
+              analysis,
+              reading,
+              facingDirection: extras?.facingDirection,
+              layout: extras?.layout,
+              requiresNextStep: !(extras?.facingDirection || extras?.layout),
+            },
             generatedAt,
           };
         } catch (err) {
@@ -1858,6 +1978,8 @@ export async function runProfileGenerationToolSlugs(
     onProgress?: (update: GenerationProgressUpdate) => void | Promise<void>;
     onToolRun?: (update: ToolRunUpdate) => void | Promise<void>;
     onToolHeartbeat?: (update: ToolHeartbeatUpdate) => void | Promise<void>;
+    skipVedicComprehensive?: boolean;
+    extraInputs?: ToolReportExtraInputs;
   },
 ): Promise<{
   toolReports: ToolReports;
@@ -1868,6 +1990,8 @@ export async function runProfileGenerationToolSlugs(
     ...options,
     onlyToolSlugs: toolSlugs,
     skipFinalize: true,
+    skipVedicComprehensive: options?.skipVedicComprehensive,
+    extraInputs: options?.extraInputs,
   });
   return {
     toolReports: partial.toolReports,
@@ -1891,6 +2015,9 @@ export async function runProfileGeneration(
     onlyToolSlugs?: readonly string[];
     /** Skip interpretations / Seer master (queue worker runs tools in batches). */
     skipFinalize?: boolean;
+    /** Skip the extra Vedic comprehensive LLM attach (natal chart commit path). */
+    skipVedicComprehensive?: boolean;
+    extraInputs?: ToolReportExtraInputs;
   },
 ): Promise<GenerationResult> {
   const baseUrl = getServerBaseUrl();
@@ -1945,9 +2072,10 @@ export async function runProfileGeneration(
       }, 5000);
     }
     try {
-      const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
+      const entry = await withTimeout(runTool(slug, userId, profile, baseUrl, options?.extraInputs), 90_000, slug);
       if (
         slug === 'vedic' &&
+        !options?.skipVedicComprehensive &&
         entry.status === 'success' &&
         entry.data &&
         typeof entry.data === 'object' &&

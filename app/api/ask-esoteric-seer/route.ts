@@ -4,9 +4,11 @@ import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { callTextStream } from '@/lib/aiStructuredOutput';
 import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
-import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder'
+import { historyFromSeerBody } from '@/lib/seerChatVoice';
 import { chartSignLabel } from '@/lib/chartSignLabel';
 import { buildEsotericSeerSystemPrompt } from '@/lib/esotericSeerPrompts';
+import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-esoteric-seer';
@@ -117,9 +119,10 @@ export async function POST(request: NextRequest) {
     const { messages } = buildToolSeerMessages({
       systemContent: systemPrompt,
       userMessage: question.trim(),
+      history: historyFromSeerBody(body),
     });
 
-    const { stream } = await callTextStream({ label: 'ask-esoteric-seer', model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'ask-esoteric-seer', model: GROQ_DEFAULT_TEXT_MODEL,
       userId,
       cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages,
