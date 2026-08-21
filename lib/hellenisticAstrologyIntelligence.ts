@@ -1116,6 +1116,11 @@ function generateRemedies(
   };
 }
 
+export type HellenisticAstrologyDataOptions = {
+  /** When false, skip Firestore cache R/W (unauthenticated Stage B). Default true. */
+  useCache?: boolean;
+};
+
 // Main function to get intelligent Hellenistic Astrology data
 export async function getIntelligentHellenisticAstrologyData(
   userId: string,
@@ -1123,7 +1128,8 @@ export async function getIntelligentHellenisticAstrologyData(
   birthTime: string,
   birthPlace: string,
   latitude: number,
-  longitude: number
+  longitude: number,
+  options?: HellenisticAstrologyDataOptions
 ): Promise<HellenisticAstrologyReading> {
   let db: any = null;
   try {
@@ -1132,7 +1138,7 @@ export async function getIntelligentHellenisticAstrologyData(
     db = null;
   }
 
-  const useCache = !!db;
+  const useCache = options?.useCache !== false && !!db;
 
   if (useCache) {
     try {
