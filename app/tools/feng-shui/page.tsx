@@ -48,7 +48,7 @@ import { adaptFengShuiBagua } from "@/lib/charts/phase2Adapters"
 import { isFengShuiChartsV2Enabled } from "@/lib/charts/featureFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { FengShuiLayoutInput } from "@/components/FengShuiSeerChatInterface"
-import { classifyToolReportState } from "@/lib/profileGenerationOrchestrator"
+import { classifyToolReportState } from "@/lib/toolReportReadiness"
 
 const DIRECTION_OPTIONS = ['Unknown', 'North', 'South', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest'] as const
 

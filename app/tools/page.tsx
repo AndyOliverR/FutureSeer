@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import { BACK_NAV_LINK_CLASSES } from "@/components/navigation/BackButton"
 import { analytics } from "@/lib/analytics"
-import { summarizeToolReadiness, ALL_TOOL_SLUGS, isReadyToolReport } from "@/lib/profileGenerationOrchestrator"
+import { summarizeToolReadiness, ALL_TOOL_SLUGS, isReadyToolReport } from "@/lib/toolReportReadiness"
 import { isNumerologyChartsV2Enabled } from "@/lib/charts/featureFlags"
 import { buildItemListSchema } from "@/components/schema-markup"
 import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
