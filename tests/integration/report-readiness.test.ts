@@ -8,7 +8,7 @@ import {
   isReadyToolReport,
   summarizeToolReadiness,
   ALL_TOOL_SLUGS,
-} from '@/lib/profileGenerationOrchestrator';
+} from '@/lib/toolReportReadiness';
 
 describe('Report readiness contract', () => {
   it('classifies placeholder and failed states correctly', () => {
