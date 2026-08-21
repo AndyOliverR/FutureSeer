@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { trichakraIntelligence, UserProfile as TrichakraUserProfile } from '@/lib/trichakraIntelligence';
-import { getUserProfile } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/firebase';
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile';
 import { devLog } from '@/lib/devLogger';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 
@@ -14,28 +14,33 @@ export async function POST(request: NextRequest) {
 
     let userProfileFromDb: TrichakraUserProfile | null = null;
 
-    // If userId is provided, fetch from database (coordinates often live here while orchestrator payload is partial)
-    if (userId) {
-      try {
-        const profile: UserProfile | null = await getUserProfile(userId);
-        if (profile) {
-          userProfileFromDb = {
-            fullName: profile.fullName,
-            birthDate: profile.birthDate,
-            birthTime: profile.birthTime,
-            birthPlace: profile.birthPlace,
-            latitude: profile.birthLatitude,
-            longitude: profile.birthLongitude
-          };
-        }
-      } catch (profileError) {
-        devLog.error('⚠️ Failed to fetch user profile:', profileError, 'route');
-      }
-    }
-
     const overlay = (customProfile || birthData) as
       | (TrichakraUserProfile & { birthLatitude?: number; birthLongitude?: number })
       | null;
+
+    // Firestore enrichment requires ownership. Stage B may send body profile without a token.
+    if (userId) {
+      const loaded = await loadOwnedUserProfile(request, userId, 'trichakra-method');
+      if (loaded.ok) {
+        const profile: UserProfile = loaded.profile;
+        userProfileFromDb = {
+          fullName: profile.fullName,
+          birthDate: profile.birthDate,
+          birthTime: profile.birthTime,
+          birthPlace: profile.birthPlace,
+          latitude: profile.birthLatitude,
+          longitude: profile.birthLongitude
+        };
+      } else if (!overlay) {
+        // No body birth payload — cannot proceed without owned profile.
+        return NextResponse.json(
+          { success: false, error: loaded.error },
+          { status: loaded.status },
+        );
+      }
+      // If overlay exists and auth is missing/mismatched, continue with body payload only
+      // so Stage B generation stays recoverable without Admin profile IDOR.
+    }
 
     const finalProfile: TrichakraUserProfile | null =
       userProfileFromDb && overlay
@@ -133,17 +138,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    devLog.info('🕉️ Fetching Trichakra analysis for user:', userId, 'trichakra-method');
-
-    // Fetch user profile
-    const profile: UserProfile | null = await getUserProfile(userId);
-    
-    if (!profile) {
+    const loaded = await loadOwnedUserProfile(request, userId, 'trichakra-method');
+    if (!loaded.ok) {
       return NextResponse.json(
-        { success: false, error: 'User profile not found' },
-        { status: 404 }
+        { success: false, error: loaded.error },
+        { status: loaded.status },
       );
     }
+
+    devLog.info('🕉️ Fetching Trichakra analysis for user:', loaded.userId, 'trichakra-method');
+
+    const profile = loaded.profile;
 
     // Check if profile is complete
     if (!profile.birthDate || !profile.birthTime || !profile.birthPlace) {

@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { calculateHumanDesignChart, BirthData } from '@/lib/humanDesign/humanDesignCalculator'
 import { generateHumanDesignReport } from '@/lib/humanDesign/humanDesignReportGenerator'
-import { UserProfile, getUserProfile } from '@/lib/firebase'
+import { UserProfile } from '@/lib/firebase'
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile'
 import { geocodePlace } from '@/services/geocoding'
 import { devLog } from '@/lib/devLogger'
 
@@ -23,15 +24,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user profile if not provided
+    // Prefer body profile / birthData (Stage B). Firestore load requires ownership.
     let userProfile: UserProfile | null = providedProfile || null
-    
-    if (!userProfile && userId) {
-      try {
-        userProfile = await getUserProfile(userId)
-      } catch (error) {
-        devLog.warn('Could not fetch user profile:', error, 'human-design')
+
+    if (!userProfile && !birthData && userId) {
+      const loaded = await loadOwnedUserProfile(request, userId, 'human-design')
+      if (!loaded.ok) {
+        return NextResponse.json(
+          { success: false, error: loaded.error },
+          { status: loaded.status },
+        )
       }
+      userProfile = loaded.profile
     }
 
     // Use birth data from request or profile

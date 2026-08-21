@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { akashicRecordsIntelligence } from '@/lib/akashicRecordsIntelligence'
-import { getUserProfile } from '@/lib/firebase'
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile'
 import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
@@ -17,22 +17,23 @@ export async function POST(request: NextRequest) {
 
     devLog.info('📚 Generating Akashic Records reading for user:', userId, 'akashic')
 
-    // Use profile from pipeline when provided (reliable); otherwise fetch
+    // Prefer body profile (Stage B). Firestore load requires ownership.
     let userProfile = providedProfile ?? null
     if (!userProfile) {
-      try {
-        userProfile = await getUserProfile(userId)
-        if (userProfile) {
-          devLog.debug('👤 User profile loaded:', {
-            displayName: userProfile.displayName,
-            hasBirthDate: !!userProfile.birthDate,
-            hasBirthTime: !!userProfile.birthTime,
-            hasBirthPlace: !!userProfile.birthPlace
-          }, 'akashic')
-        }
-      } catch (profileError) {
-        devLog.warn('⚠️ Failed to fetch user profile (continuing with basic reading):', profileError, 'akashic')
+      const loaded = await loadOwnedUserProfile(request, userId, 'akashic')
+      if (!loaded.ok) {
+        return NextResponse.json(
+          { success: false, error: loaded.error },
+          { status: loaded.status },
+        )
       }
+      userProfile = loaded.profile
+      devLog.debug('👤 Owned user profile loaded:', {
+        displayName: userProfile.displayName,
+        hasBirthDate: !!userProfile.birthDate,
+        hasBirthTime: !!userProfile.birthTime,
+        hasBirthPlace: !!userProfile.birthPlace
+      }, 'akashic')
     } else {
       devLog.debug('👤 Using profile from request (pipeline)', undefined, 'akashic')
     }

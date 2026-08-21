@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUserProfile } from '@/lib/firebase'
 import { LENORMAND_DECK } from '@/lib/lenormandIntelligence'
 import { callTextAI } from '@/lib/aiStructuredOutput'
+import { verifyUserRequest } from '@/lib/userApiAuth'
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess'
 import { devLog } from '@/lib/devLogger'
 import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
 
@@ -21,18 +23,21 @@ export async function POST(request: NextRequest) {
     devLog.info('🌸 Generating Lenormand coaching response for user:', userId, 'lenormand')
     devLog.debug('📝 Question:', question, 'lenormand')
 
-    // Fetch user profile to get display name
+    // Fetch display name only for authenticated owner (Admin profile load).
     let displayName: string | undefined = 'Seeker' // Default fallback
-    if (userId) {
-      try {
-        const userProfile = await getUserProfile(userId)
-        if (userProfile?.displayName) {
-          displayName = userProfile.displayName
-          devLog.debug('👤 Using display name:', displayName, 'lenormand')
+    if (userId && typeof userId === 'string') {
+      const auth = await verifyUserRequest(request, 'lenormand-coaching')
+      const access = decideUserScopedAccess(userId, auth)
+      if (access.kind === 'owned') {
+        try {
+          const userProfile = await getUserProfile(access.userId)
+          if (userProfile?.displayName) {
+            displayName = userProfile.displayName
+            devLog.debug('👤 Using display name:', displayName, 'lenormand')
+          }
+        } catch (profileError) {
+          devLog.warn('⚠️ Failed to fetch user profile (using default):', profileError, 'lenormand')
         }
-      } catch (profileError) {
-        devLog.warn('⚠️ Failed to fetch user profile (using default):', profileError, 'lenormand')
-        // Continue with default "Seeker"
       }
     }
 

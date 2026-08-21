@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tarotIntelligence } from '@/lib/tarotIntelligence'
 import { getUserProfile } from '@/lib/firebase'
+import { verifyUserRequest } from '@/lib/userApiAuth'
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess'
 import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
@@ -26,36 +28,37 @@ export async function POST(request: NextRequest) {
     devLog.debug('📝 Question:', question, 'tarot')
     devLog.debug('📊 Spread Type:', spreadType, 'tarot')
 
-    // Fetch user profile to get display name
-    let displayName: string | undefined = 'Seeker' // Default fallback
-    if (userId) {
-      try {
-        const userProfile = await getUserProfile(userId)
-        if (userProfile?.displayName) {
-          displayName = userProfile.displayName
-          devLog.debug('👤 Using display name:', displayName, 'tarot')
+    let displayName: string | undefined = 'Seeker'
+    let canPersist = false
+    if (userId && typeof userId === 'string') {
+      const auth = await verifyUserRequest(request, 'tarot')
+      const access = decideUserScopedAccess(userId, auth)
+      if (access.kind === 'owned') {
+        canPersist = true
+        try {
+          const userProfile = await getUserProfile(access.userId)
+          if (userProfile?.displayName) {
+            displayName = userProfile.displayName
+            devLog.debug('👤 Using display name:', displayName, 'tarot')
+          }
+        } catch (profileError) {
+          devLog.warn('⚠️ Failed to fetch user profile (using default):', profileError, 'tarot')
         }
-      } catch (profileError) {
-        devLog.warn('⚠️ Failed to fetch user profile (using default):', profileError, 'tarot')
-        // Continue with default "Seeker"
       }
     }
 
-    // Generate tarot reading
     const reading = await tarotIntelligence.drawCards(
       question.trim(),
       spreadType.trim(),
       displayName
     )
 
-    // Save reading to database if userId provided
-    if (userId) {
+    if (canPersist && userId) {
       try {
         await tarotIntelligence.saveReading(userId, reading)
         devLog.info('✅ Saved Tarot reading to database for user:', userId, 'tarot')
       } catch (saveError) {
         devLog.error('Failed to save reading to database (non-critical)', saveError, 'tarot-reading')
-        // Continue even if save fails
       }
     }
 
@@ -77,4 +80,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

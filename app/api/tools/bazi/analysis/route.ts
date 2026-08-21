@@ -1,7 +1,7 @@
 /* eslint-disable security/detect-unsafe-regex */
 import { NextRequest, NextResponse } from 'next/server'
 import { baziIntelligence, type BaziProfileInput } from '@/lib/baziIntelligence'
-import { getUserProfile } from '@/lib/firebase'
+import { loadOwnedUserProfile } from '@/lib/security/loadOwnedUserProfile'
 import { devLog } from '@/lib/devLogger'
 import { normalizeTimeString } from '@/lib/timeUtils'
 
@@ -63,27 +63,26 @@ export async function POST(request: NextRequest) {
 
     devLog.info('[BaZi] POST /api/tools/bazi/analysis called', { userId, hasUserProfile }, 'bazi')
 
-    // Use profile from request body when provided (e.g. by profile-generation orchestrator); otherwise fetch from DB
+    // Prefer body profile (Stage B). Firestore load requires ownership.
     let userProfile = normalizeProfileFromBody(body)
     if (!userProfile) {
-      try {
-        const fetched = await getUserProfile(userId)
-        if (fetched?.birthDate && fetched?.birthPlace) {
-          userProfile = {
-            birthDate: fetched.birthDate,
-            birthTime: fetched.birthTime && String(fetched.birthTime).trim() ? fetched.birthTime : undefined,
-            birthPlace: fetched.birthPlace,
-            birthLatitude: fetched.birthLatitude,
-            birthLongitude: fetched.birthLongitude,
-            gender: fetched.gender,
-          }
-        }
-      } catch (profileError) {
-        devLog.error('[BaZi] Failed to fetch user profile', profileError, 'route')
+      const loaded = await loadOwnedUserProfile(request, userId, 'bazi')
+      if (!loaded.ok) {
         return NextResponse.json(
-          { success: false, error: 'Failed to fetch user profile' },
-          { status: 400 }
+          { success: false, error: loaded.error },
+          { status: loaded.status },
         )
+      }
+      const fetched = loaded.profile
+      if (fetched?.birthDate && fetched?.birthPlace) {
+        userProfile = {
+          birthDate: fetched.birthDate,
+          birthTime: fetched.birthTime && String(fetched.birthTime).trim() ? fetched.birthTime : undefined,
+          birthPlace: fetched.birthPlace,
+          birthLatitude: fetched.birthLatitude,
+          birthLongitude: fetched.birthLongitude,
+          gender: fetched.gender,
+        }
       }
     }
 
@@ -141,17 +140,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    devLog.info('🏮 Fetching BaZi reading for user:', userId, 'bazi')
-
-    // Fetch user profile
-    const userProfile = await getUserProfile(userId)
-    
-    if (!userProfile) {
+    const loaded = await loadOwnedUserProfile(request, userId, 'bazi')
+    if (!loaded.ok) {
       return NextResponse.json(
-        { success: false, error: 'User profile not found' },
-        { status: 404 }
+        { success: false, error: loaded.error },
+        { status: loaded.status },
       )
     }
+
+    // Reject missing/invalid tokens for GET (no Stage B body payload path).
+    // loadOwnedUserProfile maps missing_token → 401 with "Authentication required..."
+    // which is correct for GET.
+
+    devLog.info('🏮 Fetching BaZi reading for user:', loaded.userId, 'bazi')
+
+    const userProfile = loaded.profile
 
     if (!userProfile.birthDate || !userProfile.birthPlace) {
       return NextResponse.json(
@@ -170,7 +173,7 @@ export async function GET(request: NextRequest) {
       ...(userProfile.gender != null && { gender: userProfile.gender }),
     }
 
-    const reading = await baziIntelligence.getBaziReading(userId, profileForBazi)
+    const reading = await baziIntelligence.getBaziReading(loaded.userId, profileForBazi)
 
     return NextResponse.json({
       success: true,
@@ -191,4 +194,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

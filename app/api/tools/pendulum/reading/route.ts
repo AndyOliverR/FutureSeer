@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pendulumIntelligence } from '@/lib/pendulumIntelligence'
 import { sanitizePendulumQuestion } from '@/lib/pendulumSeerState'
+import { verifyUserRequest } from '@/lib/userApiAuth'
+import { decideUserScopedAccess } from '@/lib/security/userScopedAccess'
 import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
@@ -33,9 +35,13 @@ export async function POST(request: NextRequest) {
       validatedType
     )
 
-    // Optionally save to database (future enhancement)
-    if (userId) {
-      await pendulumIntelligence.saveAnalysis(userId, analysis)
+    // Persist only when the caller owns userId (Stage B / anonymous skip save).
+    if (userId && typeof userId === 'string') {
+      const auth = await verifyUserRequest(request, 'pendulum')
+      const access = decideUserScopedAccess(userId, auth)
+      if (access.kind === 'owned') {
+        await pendulumIntelligence.saveAnalysis(access.userId, analysis)
+      }
     }
 
     return NextResponse.json({
