@@ -1,7 +1,7 @@
 'use client'
 
 import { useMysticalProfileContext } from '@/contexts/MysticalProfileContext'
-import { classifyToolReportState } from '@/lib/profileGenerationOrchestrator'
+import { classifyToolReportState } from '@/lib/toolReportReadiness'
 import type { PersistedToolStatus } from '@/lib/mysticalStageB'
 
 export type { ComprehensiveMysticalProfile } from '@/contexts/MysticalProfileContext'

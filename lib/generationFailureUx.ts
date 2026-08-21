@@ -2,7 +2,7 @@ import {
   ALL_TOOL_SLUGS,
   classifyToolReportState,
   type ReportReadinessState,
-} from '@/lib/profileGenerationOrchestrator';
+} from '@/lib/toolReportReadiness';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 import { humanizePipelineSlug } from '@/lib/toolSlugLabels';
 

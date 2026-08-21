@@ -1,6 +1,6 @@
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import type { ToolTeaserPayload } from '@/lib/report-viral/types'
-import { classifyToolReportState } from '@/lib/profileGenerationOrchestrator'
+import { classifyToolReportState } from '@/lib/toolReportReadiness'
 
 const MAX_LINE = 180
 const MAX_POSITIVE_LINES = 4

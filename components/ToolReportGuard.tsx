@@ -7,7 +7,7 @@ import { MysticalLoadingState } from '@/components/MysticalLoadingState'
 import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGate'
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { toolReportMissingBody } from '@/lib/accessGatingCopy'
-import { classifyToolReportState, type ReportReadinessState } from '@/lib/profileGenerationOrchestrator'
+import { classifyToolReportState, type ReportReadinessState } from '@/lib/toolReportReadiness'
 import { fsAdaptivePanel } from '@/lib/designSystemClasses'
 
 export interface ToolReportViralConfig {
