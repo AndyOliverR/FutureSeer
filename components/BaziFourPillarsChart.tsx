@@ -14,7 +14,7 @@ interface BaziFourPillarsChartProps {
 const elementColors = {
   'Wood': { bg: 'bg-green-500/20', border: 'border-green-500/40', text: 'text-green-400', glow: 'shadow-green-500/20' },
   'Fire': { bg: 'bg-red-500/20', border: 'border-red-500/40', text: 'text-red-400', glow: 'shadow-red-500/20' },
-  'Earth': { bg: 'bg-yellow-500/20', border: 'border-yellow-600/40', text: 'text-yellow-400', glow: 'shadow-yellow-500/20' },
+  'Earth': { bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', glow: 'shadow-slate-300/40' },
   'Metal': { bg: 'bg-gray-400/20', border: 'border-gray-400/40', text: 'text-gray-300', glow: 'shadow-gray-400/20' },
   'Water': { bg: 'bg-blue-500/20', border: 'border-blue-500/40', text: 'text-blue-400', glow: 'shadow-blue-500/20' }
 }
@@ -67,14 +67,14 @@ export function BaziFourPillarsChart({ chart }: BaziFourPillarsChartProps) {
               return (
                 <Tooltip key={label}>
                   <TooltipTrigger asChild>
-                    <Card className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-2 ${stemStyle.border} hover:${stemStyle.glow} hover:shadow-lg transition-all duration-300 rounded-2xl cursor-help`}>
+                    <Card className={`bg-white border-2 ${stemStyle.border} hover:${stemStyle.glow} hover:shadow-lg transition-all duration-300 rounded-2xl cursor-help`}>
                       <CardContent className="p-5">
                         {/* Header */}
                         <div className="text-center mb-4">
                           <div className="text-4xl mb-2 drop-shadow-lg">{icon}</div>
-                          <div className="text-sm text-amber-300 font-bold mb-1 flex items-center justify-center gap-1">
+                          <div className="text-sm text-sky-800 font-bold mb-1 flex items-center justify-center gap-1">
                             {label}
-                            <Info className="w-3 h-3 text-amber-400/60" />
+                            <Info className="w-3 h-3 text-sky-500" />
                           </div>
                           <div className="text-xs text-slate-400 leading-tight">{description}</div>
                         </div>
@@ -83,12 +83,12 @@ export function BaziFourPillarsChart({ chart }: BaziFourPillarsChartProps) {
                         <div className={`mb-4 pb-4 border-b-2 ${stemStyle.border} rounded-lg p-3 ${stemStyle.bg}`}>
                           <div className="text-center">
                             <div className="text-xs text-slate-400 mb-2 font-semibold tracking-wide">HEAVENLY STEM (天干)</div>
-                            <div className="text-2xl font-bold text-white mb-2">{pillar.heavenlyStem.name}</div>
+                            <div className="text-2xl font-bold text-slate-900 mb-2">{pillar.heavenlyStem.name}</div>
                             <Badge className={`${stemStyle.bg} ${stemStyle.text} border ${stemStyle.border} mb-2`}>
                               {pillar.heavenlyStem.element}
                             </Badge>
                             <div className="flex items-center justify-center gap-2 text-xs mt-2">
-                              <span className={`px-2 py-1 rounded ${pillar.heavenlyStem.yinYang === 'yang' ? 'bg-amber-500/20 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
+                              <span className={`px-2 py-1 rounded ${pillar.heavenlyStem.yinYang === 'yang' ? 'bg-sky-100 text-sky-800' : 'bg-indigo-100 text-indigo-800'}`}>
                                 {pillar.heavenlyStem.yinYang === 'yang' ? '☀ Yang' : '☾ Yin'}
                               </span>
                               <span className="px-2 py-1 rounded bg-slate-700/50 text-slate-300">
@@ -102,11 +102,11 @@ export function BaziFourPillarsChart({ chart }: BaziFourPillarsChartProps) {
                         <div className={`rounded-lg p-3 ${branchStyle.bg}`}>
                           <div className="text-center">
                             <div className="text-xs text-slate-400 mb-2 font-semibold tracking-wide">EARTHLY BRANCH (地支)</div>
-                            <div className="text-2xl font-bold text-white mb-2">{pillar.earthlyBranch.name}</div>
+                            <div className="text-2xl font-bold text-slate-900 mb-2">{pillar.earthlyBranch.name}</div>
                             <Badge className={`${branchStyle.bg} ${branchStyle.text} border ${branchStyle.border} mb-1`}>
                               {pillar.earthlyBranch.element}
                             </Badge>
-                            <div className="text-sm text-amber-300 mb-2">🐾 {pillar.earthlyBranch.animal}</div>
+                            <div className="text-sm text-cyan-800 mb-2">🐾 {pillar.earthlyBranch.animal}</div>
                             <div className="text-xs px-2 py-1 rounded bg-slate-700/50 text-slate-300 inline-block">
                               {pillar.earthlyBranch.strength}%
                             </div>
@@ -142,25 +142,24 @@ export function BaziFourPillarsChart({ chart }: BaziFourPillarsChartProps) {
         </TooltipProvider>
         
         {/* Day Master Highlight - Enhanced */}
-        <Card className="mt-6 bg-gradient-to-br from-amber-500/20 via-yellow-500/20 to-amber-600/20 border-2 border-amber-500/50 shadow-xl shadow-amber-500/10 rounded-3xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 via-transparent to-transparent" />
+        <Card className="mt-6 bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 border-2 border-sky-200 shadow-xl rounded-3xl overflow-hidden">
           <CardContent className="relative p-6">
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 mb-3 px-4 py-2 bg-amber-900/30 rounded-full border border-amber-500/30">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="text-sm text-amber-300 font-bold tracking-wide">DAY MASTER 日主</span>
+              <div className="inline-flex items-center gap-2 mb-3 px-4 py-2 bg-sky-100 rounded-full border border-sky-200">
+                <Sparkles className="w-4 h-4 text-sky-600" />
+                <span className="text-sm text-sky-800 font-bold tracking-wide">DAY MASTER 日主</span>
               </div>
-              <div className="text-4xl font-bold text-white mb-2 drop-shadow-lg">{chart.dayMaster.name}</div>
+              <div className="text-4xl font-bold text-sky-900 mb-2">{chart.dayMaster.name}</div>
               <Badge className={`text-lg px-4 py-1.5 mb-3 ${getElementStyle(chart.dayMaster.element).bg} ${getElementStyle(chart.dayMaster.element).text} border-2 ${getElementStyle(chart.dayMaster.element).border}`}>
                 {chart.dayMaster.element} Element
               </Badge>
-              <div className="inline-block px-3 py-1.5 rounded-lg mb-4 bg-slate-800/50 border border-slate-700">
-                <span className="text-sm text-slate-300">
+              <div className="inline-block px-3 py-1.5 rounded-lg mb-4 bg-white border border-sky-200">
+                <span className="text-sm text-slate-600">
                   {chart.dayMaster.yinYang === 'yang' ? '☀ Yang' : '☾ Yin'} Energy
                 </span>
               </div>
-              <p className="text-sm text-slate-200 leading-relaxed max-w-2xl mx-auto">
-                The <span className="font-semibold text-amber-300">Day Master</span> (Day Heavenly Stem) represents your <span className="font-semibold">core self, essence, and personality</span>. 
+              <p className="text-sm text-slate-700 leading-relaxed max-w-2xl mx-auto">
+                The <span className="font-semibold text-sky-800">Day Master</span> (Day Heavenly Stem) represents your <span className="font-semibold">core self, essence, and personality</span>. 
                 It is the most crucial element in your BaZi chart, revealing how you interact with the world and process life experiences.
               </p>
             </div>

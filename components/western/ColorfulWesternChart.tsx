@@ -48,7 +48,7 @@ export default function ColorfulWesternChart({
   width = 550, 
   height = 400,
   title = "Western Astrology Chart",
-  backgroundColor = "#0b1220"
+  backgroundColor = "#ffffff"
 }: ColorfulWesternChartProps) {
   const centerX = width / 2;
   const centerY = height / 2;
@@ -178,7 +178,7 @@ export default function ColorfulWesternChart({
           cx={centerX}
           cy={centerY}
           r="2"
-          fill="#e2b659"
+          fill="#3b82f6"
         />
         
         {/* Outer circle - white ring area for degree markers only */}
@@ -187,7 +187,7 @@ export default function ColorfulWesternChart({
           cy={centerY}
           r={outerRadius + 20}
           fill="none"
-          stroke="rgba(226, 182, 89, 0.35)"
+          stroke="rgba(59, 130, 246, 0.35)"
           strokeWidth="1"
         />
 
@@ -197,7 +197,7 @@ export default function ColorfulWesternChart({
           cy={centerY}
           r={innerRadius}
           fill={backgroundColor}
-          stroke="#e2b659"
+          stroke="#3b82f6"
           strokeWidth="1"
         />
 
@@ -246,7 +246,7 @@ export default function ColorfulWesternChart({
                 y={longitudeToPosition(startAngle, outerRadius + 15).y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                style={{ fontSize: '9px', fill: '#f8fafc', fontWeight: '600' }}
+                style={{ fontSize: '9px', fill: '#334155', fontWeight: '600' }}
               >
                 0°
               </text>
@@ -269,7 +269,7 @@ export default function ColorfulWesternChart({
               y1={centerY}
               x2={pos.x}
               y2={pos.y}
-              stroke="#e2b659"
+              stroke="#64748b"
               strokeWidth={isCardinal ? "2.4" : "0.9"}
               strokeOpacity={isCardinal ? "1" : "0.7"}
             />
@@ -310,7 +310,7 @@ export default function ColorfulWesternChart({
               y={pos.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              style={{ fontSize: '9px', fill: '#f8fafc', fontWeight: '600' }}
+              style={{ fontSize: '9px', fill: '#334155', fontWeight: '600' }}
             >
               {formattedDegree} {zodiacSymbols[sign as keyof typeof zodiacSymbols]}
             </text>
@@ -383,7 +383,7 @@ export default function ColorfulWesternChart({
             y={centerY - outerRadius - 10}
             textAnchor="middle"
             dominantBaseline="middle"
-            style={{ fontSize: '10px', fill: '#f8fafc', fontWeight: '500' }}
+            style={{ fontSize: '10px', fill: '#334155', fontWeight: '500' }}
           >
             ▲
           </text>
@@ -551,7 +551,7 @@ export default function ColorfulWesternChart({
           y={height - 20}
           textAnchor="middle"
           dominantBaseline="middle"
-          style={{ fontSize: '12px', fill: '#f8fafc', fontWeight: '400' }}
+          style={{ fontSize: '12px', fill: '#334155', fontWeight: '400' }}
         >
           {title}
         </text>

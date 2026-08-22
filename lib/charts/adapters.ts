@@ -72,7 +72,7 @@ export function adaptWesternToUnified(input: {
     aspects,
     tokens: {
       background: '#ffffff',
-      ringStroke: '#0f172a',
+      ringStroke: '#3b82f6',
       textPrimary: '#0f172a',
       textSecondary: '#475569',
       accent: '#dc2626',
@@ -119,11 +119,11 @@ export function adaptVedicToUnified(input: {
     points,
     houses,
     tokens: {
-      background: '#fffdf7',
-      ringStroke: '#1f2937',
-      textPrimary: '#111827',
-      textSecondary: '#6b7280',
-      accent: '#b45309',
+      background: '#ffffff',
+      ringStroke: '#3b82f6',
+      textPrimary: '#0f172a',
+      textSecondary: '#64748b',
+      accent: '#2563eb',
     },
     metadata: { source: 'vedic-adapter' },
   };

@@ -111,7 +111,7 @@ export default function VedicSouthChart({ chart, className = "", onPlanetClick }
                       y={y}
                       width={cellWidth * 2}
                       height={cellHeight * 2}
-                      fill="#fff9e6"
+                      fill="#ffffff"
                       stroke="black"
                       strokeWidth="1"
                     />
@@ -121,7 +121,7 @@ export default function VedicSouthChart({ chart, className = "", onPlanetClick }
                       textAnchor="middle"
                       fontSize="14"
                       fontWeight="bold"
-                      fill="#92400e"
+                      fill="#1e40af"
                     >
                       South Indian
                     </text>
@@ -130,7 +130,7 @@ export default function VedicSouthChart({ chart, className = "", onPlanetClick }
                       y={y + cellHeight + 10}
                       textAnchor="middle"
                       fontSize="12"
-                      fill="#92400e"
+                      fill="#1e40af"
                     >
                       Vedic Chart
                     </text>

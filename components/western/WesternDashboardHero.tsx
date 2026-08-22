@@ -129,13 +129,13 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="overflow-hidden rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+        <Card className="overflow-hidden rounded-2xl border border-sky-200 bg-white">
           <CardContent className="p-3 sm:p-6">
             <div className="mb-4 text-center sm:mb-6">
-              <h2 className="mb-2 text-xl font-medium tracking-wide text-amber-200 sm:text-2xl">
+              <h2 className="mb-2 font-heading text-xl font-medium tracking-wide text-sky-900 sm:text-2xl">
                 Your Birth Chart
               </h2>
-              <p className="text-xs text-[var(--m3-on-surface-variant)] sm:text-sm">
+              <p className="text-xs text-slate-500 sm:text-sm">
                 {userProfile?.birthPlace && `Born in ${userProfile.birthPlace}`}
                 {userProfile?.birthDate && ` • ${new Date(userProfile.birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
               </p>
@@ -266,32 +266,32 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <Card className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+        <Card className="rounded-2xl border border-sky-200 bg-sky-50">
           <CardContent className="p-4">
             <div className="flex min-w-0 flex-wrap items-center justify-center gap-2 sm:gap-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-400" />
-                <span className="text-sm font-medium text-amber-200">Quick Insights:</span>
+                <Sparkles className="h-5 w-5 text-sky-600" />
+                <span className="text-sm font-medium text-sky-900">Quick Insights:</span>
               </div>
               
-              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
+              <Badge variant="secondary" className="border border-sky-200 bg-white font-medium text-sky-800">
                 {planets.length} Planets
               </Badge>
               
-              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
+              <Badge variant="secondary" className="border border-sky-200 bg-white font-medium text-sky-800">
                 {aspects.length} Aspects
               </Badge>
               
-              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
+              <Badge variant="secondary" className="border border-sky-200 bg-white font-medium text-sky-800">
                 {dominantElement.element} Dominant
               </Badge>
               
-              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
+              <Badge variant="secondary" className="border border-sky-200 bg-white font-medium text-sky-800">
                 {getModalityName(dominantModality.modality)}
               </Badge>
               
               {transits.length > 0 && (
-                <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 font-medium text-amber-100">
+                <Badge variant="secondary" className="border border-sky-200 bg-white font-medium text-sky-800">
                   {transits.length} Active Transits
                 </Badge>
               )}

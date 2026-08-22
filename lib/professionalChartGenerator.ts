@@ -68,15 +68,15 @@ export class ProfessionalChartGenerator {
         <defs>
           <!-- Professional Gradients -->
           <radialGradient id="professional-chart-gradient" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" style="stop-color:rgba(59, 130, 246, 0.1);stop-opacity:1" />
-            <stop offset="100%" style="stop-color:rgba(15, 23, 42, 0.95);stop-opacity:1" />
+            <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#ffffff;stop-opacity:1" />
           </radialGradient>
           
-          <!-- Golden Gradient for accents -->
+          <!-- Cool stroke accents -->
           <linearGradient id="golden-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
-            <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#ffff00;stop-opacity:1" />
+            <stop offset="0%" style="stop-color:#7dd3fc;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
           </linearGradient>
         </defs>
         
@@ -187,21 +187,21 @@ export class ProfessionalChartGenerator {
     svg += `
       <defs>
         <linearGradient id="futureseer-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+          <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#ffffff;stop-opacity:1" />
         </linearGradient>
         <linearGradient id="futureseer-border" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#eab308;stop-opacity:1" />
+          <stop offset="0%" style="stop-color:#7dd3fc;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
         </linearGradient>
         <style>
           .futureseer-chart-bg { fill: url(#futureseer-bg); stroke: url(#futureseer-border); stroke-width: 3; }
-          .futureseer-chart-line { stroke: #f59e0b; stroke-width: 2; opacity: 0.8; }
-          .futureseer-house-text { fill: #f59e0b; font-size: 14px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
-          .futureseer-planet-text { fill: #eab308; font-size: 12px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
-          .futureseer-degree-text { fill: #fbbf24; font-size: 10px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: normal; }
-          .futureseer-sign-text { fill: #f59e0b; font-size: 18px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
-          .futureseer-ascendant-text { fill: #fbbf24; font-size: 14px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
+          .futureseer-chart-line { stroke: #3b82f6; stroke-width: 2; opacity: 0.8; }
+          .futureseer-house-text { fill: #1e40af; font-size: 14px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
+          .futureseer-planet-text { fill: #0f172a; font-size: 12px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
+          .futureseer-degree-text { fill: #64748b; font-size: 10px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: normal; }
+          .futureseer-sign-text { fill: #1e40af; font-size: 18px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
+          .futureseer-ascendant-text { fill: #2563eb; font-size: 14px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
         </style>
       </defs>
     `;
@@ -413,21 +413,21 @@ export class ProfessionalChartGenerator {
     svg += `
       <defs>
         <linearGradient id="futureseer-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+          <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#ffffff;stop-opacity:1" />
         </linearGradient>
         <linearGradient id="futureseer-border" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#eab308;stop-opacity:1" />
+          <stop offset="0%" style="stop-color:#7dd3fc;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
         </linearGradient>
         <style>
           .futureseer-chart-bg { fill: url(#futureseer-bg); stroke: url(#futureseer-border); stroke-width: 3; }
-          .futureseer-chart-line { stroke: #f59e0b; stroke-width: 2; opacity: 0.8; }
-          .futureseer-house-text { fill: #f59e0b; font-size: 14px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
-          .futureseer-planet-text { fill: #eab308; font-size: 12px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
-          .futureseer-degree-text { fill: #fbbf24; font-size: 10px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: normal; }
-          .futureseer-sign-text { fill: #f59e0b; font-size: 18px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
-          .futureseer-ascendant-text { fill: #fbbf24; font-size: 14px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
+          .futureseer-chart-line { stroke: #3b82f6; stroke-width: 2; opacity: 0.8; }
+          .futureseer-house-text { fill: #1e40af; font-size: 14px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
+          .futureseer-planet-text { fill: #0f172a; font-size: 12px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
+          .futureseer-degree-text { fill: #64748b; font-size: 10px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: normal; }
+          .futureseer-sign-text { fill: #1e40af; font-size: 18px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
+          .futureseer-ascendant-text { fill: #2563eb; font-size: 14px; text-anchor: middle; font-family: 'Arial', sans-serif; font-weight: bold; }
         </style>
       </defs>
     `;

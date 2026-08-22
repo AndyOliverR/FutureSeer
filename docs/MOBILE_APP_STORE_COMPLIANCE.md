@@ -1,6 +1,8 @@
 # Mobile app store compliance notes (Capacitor)
 
-FutureSeer’s native shells load the production web app ([capacitor.config.ts](../capacitor.config.ts) `server.url`). The following are **product/legal** decisions, not automated guarantees.
+> Historical. FutureSeer ships as a web PWA; Capacitor native shells were removed. The notes below apply only if a store wrapper is reintroduced.
+
+FutureSeer’s former native shells loaded the production web app. The following remain **product/legal** decisions, not automated guarantees.
 
 ## iOS — digital goods and payments (Guideline 3.1.x)
 

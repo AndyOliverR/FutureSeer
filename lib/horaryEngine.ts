@@ -676,23 +676,23 @@ export class HoraryEngine {
       <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>
-            .chart-bg { fill: rgba(147, 51, 234, 0.08); }
-            .outer-circle { fill: none; stroke: #4a5568; stroke-width: 2; }
-            .inner-circle { fill: none; stroke: #2d3748; stroke-width: 1.5; }
-            .house-line { stroke: #4a5568; stroke-width: 0.8; }
-            .house-number { fill: #e2e8f0; font-size: 11px; font-weight: bold; text-anchor: middle; }
-            .planet-glyph { fill: #fbbf24; font-size: 16px; text-anchor: middle; font-weight: bold; }
-            .planet-name { fill: #e2e8f0; font-size: 9px; text-anchor: middle; font-weight: 500; }
-            .sign-glyph { fill: #a0aec0; font-size: 14px; text-anchor: middle; }
-            .sign-name { fill: #718096; font-size: 8px; text-anchor: middle; }
+            .chart-bg { fill: #ffffff; }
+            .outer-circle { fill: none; stroke: #3b82f6; stroke-width: 2; }
+            .inner-circle { fill: none; stroke: #64748b; stroke-width: 1.5; }
+            .house-line { stroke: #64748b; stroke-width: 0.8; }
+            .house-number { fill: #0f172a; font-size: 11px; font-weight: bold; text-anchor: middle; }
+            .planet-glyph { fill: #1d4ed8; font-size: 16px; text-anchor: middle; font-weight: bold; }
+            .planet-name { fill: #334155; font-size: 9px; text-anchor: middle; font-weight: 500; }
+            .sign-glyph { fill: #334155; font-size: 14px; text-anchor: middle; }
+            .sign-name { fill: #64748b; font-size: 8px; text-anchor: middle; }
             .aspect-line { stroke: #f56565; stroke-width: 1.2; opacity: 0.5; }
             .conjunction { stroke: #f56565; }
             .sextile { stroke: #48bb78; }
             .square { stroke: #ed8936; }
             .trine { stroke: #4299e1; }
             .opposition { stroke: #9f7aea; }
-            .center-dot { fill: #fbbf24; }
-            .degree-text { fill: #cbd5e0; font-size: 7px; text-anchor: middle; font-weight: 500; }
+            .center-dot { fill: #3b82f6; }
+            .degree-text { fill: #64748b; font-size: 7px; text-anchor: middle; font-weight: 500; }
           </style>
         </defs>
         
@@ -778,7 +778,7 @@ export class HoraryEngine {
         <circle cx="${centerX}" cy="${centerY}" r="3" class="center-dot"/>
         
         <!-- Chart title -->
-        <text x="${centerX}" y="30" text-anchor="middle" fill="#fbbf24" font-size="16" font-weight="bold">Horary Astrology Chart</text>
+        <text x="${centerX}" y="30" text-anchor="middle" fill="#1e40af" font-size="16" font-weight="bold">Horary Astrology Chart</text>
       </svg>
     `
 

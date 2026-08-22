@@ -38,30 +38,30 @@ interface HellenisticChartWheelProps {
   height?: number;
 }
 
-// FutureSeer color scheme - amber/gold palette with variations
+// Distinct sign hues (not gold) used only as cool pastel tints; houses themselves stay white.
 const SIGN_COLORS: { [key: string]: string } = {
-  'Aries': '#F59E0B',      // amber-500
-  'Taurus': '#FCD34D',     // amber-300
-  'Gemini': '#FBBF24',     // amber-400
-  'Cancer': '#F59E0B',     // amber-500
-  'Leo': '#FCD34D',        // amber-300
-  'Virgo': '#FBBF24',      // amber-400
-  'Libra': '#F59E0B',      // amber-500
-  'Scorpio': '#FCD34D',    // amber-300
-  'Sagittarius': '#FBBF24', // amber-400
-  'Capricorn': '#F59E0B',   // amber-500
-  'Aquarius': '#FCD34D',    // amber-300
-  'Pisces': '#FBBF24'       // amber-400
+  'Aries': '#fecaca',
+  'Taurus': '#fed7aa',
+  'Gemini': '#fde68a',
+  'Cancer': '#a5f3fc',
+  'Leo': '#fde047',
+  'Virgo': '#bbf7d0',
+  'Libra': '#bfdbfe',
+  'Scorpio': '#c4b5fd',
+  'Sagittarius': '#93c5fd',
+  'Capricorn': '#cbd5e1',
+  'Aquarius': '#67e8f9',
+  'Pisces': '#a5b4fc'
 };
 
 const PLANET_COLORS: { [key: string]: string } = {
-  'Sun': '#FFD700',        // gold
-  'Moon': '#FCD34D',       // amber-300 (lighter gold)
-  'Mercury': '#F59E0B',    // amber-500
-  'Venus': '#FBBF24',      // amber-400
-  'Mars': '#DC2626',       // red-600 (for Mars, but muted)
-  'Jupiter': '#F59E0B',    // amber-500
-  'Saturn': '#92400E'       // amber-800 (darker amber)
+  'Sun': '#f59e0b',
+  'Moon': '#64748b',
+  'Mercury': '#22c55e',
+  'Venus': '#ec4899',
+  'Mars': '#ef4444',
+  'Jupiter': '#3b82f6',
+  'Saturn': '#57534e'
 };
 
 export default function HellenisticChartWheel({
@@ -144,7 +144,7 @@ export default function HellenisticChartWheel({
           cy={centerY}
           r={outerRadius}
           fill="none"
-          stroke="rgba(251, 191, 36, 0.4)"
+          stroke="rgba(59, 130, 246, 0.45)"
           strokeWidth="2.5"
           className="transition-opacity duration-300"
         />
@@ -167,11 +167,11 @@ export default function HellenisticChartWheel({
               {/* House segment */}
               <path
                 d={`M ${centerX} ${centerY} L ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                fill={SIGN_COLORS[house.sign] || '#F59E0B'}
-                fillOpacity="0.2"
-                stroke="rgba(251, 191, 36, 0.5)"
+                fill="#ffffff"
+                fillOpacity="1"
+                stroke="#3b82f6"
                 strokeWidth="1.5"
-              className="cursor-pointer transition-all duration-300 ease-in-out hover:opacity-60 hover:stroke-amber-400"
+              className="cursor-pointer transition-all duration-300 ease-in-out hover:opacity-80 hover:stroke-sky-500"
               onMouseEnter={() => setHoveredElement(`house-${house.number}`)}
               onMouseLeave={() => setHoveredElement(null)}
               aria-label={`House ${house.number} in ${house.sign}`}
@@ -196,7 +196,8 @@ export default function HellenisticChartWheel({
                 y={house.position.y + 15}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="text-[10px] fill-slate-700 font-medium pointer-events-none"
+                className="text-[10px] font-medium pointer-events-none"
+              fill={SIGN_COLORS[house.sign] || '#334155'}
               >
                 {house.sign.substring(0, 3)}
               </text>
@@ -213,10 +214,10 @@ export default function HellenisticChartWheel({
               cx={planet.position.x}
               cy={planet.position.y}
               r="12"
-              fill={PLANET_COLORS[planet.name] || '#FBBF24'}
-              stroke="rgba(251, 191, 36, 0.9)"
-              strokeWidth="2.5"
-              className="cursor-pointer transition-all duration-300 ease-in-out hover:stroke-amber-400 hover:stroke-width-3"
+              fill={PLANET_COLORS[planet.name] || '#3b82f6'}
+              stroke="#3b82f6"
+              strokeWidth="2"
+              className="cursor-pointer transition-all duration-300 ease-in-out hover:stroke-sky-500 hover:stroke-width-3"
               onMouseEnter={() => setHoveredElement(`planet-${planet.name}`)}
               onMouseLeave={() => setHoveredElement(null)}
               aria-label={`${planet.name} in ${planet.sign} at ${planet.degree.toFixed(1)} degrees in House ${planet.house}`}
@@ -243,9 +244,9 @@ export default function HellenisticChartWheel({
                   y={planet.position.y - 50}
                   width="80"
                   height="30"
-                  fill="rgba(20, 25, 50, 0.95)"
+                  fill="rgba(255, 255, 255, 0.98)"
                   rx="6"
-                  stroke="rgba(251, 191, 36, 0.6)"
+                  stroke="#3b82f6"
                   strokeWidth="1"
                 />
                 <text
@@ -253,7 +254,7 @@ export default function HellenisticChartWheel({
                   y={planet.position.y - 35}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="text-xs fill-amber-300 font-semibold"
+                  className="text-xs fill-sky-800 font-semibold"
                 >
                   {planet.name} in {planet.sign}
                 </text>
@@ -262,7 +263,7 @@ export default function HellenisticChartWheel({
                   y={planet.position.y - 20}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="text-[10px] fill-amber-400"
+                  className="text-[10px] fill-slate-600"
                 >
                   {planet.degree.toFixed(1)}° - House {planet.house}
                 </text>
@@ -276,10 +277,10 @@ export default function HellenisticChartWheel({
           <g key={lot.name}>
             <polygon
               points={`${lot.position.x},${lot.position.y - 8} ${lot.position.x - 6},${lot.position.y + 6} ${lot.position.x + 6},${lot.position.y + 6}`}
-              fill="#FBBF24"
-              stroke="rgba(251, 191, 36, 0.9)"
+              fill="#3b82f6"
+              stroke="#2563eb"
               strokeWidth="2"
-              className="cursor-pointer transition-all duration-300 ease-in-out hover:fill-amber-400 hover:stroke-amber-300"
+              className="cursor-pointer transition-all duration-300 ease-in-out hover:fill-sky-500 hover:stroke-sky-400"
               onMouseEnter={() => setHoveredElement(`lot-${lot.name}`)}
               onMouseLeave={() => setHoveredElement(null)}
               aria-label={`${lot.name} in ${lot.sign} at ${lot.degree.toFixed(1)} degrees in House ${lot.house}`}
@@ -306,9 +307,9 @@ export default function HellenisticChartWheel({
                   y={lot.position.y - 50}
                   width="100"
                   height="40"
-                  fill="rgba(20, 25, 50, 0.95)"
+                  fill="rgba(255, 255, 255, 0.98)"
                   rx="6"
-                  stroke="rgba(251, 191, 36, 0.6)"
+                  stroke="#3b82f6"
                   strokeWidth="1"
                 />
                 <text
@@ -316,7 +317,7 @@ export default function HellenisticChartWheel({
                   y={lot.position.y - 35}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="text-xs fill-amber-300 font-semibold"
+                  className="text-xs fill-sky-800 font-semibold"
                 >
                   {lot.name}
                 </text>
@@ -325,7 +326,7 @@ export default function HellenisticChartWheel({
                   y={lot.position.y - 20}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="text-[10px] fill-amber-400"
+                  className="text-[10px] fill-slate-600"
                 >
                   {lot.sign} {lot.degree.toFixed(1)}° - H{lot.house}
                 </text>
@@ -345,7 +346,7 @@ export default function HellenisticChartWheel({
                 y1={centerY}
                 x2={ascPos.x}
                 y2={ascPos.y}
-                stroke="#FBBF24"
+                stroke="#3b82f6"
                 strokeWidth="2.5"
                 strokeDasharray="5,5"
                 opacity="0.7"
@@ -356,7 +357,7 @@ export default function HellenisticChartWheel({
                 y={ascPos.y}
                 textAnchor="start"
                 dominantBaseline="middle"
-                className="text-xs fill-amber-400 font-bold"
+                className="text-xs fill-sky-700 font-bold"
               >
                 ASC
               </text>
@@ -369,8 +370,8 @@ export default function HellenisticChartWheel({
           cx={centerX}
           cy={centerY}
           r={innerRadius}
-          fill="rgba(15, 23, 42, 0.85)"
-          stroke="rgba(251, 191, 36, 0.6)"
+          fill="#ffffff"
+          stroke="#3b82f6"
           strokeWidth="2.5"
           className="transition-all duration-300"
         />
@@ -381,7 +382,7 @@ export default function HellenisticChartWheel({
           y={centerY}
           textAnchor="middle"
           dominantBaseline="middle"
-          className="text-sm fill-amber-300 font-semibold"
+          className="text-sm fill-sky-800 font-semibold"
         >
           Whole Sign
         </text>
@@ -390,7 +391,7 @@ export default function HellenisticChartWheel({
           y={centerY + 20}
           textAnchor="middle"
           dominantBaseline="middle"
-          className="text-xs fill-amber-400"
+          className="text-xs fill-slate-600"
         >
           Houses
         </text>

@@ -36,7 +36,7 @@ const GEOMANTIC_PATTERNS: Record<string, number[][]> = {
 // Element colors
 const ELEMENT_COLORS: Record<string, string> = {
   'Fire': '#ef4444', // red-500
-  'Earth': '#a16207', // amber-700
+  'Earth': '#64748b',
   'Air': '#3b82f6', // blue-500
   'Water': '#06b6d4', // cyan-500
 };

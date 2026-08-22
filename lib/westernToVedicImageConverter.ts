@@ -130,14 +130,14 @@ export class WesternToVedicImageConverter {
       <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>
-            .chart-bg { fill: #ffffff; stroke: #ffd700; stroke-width: 3; }
+            .chart-bg { fill: #ffffff; stroke: #3b82f6; stroke-width: 3; }
             .house-border { fill: none; stroke: #000000; stroke-width: 1; }
             .house-number { font-family: Arial, sans-serif; font-size: 18px; fill: #000000; font-weight: bold; text-anchor: middle; }
             .planet-symbol { font-family: Arial, sans-serif; font-size: 14px; fill: #000000; text-anchor: middle; }
             .planet-name { font-family: Arial, sans-serif; font-size: 8px; fill: #000000; text-anchor: middle; }
             .degree-text { font-family: Arial, sans-serif; font-size: 7px; fill: #666666; text-anchor: middle; }
             .retrograde-text { font-family: Arial, sans-serif; font-size: 8px; fill: #ff0000; font-weight: bold; }
-            .title-text { font-family: Arial, sans-serif; font-size: 18px; fill: #ffd700; font-weight: bold; text-anchor: middle; }
+            .title-text { font-family: Arial, sans-serif; font-size: 18px; fill: #1e40af; font-weight: bold; text-anchor: middle; }
             .branding-text { font-family: Arial, sans-serif; font-size: 12px; fill: #666666; text-anchor: middle; }
             .zodiac-symbol { font-family: Arial, sans-serif; font-size: 12px; fill: #000000; text-anchor: middle; }
           </style>
@@ -231,14 +231,14 @@ export class WesternToVedicImageConverter {
       <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>
-            .chart-bg { fill: #ffffff; stroke: #ffd700; stroke-width: 3; }
+            .chart-bg { fill: #ffffff; stroke: #3b82f6; stroke-width: 3; }
             .house-border { fill: none; stroke: #000000; stroke-width: 1; }
             .house-number { font-family: Arial, sans-serif; font-size: 16px; fill: #000000; font-weight: bold; text-anchor: middle; }
             .planet-symbol { font-family: Arial, sans-serif; font-size: 12px; fill: #000000; text-anchor: middle; }
             .planet-name { font-family: Arial, sans-serif; font-size: 7px; fill: #000000; text-anchor: middle; }
             .degree-text { font-family: Arial, sans-serif; font-size: 6px; fill: #666666; text-anchor: middle; }
             .retrograde-text { font-family: Arial, sans-serif; font-size: 7px; fill: #ff0000; font-weight: bold; }
-            .title-text { font-family: Arial, sans-serif; font-size: 18px; fill: #ffd700; font-weight: bold; text-anchor: middle; }
+            .title-text { font-family: Arial, sans-serif; font-size: 18px; fill: #1e40af; font-weight: bold; text-anchor: middle; }
             .branding-text { font-family: Arial, sans-serif; font-size: 12px; fill: #666666; text-anchor: middle; }
             .zodiac-symbol { font-family: Arial, sans-serif; font-size: 10px; fill: #000000; text-anchor: middle; }
           </style>
@@ -322,7 +322,7 @@ export class WesternToVedicImageConverter {
       <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>
-            .chart-bg { fill: #ffffff; stroke: #ffd700; stroke-width: 3; }
+            .chart-bg { fill: #ffffff; stroke: #3b82f6; stroke-width: 3; }
             .nakshatra-border { fill: none; stroke: #000000; stroke-width: 1; }
             .house-border { fill: none; stroke: #000000; stroke-width: 2; }
             .nakshatra-text { font-family: Arial, sans-serif; font-size: 8px; fill: #000000; text-anchor: middle; }
@@ -331,7 +331,7 @@ export class WesternToVedicImageConverter {
             .planet-name { font-family: Arial, sans-serif; font-size: 6px; fill: #000000; text-anchor: middle; }
             .degree-text { font-family: Arial, sans-serif; font-size: 5px; fill: #666666; text-anchor: middle; }
             .retrograde-text { font-family: Arial, sans-serif; font-size: 6px; fill: #ff0000; font-weight: bold; }
-            .title-text { font-family: Arial, sans-serif; font-size: 18px; fill: #ffd700; font-weight: bold; text-anchor: middle; }
+            .title-text { font-family: Arial, sans-serif; font-size: 18px; fill: #1e40af; font-weight: bold; text-anchor: middle; }
             .branding-text { font-family: Arial, sans-serif; font-size: 12px; fill: #666666; text-anchor: middle; }
             .zodiac-symbol { font-family: Arial, sans-serif; font-size: 8px; fill: #000000; text-anchor: middle; }
           </style>

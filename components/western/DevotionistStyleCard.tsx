@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { CheckCircle, AlertCircle, Circle } from 'lucide-react'
 
+export type DevotionistColorScheme = 'amber' | 'blue' | 'purple' | 'pink' | 'green' | 'orange' | 'cyan'
+
 export interface DevotionistStyleCardProps {
   icon: ReactNode
   title: string
@@ -13,21 +15,75 @@ export interface DevotionistStyleCardProps {
   summary?: string
   items?: Array<{ icon?: ReactNode; text: string; highlight?: boolean; type?: 'positive' | 'neutral' | 'challenge' }>
   variant?: 'default' | 'callout' | 'timeline'
-  /** Kept for call-site compatibility; rainbow palettes are no longer applied. */
-  colorScheme?: 'amber' | 'blue' | 'purple' | 'pink' | 'green' | 'orange' | 'cyan'
+  colorScheme?: DevotionistColorScheme
   className?: string
   children?: ReactNode
 }
 
-const surface = {
-  border: 'border-[var(--m3-outline-variant)]',
-  hoverBorder: 'hover:border-[var(--m3-outline)]',
-  bg: 'bg-[var(--m3-surface-container)]',
-  iconBg: 'bg-amber-500/15',
-  iconColor: 'text-amber-300',
-  titleColor: 'text-amber-200',
-  body: 'text-[var(--m3-on-surface)]',
-  muted: 'text-[var(--m3-on-surface-variant)]',
+const coolSurface = {
+  border: 'border-sky-200',
+  hoverBorder: 'hover:border-sky-300',
+  bg: 'bg-sky-50',
+  iconBg: 'bg-sky-100',
+  iconColor: 'text-sky-700',
+  titleColor: 'font-heading tracking-wide text-sky-900',
+  body: 'text-slate-700',
+  muted: 'text-slate-500',
+}
+
+const palettes: Record<DevotionistColorScheme, typeof coolSurface> = {
+  amber: coolSurface,
+  blue: coolSurface,
+  cyan: {
+    border: 'border-cyan-200',
+    hoverBorder: 'hover:border-cyan-300',
+    bg: 'bg-cyan-50',
+    iconBg: 'bg-cyan-100',
+    iconColor: 'text-cyan-700',
+    titleColor: 'font-heading tracking-wide text-cyan-900',
+    body: 'text-slate-700',
+    muted: 'text-slate-500',
+  },
+  purple: {
+    border: 'border-indigo-200',
+    hoverBorder: 'hover:border-indigo-300',
+    bg: 'bg-indigo-50',
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-700',
+    titleColor: 'font-heading tracking-wide text-indigo-900',
+    body: 'text-slate-700',
+    muted: 'text-slate-500',
+  },
+  green: {
+    border: 'border-teal-200',
+    hoverBorder: 'hover:border-teal-300',
+    bg: 'bg-teal-50',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-700',
+    titleColor: 'font-heading tracking-wide text-teal-900',
+    body: 'text-slate-700',
+    muted: 'text-slate-500',
+  },
+  pink: {
+    border: 'border-sky-200',
+    hoverBorder: 'hover:border-sky-300',
+    bg: 'bg-slate-50',
+    iconBg: 'bg-sky-100',
+    iconColor: 'text-sky-700',
+    titleColor: 'font-heading tracking-wide text-slate-900',
+    body: 'text-slate-700',
+    muted: 'text-slate-500',
+  },
+  orange: {
+    border: 'border-sky-200',
+    hoverBorder: 'hover:border-sky-300',
+    bg: 'bg-slate-50',
+    iconBg: 'bg-sky-100',
+    iconColor: 'text-sky-700',
+    titleColor: 'font-heading tracking-wide text-slate-900',
+    body: 'text-slate-700',
+    muted: 'text-slate-500',
+  },
 }
 
 export function DevotionistStyleCard({
@@ -37,21 +93,21 @@ export function DevotionistStyleCard({
   summary,
   items,
   variant = 'default',
-  colorScheme: _colorScheme = 'amber',
+  colorScheme = 'amber',
   className = '',
   children
 }: DevotionistStyleCardProps) {
-  void _colorScheme
+  const surface = palettes[colorScheme] ?? coolSurface
 
   const getItemIcon = (item: { icon?: ReactNode; type?: 'positive' | 'neutral' | 'challenge' }) => {
     if (item.icon) return item.icon
     
     if (item.type === 'positive') {
-      return <CheckCircle className="h-4 w-4 text-amber-300" />
+      return <CheckCircle className="h-4 w-4 text-teal-600" />
     } else if (item.type === 'challenge') {
-      return <AlertCircle className="h-4 w-4 text-amber-400/80" />
+      return <AlertCircle className="h-4 w-4 text-sky-600" />
     }
-    return <Circle className="h-3 w-3 fill-current text-[var(--m3-on-surface-variant)]" />
+    return <Circle className="h-3 w-3 fill-current text-slate-400" />
   }
 
   if (variant === 'callout') {
@@ -116,7 +172,7 @@ export function DevotionistStyleCard({
         transition={{ duration: 0.3 }}
         className={`relative pl-8 ${className}`}
       >
-        <div className="absolute bottom-0 left-3 top-0 w-0.5 bg-amber-500/20" />
+        <div className="absolute bottom-0 left-3 top-0 w-0.5 bg-sky-200" />
         <div className={`absolute left-0 top-1 ${surface.iconBg} rounded-full p-1.5`}>
           <div className={surface.iconColor}>
             {icon}

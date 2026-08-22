@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { StandardsBadges } from "./StandardsBadges";
 import { subscribeNewsletterClient } from "@/lib/newsletterSubscribeClient";
 import { FutureSeerWordmark } from "@/components/brand/FutureSeerWordmark";
+import { PwaInstallButton } from "@/components/PwaInstallButton";
+import { PwaPlatformIcons } from "@/components/PwaPlatformIcons";
 
 export function EnhancedFooter() {
   const [email, setEmail] = useState("");
@@ -128,59 +130,15 @@ export function EnhancedFooter() {
         </div>
         <div className="mt-4 rounded-xl border border-outline-variant/25 bg-surface-container-low px-4 py-4">
           <p className="text-xs font-semibold tracking-wide text-surface-on">
-            Mobile apps coming soon
+            Install FutureSeer
           </p>
           <p className="mt-1 text-xs text-surface-on-variant leading-relaxed">
-            Optimized for mobile and desktop—the same web app adapts to your screen. Native iOS and Android apps are
-            coming soon; join the waitlist below.
+            Install on Windows, macOS, Linux, ChromeOS, Android, and iPhone. Tap Install to add the same app to your
+            device — no store listing required.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href="/mobile-waitlist"
-              className="inline-flex flex-col gap-1"
-              aria-label="Coming Soon — App Store badge — join the iOS app waitlist"
-            >
-              <span className="text-[11px] uppercase tracking-wide text-surface-on-variant/90">Coming Soon</span>
-              <img
-                src="/badges/app-store-dark.svg"
-                alt=""
-                width={124}
-                height={40}
-                className="block h-auto w-auto dark:hidden"
-                loading="lazy"
-              />
-              <img
-                src="/badges/app-store-light.svg"
-                alt=""
-                width={124}
-                height={40}
-                className="hidden h-auto w-auto dark:block"
-                loading="lazy"
-              />
-            </Link>
-            <Link
-              href="/mobile-waitlist"
-              className="inline-flex flex-col gap-1"
-              aria-label="Coming Soon — Google Play badge — join the Android app waitlist"
-            >
-              <span className="text-[11px] uppercase tracking-wide text-surface-on-variant/90">Coming Soon</span>
-              <img
-                src="/badges/google-play-dark.svg"
-                alt=""
-                width={135}
-                height={40}
-                className="block h-auto w-auto dark:hidden"
-                loading="lazy"
-              />
-              <img
-                src="/badges/google-play-light.svg"
-                alt=""
-                width={135}
-                height={40}
-                className="hidden h-auto w-auto dark:block"
-                loading="lazy"
-              />
-            </Link>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <PwaPlatformIcons />
+            <PwaInstallButton placement="footer" />
           </div>
         </div>
       </div>

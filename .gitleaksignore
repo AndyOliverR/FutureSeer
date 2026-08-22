@@ -10,15 +10,24 @@
 #   and benign strings (e.g. LLM model id) that gitleaks heuristics matched as generic-api-key.
 
 # Public reCAPTCHA Enterprise site key (browser-public; restrict in Google Cloud console).
+# Fingerprints differ by scan: gitleaks reports the first-seen commit SHA, which can change
+# after history rewrite. Keep every known SHA so schedule (full-history) scans stay green.
 0bba30a68c152d594109d61be6799d8c11da7005:components/community/GuestDiscussionForm.tsx:generic-api-key:14
 0bba30a68c152d594109d61be6799d8c11da7005:lib/recaptcha/verifyEnterpriseCaptcha.ts:generic-api-key:4
+ce320a2ed7b7d6bd98f33d4deebc2b8d518c17cc:components/community/GuestDiscussionForm.tsx:generic-api-key:14
+ce320a2ed7b7d6bd98f33d4deebc2b8d518c17cc:lib/recaptcha/verifyEnterpriseCaptcha.ts:generic-api-key:4
 94ea03eaaa42a3aa772659b8f87366866bf8627c:app/signin/page.tsx:generic-api-key:41
 94ea03eaaa42a3aa772659b8f87366866bf8627c:app/signup/page.tsx:generic-api-key:46
+83b10adfdcffe34bb4088bf2084c2313dca621e1:app/signin/page.tsx:generic-api-key:41
+83b10adfdcffe34bb4088bf2084c2313dca621e1:app/signup/page.tsx:generic-api-key:46
 4c913e4f7832fcec6996c2e4ec2f8d14f2322366:app/api/auth/verify-captcha/route.ts:generic-api-key:13
+0012872a546b2bc15dbe2426be6a20db23c7d34c:app/api/auth/verify-captcha/route.ts:generic-api-key:13
 
 # Benign LLM model id strings flagged as generic-api-key by entropy heuristic.
 d4d949276a1151a6304ae95e54df6f81d2f8f08f:lib/bibliomancyIntelligence.ts:generic-api-key:765
 22ba13dcb93601397b260845276e28204743c78d:lib/bibliomancyIntelligence.ts:generic-api-key:764
+1785a4dbdd382d00770e3a59669270b834a9eb62:lib/bibliomancyIntelligence.ts:generic-api-key:765
+9ebd9ec87e3dd689caf51a38bc63347c309e72ca:lib/bibliomancyIntelligence.ts:generic-api-key:764
 
 # env-template.txt placeholder string.
 22ba13dcb93601397b260845276e28204743c78d:env-template.txt:generic-api-key:16

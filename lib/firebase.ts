@@ -37,8 +37,6 @@ import {
 } from './localStorage';
 import { clearAstroDataCache } from './astroDataService';
 import { generateReferralCode, trackReferralSignup } from './referralUtils';
-
-import { Capacitor } from '@capacitor/core';
 import {
   shouldPreferOAuthRedirect,
   markOAuthRedirectPending,
@@ -524,11 +522,6 @@ export const signInWithGoogle = async (): Promise<User> => {
       const auth = getFirebaseAuth();
       if (!auth) throw new Error('Firebase not initialized');
 
-      if (Capacitor.isNativePlatform()) {
-        const { signInWithGoogleNative } = await import('./firebase-mobile');
-        return await signInWithGoogleNative();
-      }
-
       const user = await signInWithOAuthWeb(auth, googleProvider, 'google');
       await ensureUserDocumentFromAuth(user);
       return user;
@@ -554,10 +547,6 @@ export const signInWithApple = async (): Promise<User> => {
     try {
       const auth = getFirebaseAuth();
       if (!auth) throw new Error('Firebase not initialized');
-
-      if (Capacitor.isNativePlatform()) {
-        throw Object.assign(new Error('Apple sign-in web only'), { code: 'fs/apple-web-only' });
-      }
 
       const user = await signInWithOAuthWeb(auth, getAppleOAuthProvider(), 'apple');
       await ensureUserDocumentFromAuth(user);
@@ -803,10 +792,6 @@ export const resetPassword = async (email: string): Promise<void> => {
 export const signOutUser = async (): Promise<void> => {
   try {
     const auth = getFirebaseAuth();
-    if (Capacitor.isNativePlatform()) {
-      const { signOutNative } = await import('./firebase-mobile');
-      await signOutNative();
-    }
     if (auth) await signOut(auth);
     setGlobalRedirectResultPromise(null);
     // Only redirect after sign-out succeeds

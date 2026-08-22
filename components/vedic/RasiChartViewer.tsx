@@ -100,25 +100,25 @@ export function RasiChartViewer({
       <svg width="${chartSize}" height="${chartSize}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>
-            .chart-text { font-family: Arial, sans-serif; font-size: ${12 * zoomLevel}px; fill: #ffffff; }
-            .house-text { font-family: Arial, sans-serif; font-size: ${14 * zoomLevel}px; fill: #ffd700; font-weight: bold; }
-            .planet-text { font-family: Arial, sans-serif; font-size: ${10 * zoomLevel}px; fill: #ffffff; }
-            .sign-text { font-family: Arial, sans-serif; font-size: ${11 * zoomLevel}px; fill: #ffffff; }
-            .degree-text { font-family: Arial, sans-serif; font-size: ${8 * zoomLevel}px; fill: #cccccc; }
+            .chart-text { font-family: Arial, sans-serif; font-size: ${12 * zoomLevel}px; fill: #0f172a; }
+            .house-text { font-family: Arial, sans-serif; font-size: ${14 * zoomLevel}px; fill: #1e40af; font-weight: bold; }
+            .planet-text { font-family: Arial, sans-serif; font-size: ${10 * zoomLevel}px; fill: #0f172a; }
+            .sign-text { font-family: Arial, sans-serif; font-size: ${11 * zoomLevel}px; fill: #0f172a; }
+            .degree-text { font-family: Arial, sans-serif; font-size: ${8 * zoomLevel}px; fill: #64748b; }
             .nakshatra-text { font-family: Arial, sans-serif; font-size: ${7 * zoomLevel}px; fill: #ff6b6b; }
             .retrograde-text { font-family: Arial, sans-serif; font-size: ${8 * zoomLevel}px; fill: #ff4757; font-weight: bold; }
           </style>
         </defs>
         
         <!-- Background -->
-        <rect width="${chartSize}" height="${chartSize}" fill="#1a1a2e" stroke="#ffd700" stroke-width="${2 * zoomLevel}"/>
+        <rect width="${chartSize}" height="${chartSize}" fill="#ffffff" stroke="#3b82f6" stroke-width="${2 * zoomLevel}"/>
         
         <!-- Title -->
         <text x="${centerX}" y="${30 * zoomLevel}" text-anchor="middle" class="house-text">Rasi Chart (Birth Chart)</text>
     `
 
     // Draw outer circle
-    svg += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="none" stroke="#ffd700" stroke-width="${2 * zoomLevel}"/>`
+    svg += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="none" stroke="#3b82f6" stroke-width="${2 * zoomLevel}"/>`
 
     // Draw house divisions
     if (showHouses) {
@@ -130,7 +130,7 @@ export function RasiChartViewer({
         const y2 = centerY + radius * Math.sin((angle + 30) * Math.PI / 180)
 
         // House line
-        svg += `<line x1="${centerX}" y1="${centerY}" x2="${x1}" y2="${y1}" stroke="#ffd700" stroke-width="${1 * zoomLevel}"/>`
+        svg += `<line x1="${centerX}" y1="${centerY}" x2="${x1}" y2="${y1}" stroke="#3b82f6" stroke-width="${1 * zoomLevel}"/>`
         
         // House number
         const houseAngle = angle + 15
@@ -149,7 +149,7 @@ export function RasiChartViewer({
         
         svg += `
           <g>
-            <circle cx="${planetPosition.x}" cy="${planetPosition.y}" r="${15 * zoomLevel}" fill="#1a1a2e" stroke="#ffd700" stroke-width="${1 * zoomLevel}"/>
+            <circle cx="${planetPosition.x}" cy="${planetPosition.y}" r="${15 * zoomLevel}" fill="#ffffff" stroke="#3b82f6" stroke-width="${1 * zoomLevel}"/>
             <text x="${planetPosition.x}" y="${planetPosition.y + 5 * zoomLevel}" text-anchor="middle" class="planet-text">${planetEmoji}</text>
             <text x="${planetPosition.x}" y="${planetPosition.y + 20 * zoomLevel}" text-anchor="middle" class="planet-text">${planet.planet}</text>
         `

@@ -72,13 +72,13 @@ const NorthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
   return (
     <svg viewBox="0 0 400 400" className="border border-slate-600 w-80 h-80">
       {/* Background */}
-      <rect width="400" height="400" fill="#1a1a2e" />
+      <rect width="400" height="400" fill="#ffffff" />
       
       {/* Diamond grid lines */}
-      <line x1="200" y1="0" x2="200" y2="400" stroke="#ffd700" strokeWidth="2" />
-      <line x1="0" y1="200" x2="400" y2="200" stroke="#ffd700" strokeWidth="2" />
-      <line x1="0" y1="0" x2="400" y2="400" stroke="#ffd700" strokeWidth="2" />
-      <line x1="0" y1="400" x2="400" y2="0" stroke="#ffd700" strokeWidth="2" />
+      <line x1="200" y1="0" x2="200" y2="400" stroke="#3b82f6" strokeWidth="2" />
+      <line x1="0" y1="200" x2="400" y2="200" stroke="#3b82f6" strokeWidth="2" />
+      <line x1="0" y1="0" x2="400" y2="400" stroke="#3b82f6" strokeWidth="2" />
+      <line x1="0" y1="400" x2="400" y2="0" stroke="#3b82f6" strokeWidth="2" />
       
       {/* House numbers and content */}
       {placements.map((placement, i) => {
@@ -92,7 +92,7 @@ const NorthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
               x={coord.x}
               y={coord.y - 15}
               textAnchor="middle"
-              fill="#ffd700"
+              fill="#1e40af"
               fontSize="12"
               fontWeight="bold"
             >
@@ -105,7 +105,7 @@ const NorthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
                 x={coord.x}
                 y={coord.y}
                 textAnchor="middle"
-                fill="#ffffff"
+                fill="#0f172a"
                 fontSize="16"
               >
                 {SIGN_SYMBOLS[parseInt(placement.signs[0]) - 1] || '●'}
@@ -119,7 +119,7 @@ const NorthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
                 x={coord.x}
                 y={coord.y + 15 + (planetIndex * 12)}
                 textAnchor="middle"
-                fill="#ffffff"
+                fill="#0f172a"
                 fontSize="10"
               >
                 <title>{`${planet} in House ${placement.house}`}</title>
@@ -135,7 +135,7 @@ const NorthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
         x="200"
         y="200"
         textAnchor="middle"
-        fill="#ffd700"
+        fill="#1e40af"
         fontSize="14"
         fontWeight="bold"
       >
@@ -169,26 +169,26 @@ const SouthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
   return (
     <svg viewBox="0 0 600 400" className="border border-slate-600 w-full max-w-4xl rounded-2xl shadow-2xl">
       {/* Background */}
-      <rect width="600" height="400" fill="#1a1a2e" />
+      <rect width="600" height="400" fill="#ffffff" />
       
       {/* Square grid lines - proper South Indian layout with empty center */}
-      <rect x="0" y="0" width="600" height="400" fill="none" stroke="#ffd700" strokeWidth="2" />
+      <rect x="0" y="0" width="600" height="400" fill="none" stroke="#3b82f6" strokeWidth="2" />
       {/* Vertical lines - full height for side box borders */}
-      <line x1="150" y1="0" x2="150" y2="400" stroke="#ffd700" strokeWidth="1" />
-      <line x1="450" y1="0" x2="450" y2="400" stroke="#ffd700" strokeWidth="1" />
+      <line x1="150" y1="0" x2="150" y2="400" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="450" y1="0" x2="450" y2="400" stroke="#3b82f6" strokeWidth="1" />
       
       {/* Vertical lines - segmented to skip center area */}
-      <line x1="300" y1="0" x2="300" y2="100" stroke="#ffd700" strokeWidth="1" />
-      <line x1="300" y1="300" x2="300" y2="400" stroke="#ffd700" strokeWidth="1" />
+      <line x1="300" y1="0" x2="300" y2="100" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="300" y1="300" x2="300" y2="400" stroke="#3b82f6" strokeWidth="1" />
       {/* Horizontal lines - skip center area */}
-      <line x1="0" y1="100" x2="150" y2="100" stroke="#ffd700" strokeWidth="1" />
-      <line x1="150" y1="100" x2="450" y2="100" stroke="#ffd700" strokeWidth="1" />
-      <line x1="450" y1="100" x2="600" y2="100" stroke="#ffd700" strokeWidth="1" />
-      <line x1="0" y1="200" x2="150" y2="200" stroke="#ffd700" strokeWidth="1" />
-      <line x1="450" y1="200" x2="600" y2="200" stroke="#ffd700" strokeWidth="1" />
-      <line x1="0" y1="300" x2="150" y2="300" stroke="#ffd700" strokeWidth="1" />
-      <line x1="150" y1="300" x2="450" y2="300" stroke="#ffd700" strokeWidth="1" />
-      <line x1="450" y1="300" x2="600" y2="300" stroke="#ffd700" strokeWidth="1" />
+      <line x1="0" y1="100" x2="150" y2="100" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="150" y1="100" x2="450" y2="100" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="450" y1="100" x2="600" y2="100" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="0" y1="200" x2="150" y2="200" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="450" y1="200" x2="600" y2="200" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="0" y1="300" x2="150" y2="300" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="150" y1="300" x2="450" y2="300" stroke="#3b82f6" strokeWidth="1" />
+      <line x1="450" y1="300" x2="600" y2="300" stroke="#3b82f6" strokeWidth="1" />
       
       {/* House numbers and content */}
       {placements.map((placement, i) => {
@@ -202,7 +202,7 @@ const SouthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
               x={coord.x}
               y={coord.y - 15}
               textAnchor="middle"
-              fill="#ffd700"
+              fill="#1e40af"
               fontSize="12"
               fontWeight="bold"
             >
@@ -215,7 +215,7 @@ const SouthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
                 x={coord.x}
                 y={coord.y}
                 textAnchor="middle"
-                fill="#ffffff"
+                fill="#0f172a"
                 fontSize="16"
               >
                 {SIGN_SYMBOLS[parseInt(placement.signs[0]) - 1] || '●'}
@@ -229,7 +229,7 @@ const SouthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
                 x={coord.x}
                 y={coord.y + 15 + (planetIndex * 12)}
                 textAnchor="middle"
-                fill="#ffffff"
+                fill="#0f172a"
                 fontSize="10"
               >
                 <title>{`${planet} in House ${placement.house}`}</title>
@@ -245,7 +245,7 @@ const SouthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
         x="200"
         y="200"
         textAnchor="middle"
-        fill="#ffd700"
+        fill="#1e40af"
         fontSize="14"
         fontWeight="bold"
       >

@@ -22,10 +22,10 @@ The app runs TWO distinct design systems based on screen size and platform:
 | Signal | Design | Styling |
 |---|---|---|
 | Desktop/laptop (>= 768px) | **Devotionist Web** | Transparent surfaces, light serif headings (Cinzel), wide letter-spacing, cosmic floating aesthetic |
-| Mobile/small screen (< 768px) OR Capacitor native | **Material 3 Mobile** | Solid dark surfaces, medium-weight headings, tighter spacing, bottom nav bar, Material 3 elevation |
+| Mobile/small screen (< 768px) | **Material 3 Mobile** | Solid dark surfaces, medium-weight headings, tighter spacing, bottom nav bar, Material 3 elevation |
 
 **How it works:**
-- **Naming:** `.platform-android` and `data-platform="android"` mean **"mobile layout (Material 3)"**, not Android OS. They are set when screen width &lt; 768px or when running in Capacitor native; use them for layout/design system only.
+- **Naming:** `.platform-android` and `data-platform="android"` mean **"mobile layout (Material 3)"**, not Android OS. They are set when screen width &lt; 768px; use them for layout/design system only.
 - `PlatformClassProvider` (in `components/PlatformClassProvider.tsx`) applies `.platform-android` or `.platform-web` to `<body>` on every page load, resize, and orientationchange, and syncs `data-platform` on the document element.
 - CSS custom properties (`--m3-surface`, etc.) in `globals.css` change values under `.platform-android` — e.g., surfaces become solid (#020617) instead of transparent.
 - Tailwind responsive classes (`md:hidden`, `md:grid-cols-3`) handle layout.
@@ -128,7 +128,7 @@ After `pnpm install`, a warning about "Ignored build scripts" appears. `sharp` (
 ### Key Gotchas
 
 - The SSR error `Bail out to client-side rendering: next/dynamic` in dev server logs is expected — the app uses `next/dynamic` heavily and renders client-side.
-- The project includes Electron (`pnpm desktop`) and Capacitor (`pnpm mobile:build`) shells — these are optional and not needed for web development.
+- Shipping path is the web PWA at `https://futureseer.app` (install from the browser). Native store shells were removed.
 
 ### AI control layer (Phases 1–4)
 

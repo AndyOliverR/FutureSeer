@@ -27,7 +27,7 @@ const ELEMENT_COLORS: Record<string, string> = {
   'Water': 'from-blue-900 to-blue-600',
   'Wood': 'from-green-700 to-green-500',
   'Fire': 'from-red-600 to-orange-500',
-  'Earth': 'from-amber-700 to-yellow-500',
+  'Earth': 'from-slate-200 to-sky-200',
   'Metal': 'from-slate-400 to-slate-200'
 }
 

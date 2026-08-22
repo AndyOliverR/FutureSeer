@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight, ChevronDown } from "lucide-react"
+import { PwaInstallButton } from "@/components/PwaInstallButton"
 import { useAnalytics } from "@/lib/analytics"
 import { ANALYTICS_EVENTS } from "@/lib/analytics"
 import { heroCtaLabel } from "@/lib/heroCtaVariant"
@@ -44,6 +45,7 @@ export function HeroSection() {
             {ctaLabel}
             <ArrowRight className="ml-2 w-4 h-4 hidden md:block" />
           </Button>
+          <PwaInstallButton placement="hero" />
           <p className="text-xs text-primary/65 max-w-md mx-auto">
             No spam. Read our{" "}
             <Link

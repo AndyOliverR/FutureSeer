@@ -33,11 +33,11 @@ import {
 } from 'lucide-react'
 
 const REPORT_SECTION_ITEM =
-  'rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] px-3 sm:px-4'
+  'rounded-xl border border-sky-200 bg-white px-3 sm:px-4'
 const REPORT_SECTION_TRIGGER =
-  'py-4 text-[var(--m3-on-surface)] hover:text-amber-200 [&[data-state=open]]:text-amber-200 [&>svg]:text-[var(--m3-on-surface-variant)]'
+  'font-heading py-4 tracking-wide text-sky-900 hover:text-sky-700 [&[data-state=open]]:text-sky-800 [&>svg]:text-sky-600'
 const REPORT_SUMMARY_CARD =
-  'rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]'
+  'rounded-2xl border border-sky-200 bg-sky-50'
 
 interface ComprehensiveVedicReportProps {
   userId?: string
@@ -198,10 +198,10 @@ export default function ComprehensiveVedicReport({
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-8"
+        className="mb-8 rounded-2xl border border-sky-200 bg-sky-50 p-6 text-center"
       >
-        <h2 className="mb-4 text-3xl font-medium tracking-wide text-amber-200">Comprehensive Vedic Astrology Report</h2>
-        <p className="text-slate-200 leading-relaxed">
+        <h2 className="mb-4 font-heading text-3xl font-medium tracking-wide text-sky-900">Comprehensive Vedic Astrology Report</h2>
+        <p className="text-slate-600 leading-relaxed">
           Complete analysis of your Vedic birth chart (Jyotish)
         </p>
       </motion.div>
@@ -210,11 +210,11 @@ export default function ComprehensiveVedicReport({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card className={REPORT_SUMMARY_CARD}>
           <CardContent className="p-3 text-center sm:p-6">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
-              <Star className="h-8 w-8 text-amber-300" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-100">
+              <Star className="h-8 w-8 text-sky-700" />
             </div>
             <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Ascendant</div>
-            <div className="mb-2 text-4xl font-medium text-amber-200">
+            <div className="mb-2 font-heading text-4xl font-medium tracking-wide text-sky-900">
               {ascendant}
             </div>
             <div className="text-xs text-[var(--m3-on-surface-variant)]">Rising Sign (Lagna)</div>
@@ -223,11 +223,11 @@ export default function ComprehensiveVedicReport({
 
         <Card className={REPORT_SUMMARY_CARD}>
           <CardContent className="p-3 text-center sm:p-6">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
-              <Moon className="h-8 w-8 text-amber-300" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-100">
+              <Moon className="h-8 w-8 text-cyan-700" />
             </div>
             <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Current Dasha</div>
-            <div className="mb-2 text-4xl font-medium text-amber-200">
+            <div className="mb-2 font-heading text-4xl font-medium tracking-wide text-sky-900">
               {currentDasha}
             </div>
             <div className="text-xs text-[var(--m3-on-surface-variant)]">Planetary Period</div>
@@ -236,11 +236,11 @@ export default function ComprehensiveVedicReport({
 
         <Card className={REPORT_SUMMARY_CARD}>
           <CardContent className="p-3 text-center sm:p-6">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
-              <Sparkles className="h-8 w-8 text-amber-300" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-100">
+              <Sparkles className="h-8 w-8 text-indigo-700" />
             </div>
             <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Chart Type</div>
-            <div className="mb-2 text-4xl font-medium text-amber-200">
+            <div className="mb-2 font-heading text-4xl font-medium tracking-wide text-sky-900">
               D1
             </div>
             <div className="text-xs text-[var(--m3-on-surface-variant)]">Birth Chart</div>
@@ -337,10 +337,10 @@ export default function ComprehensiveVedicReport({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <Card className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+          <Card className="rounded-2xl border border-sky-200 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-amber-200">
-                <Sparkles className="w-6 h-6 text-amber-600" />
+              <CardTitle className="font-heading flex items-center gap-2 tracking-wide text-sky-900">
+                <Sparkles className="w-6 h-6 text-sky-600" />
                 Comprehensive Vedic Astrology Analysis
               </CardTitle>
             </CardHeader>

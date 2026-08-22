@@ -106,7 +106,7 @@ export default function VedicNorthChart({ chart, className = "", onPlanetClick }
                 textAnchor="middle"
                 fontSize="12"
                 fontWeight="bold"
-                fill="#d97706"
+                fill="#1e40af"
               >
                 {houseData?.signName || "---"}
               </text>

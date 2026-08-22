@@ -31,7 +31,7 @@ const VedicChartSouthPro: React.FC<VedicChartSouthProProps> = ({
     if (!svgRef.current) return;
     try {
       const dataUrl = await toPng(svgRef.current as unknown as HTMLElement, {
-        backgroundColor: "#0b0f1a",
+        backgroundColor: "#ffffff",
         pixelRatio: 3,
       });
       const link = document.createElement("a");

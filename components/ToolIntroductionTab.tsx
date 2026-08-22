@@ -36,14 +36,14 @@ export function ToolIntroductionTab({ toolSlug }: ToolIntroductionTabProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
+      <Card className="bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 border-2 border-sky-200 shadow-lg rounded-3xl">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="bg-purple-200/60 rounded-full p-3">
+            <div className="bg-sky-100 rounded-full p-3">
               <div className="text-4xl">{introduction.icon}</div>
             </div>
             <div className="flex-1">
-              <CardTitle className="text-2xl font-serif text-purple-900">
+              <CardTitle className="text-2xl font-heading tracking-wide text-sky-900">
                 {introduction.name}
               </CardTitle>
               <p className="text-slate-700 mt-1">{introduction.description}</p>

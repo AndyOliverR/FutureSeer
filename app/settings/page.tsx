@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { User, LogOut, Trash2, CheckCircle, XCircle, Bell, Mail, Heart, Users, Sparkles } from "lucide-react"
 import { Label } from "@/components/ui/label"
+import { PwaInstallButton } from "@/components/PwaInstallButton"
 import { getMissingFullProfileFields } from "@/lib/subscriptionConfig"
 
 const FULL_FIELD_LABELS: Record<string, string> = {
@@ -258,6 +259,8 @@ export default function SettingsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <PwaInstallButton placement="settings" />
 
         {/* Profile Card */}
         <Card className={cardClass}>

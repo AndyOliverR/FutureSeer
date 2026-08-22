@@ -10,12 +10,12 @@ export const GROQ_STYLE_VARIANTS: GroqStyleVariant[] = [
   {
     id: 'auric-night',
     label: 'Auric Night',
-    tokens: { background: '#0b1120', ringStroke: '#eab308', textPrimary: '#f8fafc', textSecondary: '#94a3b8', accent: '#f59e0b' },
+    tokens: { background: '#ffffff', ringStroke: '#3b82f6', textPrimary: '#0f172a', textSecondary: '#64748b', accent: '#2563eb' },
   },
   {
     id: 'ivory-manuscript',
     label: 'Ivory Manuscript',
-    tokens: { background: '#fffdf7', ringStroke: '#7c2d12', textPrimary: '#1f2937', textSecondary: '#6b7280', accent: '#b45309' },
+    tokens: { background: '#ffffff', ringStroke: '#3b82f6', textPrimary: '#0f172a', textSecondary: '#64748b', accent: '#2563eb' },
   },
 ];
 

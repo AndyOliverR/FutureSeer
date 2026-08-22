@@ -267,17 +267,17 @@ export default function ComprehensiveNumerologyReport({
           <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-slate-200 shadow-lg rounded-3xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800">
-                <Sparkles className="w-6 h-6 text-amber-600" />
+                <Sparkles className="w-6 h-6 text-indigo-600" />
                 Comprehensive Numerology Analysis
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {/* Profile Overview */}
-                <AccordionItem value="overview" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-3 sm:px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-700 [&>svg]:text-slate-600">
+                <AccordionItem value="overview" className="border-2 border-indigo-200 rounded-lg bg-gradient-to-br from-indigo-50 to-sky-50 px-3 sm:px-4 shadow-sm">
+                  <AccordionTrigger className="text-slate-800 hover:text-indigo-700 py-4 [&[data-state=open]]:text-indigo-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
-                      <Star className="w-5 h-5 text-amber-600" />
+                      <Star className="w-5 h-5 text-indigo-600" />
                       <span className="text-left font-semibold">Profile Overview</span>
                     </div>
                   </AccordionTrigger>
@@ -401,10 +401,10 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Destiny Analysis */}
-                <AccordionItem value="destiny" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-3 sm:px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-700 [&>svg]:text-slate-600">
+                <AccordionItem value="destiny" className="border-2 border-indigo-200 rounded-lg bg-gradient-to-br from-indigo-50 to-sky-50 px-3 sm:px-4 shadow-sm">
+                  <AccordionTrigger className="text-slate-800 hover:text-indigo-700 py-4 [&[data-state=open]]:text-indigo-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
-                      <Sparkles className="w-5 h-5 text-amber-600" />
+                      <Sparkles className="w-5 h-5 text-indigo-600" />
                       <span className="text-left font-semibold">Destiny Analysis</span>
                     </div>
                   </AccordionTrigger>

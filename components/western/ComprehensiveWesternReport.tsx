@@ -39,11 +39,11 @@ import {
 } from 'lucide-react'
 
 const REPORT_SECTION_ITEM =
-  'rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] px-3 sm:px-4'
+  'rounded-xl border border-sky-200 bg-white px-3 sm:px-4'
 const REPORT_SECTION_TRIGGER =
-  'py-4 text-[var(--m3-on-surface)] hover:text-amber-200 [&[data-state=open]]:text-amber-200 [&>svg]:text-[var(--m3-on-surface-variant)]'
+  'font-heading py-4 tracking-wide text-sky-900 hover:text-sky-700 [&[data-state=open]]:text-sky-800 [&>svg]:text-sky-600'
 const REPORT_SUMMARY_CARD =
-  'rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]'
+  'rounded-2xl border border-sky-200 bg-sky-50'
 
 interface ComprehensiveWesternReportProps {
   userId?: string
@@ -218,10 +218,10 @@ export default function ComprehensiveWesternReport({
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-8"
+        className="mb-8 rounded-2xl border border-sky-200 bg-sky-50 p-6 text-center"
       >
-        <h2 className="mb-4 text-3xl font-medium tracking-wide text-amber-200">Comprehensive Western Astrology Report</h2>
-        <p className="text-slate-200 leading-relaxed">
+        <h2 className="mb-4 font-heading text-3xl font-medium tracking-wide text-sky-900">Comprehensive Western Astrology Report</h2>
+        <p className="text-slate-600 leading-relaxed">
           Complete analysis of your Tropical Zodiac birth chart
         </p>
       </motion.div>
@@ -230,55 +230,55 @@ export default function ComprehensiveWesternReport({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card className={REPORT_SUMMARY_CARD}>
           <CardContent className="p-3 text-center sm:p-6">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
-              <Sun className="h-8 w-8 text-amber-300" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-100">
+              <Sun className="h-8 w-8 text-sky-700" />
             </div>
-            <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Sun Sign</div>
+            <div className="mb-2 text-sm text-slate-500">Sun Sign</div>
             <div className="mb-2 flex items-center justify-center gap-2">
               {sun?.sign?.signName || sun?.sign ? (
-                <ZodiacIcon sign={sun?.sign?.signName || sun?.sign} size={24} className="text-amber-300" />
+                <ZodiacIcon sign={sun?.sign?.signName || sun?.sign} size={24} className="text-sky-700" />
               ) : null}
-              <div className="text-2xl font-medium text-amber-200">
+              <div className="font-heading text-2xl font-medium tracking-wide text-sky-900">
                 {sun?.sign?.signName || sun?.sign || 'Unknown'}
               </div>
             </div>
-            <div className="text-xs text-[var(--m3-on-surface-variant)]">House {sun?.house || 'N/A'}</div>
+            <div className="text-xs text-slate-500">House {sun?.house || 'N/A'}</div>
           </CardContent>
         </Card>
 
         <Card className={REPORT_SUMMARY_CARD}>
           <CardContent className="p-3 text-center sm:p-6">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
-              <Moon className="h-8 w-8 text-amber-300" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-100">
+              <Moon className="h-8 w-8 text-sky-700" />
             </div>
-            <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Moon Sign</div>
+            <div className="mb-2 text-sm text-slate-500">Moon Sign</div>
             <div className="mb-2 flex items-center justify-center gap-2">
               {moon?.sign?.signName || moon?.sign ? (
-                <ZodiacIcon sign={moon?.sign?.signName || moon?.sign} size={24} className="text-amber-300" />
+                <ZodiacIcon sign={moon?.sign?.signName || moon?.sign} size={24} className="text-sky-700" />
               ) : null}
-              <div className="text-2xl font-medium text-amber-200">
+              <div className="font-heading text-2xl font-medium tracking-wide text-sky-900">
                 {moon?.sign?.signName || moon?.sign || 'Unknown'}
               </div>
             </div>
-            <div className="text-xs text-[var(--m3-on-surface-variant)]">House {moon?.house || 'N/A'}</div>
+            <div className="text-xs text-slate-500">House {moon?.house || 'N/A'}</div>
           </CardContent>
         </Card>
 
         <Card className={REPORT_SUMMARY_CARD}>
           <CardContent className="p-3 text-center sm:p-6">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
-              <ArrowUp className="h-8 w-8 text-amber-300" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-100">
+              <ArrowUp className="h-8 w-8 text-sky-700" />
             </div>
-            <div className="mb-2 text-sm text-[var(--m3-on-surface-variant)]">Rising Sign</div>
+            <div className="mb-2 text-sm text-slate-500">Rising Sign</div>
             <div className="mb-2 flex items-center justify-center gap-2">
               {rising?.sign?.signName || rising?.sign ? (
-                <ZodiacIcon sign={rising?.sign?.signName || rising?.sign} size={24} className="text-amber-300" />
+                <ZodiacIcon sign={rising?.sign?.signName || rising?.sign} size={24} className="text-sky-700" />
               ) : null}
-              <div className="text-2xl font-medium text-amber-200">
+              <div className="font-heading text-2xl font-medium tracking-wide text-sky-900">
                 {rising?.sign?.signName || rising?.sign || 'Unknown'}
               </div>
             </div>
-            <div className="text-xs text-[var(--m3-on-surface-variant)]">Ascendant</div>
+            <div className="text-xs text-slate-500">Ascendant</div>
           </CardContent>
         </Card>
       </div>
@@ -289,14 +289,14 @@ export default function ComprehensiveWesternReport({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <Card className="glass-card border-white/10 rounded-2xl text-white">
-          <CardHeader className="text-white">
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Eye className="w-5 h-5 text-amber-400" />
+        <Card className="rounded-2xl border border-sky-200 bg-white">
+          <CardHeader>
+            <CardTitle className="font-heading flex items-center gap-2 tracking-wide text-sky-900">
+              <Eye className="w-5 h-5 text-sky-600" />
               Chart Visualization
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-white">
+          <CardContent>
             <DualChartDisplay
               natalPlanets={planets}
               natalHouses={houses}
@@ -387,10 +387,10 @@ export default function ComprehensiveWesternReport({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <Card className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+          <Card className="rounded-2xl border border-sky-200 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-amber-200">
-                <Sparkles className="h-6 w-6 text-amber-300" />
+              <CardTitle className="font-heading flex items-center gap-2 tracking-wide text-sky-900">
+                <Sparkles className="h-6 w-6 text-sky-600" />
                 Comprehensive Chart Analysis
               </CardTitle>
             </CardHeader>

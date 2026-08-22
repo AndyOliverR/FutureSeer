@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { getSymbolById, SymbolData } from '@/lib/symbolSystem'
+import { getToolCardEmoji } from '@/lib/data/toolIntroductions'
 import { cn } from '@/lib/utils'
 
 interface MysticalSymbolProps {
@@ -322,5 +323,30 @@ export function SymbolGrid({
         />
       ))}
     </div>
+  )
+}
+
+/** Large emoji from tool introductions — not a thin astrological glyph. */
+export function ToolCardEmoji({
+  slug,
+  size = 'lg',
+  className,
+}: {
+  slug: string
+  size?: 'lg' | 'xl'
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        'inline-flex select-none items-center justify-center leading-none',
+        size === 'xl' ? 'text-6xl' : 'text-5xl',
+        className,
+      )}
+      role="img"
+      aria-hidden
+    >
+      {getToolCardEmoji(slug)}
+    </span>
   )
 } 

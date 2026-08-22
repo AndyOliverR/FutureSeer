@@ -148,44 +148,6 @@ jobs:
       - name: Jest tests
         run: pnpm test
 
-  linux_desktop_smoke:
-    name: Linux desktop smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [lint_test]
-    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build app
-        run: pnpm run build
-
-      - name: Linux desktop launch smoke
-        shell: bash
-        continue-on-error: true
-        env:
-          ELECTRON_NO_SANDBOX: "1"
-          ELECTRON_EXIT_AFTER_MS: "5000"
-        run: |
-          pnpm run start &
-          NEXT_PID=$!
-          trap "kill $NEXT_PID" EXIT
-          pnpm exec wait-on http://localhost:3000
-          xvfb-run --auto-servernum pnpm run electron
-
   linux_readiness_audit:
     name: Linux readiness audit
     runs-on: ubuntu-latest

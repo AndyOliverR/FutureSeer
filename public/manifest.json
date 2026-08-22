@@ -1,12 +1,14 @@
 {
+  "id": "https://futureseer.app/",
   "name": "FutureSeer - AI-Powered Mystical Insights",
   "short_name": "FutureSeer",
   "description": "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "browser"],
   "background_color": "#0a0f1f",
-  "theme_color": "#fbbf24",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -36,10 +38,5 @@
   ],
   "categories": ["lifestyle", "entertainment", "education"],
   "lang": "en",
-  "dir": "ltr",
-  "serviceworker": {
-    "src": "/sw.js",
-    "scope": "/",
-    "update_via_cache": "none"
-  }
+  "dir": "ltr"
 }

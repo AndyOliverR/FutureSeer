@@ -78,6 +78,11 @@ export const metadata: Metadata = {
     copyright: "FutureSeer (futureseer.app)",
   },
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "FutureSeer",
+    statusBarStyle: "black-translucent",
+  },
   icons: {
     icon: [
       { url: "/favicon.png", sizes: "32x32", type: "image/png" },
