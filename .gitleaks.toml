@@ -9,7 +9,7 @@ title = "FutureSeer"
 useDefault = true
 
 [allowlist]
-description = "Firebase Android JSON, UI storage keys, campaign key constants, env template placeholders (historical fingerprints live in .gitleaksignore)"
+description = "Firebase Android JSON, UI storage keys, campaign key constants, env template placeholders, public reCAPTCHA site key, Groq model id (not a secret). Historical fingerprints also live in .gitleaksignore."
 paths = [
   '''android/app/google-services\.json''',
   '''android/app/src/google-services\.json''',
@@ -17,7 +17,11 @@ paths = [
   '''lib/campaignAttribution\.ts''',
   '''env-template\.txt''',
 ]
+# Extra regexes: public reCAPTCHA Enterprise site key (restrict in Google Cloud)
+# and Groq/Llama model id (entropy false positive for generic-api-key).
 regexes = [
   '''FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\nYour private key here\\n-----END PRIVATE KEY-----"''',
   '''ASTROAPP_API_KEY=your-astroapp-api-key''',
+  '''6Ld_vmMsAAAAAJzl7DmmVomD3G3BLkovwM0AB8Fz''',
+  '''llama-3\.3-70b-versatile''',
 ]

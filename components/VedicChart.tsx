@@ -57,8 +57,9 @@ export default function VedicChart({ placements, chartType, className = '' }: Ve
     return house ? house.planets : [];
   };
 
-  const getSignColor = (signName: string): string => {
-    return VEDIC_COLORS.signs[signName as keyof typeof VEDIC_COLORS.signs] || '#FFFFFF';
+  const getSignColor = (_signName: string): string => {
+    void _signName
+    return '#ffffff'
   };
 
   const getPlanetColor = (planetName: string): string => {

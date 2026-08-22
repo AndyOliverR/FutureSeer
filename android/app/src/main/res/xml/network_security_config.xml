@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Production: HTTPS only. For emulator dev cleartext, use a debug build flavor or restore a dev domain-config locally. -->
-<network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
-</network-security-config>

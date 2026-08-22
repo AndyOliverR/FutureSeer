@@ -23,11 +23,11 @@ const TEXT_COLORS: Record<BibliomancyTextId, 'amber' | 'blue' | 'purple' | 'pink
 };
 
 const ACTIVE_BUTTON_CLASS: Record<BibliomancyTextId, string> = {
-  bible: 'bg-amber-100 border-amber-400 text-amber-900',
-  quran: 'bg-green-100 border-green-400 text-green-900',
-  gita: 'bg-orange-100 border-orange-400 text-orange-900',
-  torah: 'bg-blue-100 border-blue-400 text-blue-900',
-  hafez: 'bg-purple-100 border-purple-400 text-purple-900',
+  bible: 'bg-sky-100 border-sky-400 text-sky-900',
+  quran: 'bg-teal-100 border-teal-400 text-teal-900',
+  gita: 'bg-cyan-100 border-cyan-400 text-cyan-900',
+  torah: 'bg-indigo-100 border-indigo-400 text-indigo-900',
+  hafez: 'bg-slate-100 border-slate-400 text-slate-900',
 };
 
 interface PassageReport {

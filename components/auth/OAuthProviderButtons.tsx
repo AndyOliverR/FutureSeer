@@ -70,17 +70,17 @@ export function OAuthProviderButtons({
   const busy = disabled || gate;
   const clickLockRef = useRef(false);
 
-  const runWithShortClickLock = async (action: () => void | Promise<void>) => {
+  const runWithShortClickLock = (action: () => void | Promise<void>) => {
     if (clickLockRef.current) return;
     clickLockRef.current = true;
-    try {
-      await action();
-    } finally {
-      // Prevent rapid double taps that can trigger cancelled popup requests.
-      window.setTimeout(() => {
-        clickLockRef.current = false;
-      }, 700);
-    }
+    // Paint first so INP is not blocked by Firebase popup work.
+    requestAnimationFrame(() => {
+      void Promise.resolve(action()).finally(() => {
+        window.setTimeout(() => {
+          clickLockRef.current = false;
+        }, 700);
+      });
+    });
   };
 
   if (variant === "mobile") {
@@ -91,7 +91,7 @@ export function OAuthProviderButtons({
           size="xl"
           onClick={() => void runWithShortClickLock(onGoogle)}
           disabled={busy || activeProvider === "google"}
-          className="w-full gap-3 bg-white text-slate-900 shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full gap-3 bg-white text-slate-900 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           aria-busy={activeProvider === "google"}
         >
           {activeProvider === "google" ? (
@@ -107,7 +107,7 @@ export function OAuthProviderButtons({
             size="xl"
             onClick={() => void runWithShortClickLock(onApple)}
             disabled={busy || activeProvider === "apple"}
-            className="w-full gap-3 bg-black text-white border border-white/10 shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full gap-3 bg-black text-white border border-white/10 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             aria-busy={activeProvider === "apple"}
           >
             {activeProvider === "apple" ? (

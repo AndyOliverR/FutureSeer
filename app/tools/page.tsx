@@ -28,7 +28,7 @@ import {
   toolSlugForPath,
 } from "@/lib/report-viral/toolSlugToPath"
 import { GENERATION_ETA_TOOLS_BANNER } from "@/lib/generationEtaCopy"
-import { ToolSymbol } from "@/components/MysticalSymbol"
+import { ToolCardEmoji } from "@/components/MysticalSymbol"
 import {
   isReportGenerationActive,
   resolveReportGenerationState,
@@ -348,8 +348,8 @@ function ToolsPageContent() {
                             : "bg-surface-container-high border-outline-variant shadow-md",
                       )}
                     >
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest shadow-inner">
-                        <ToolSymbol toolName={tool.slug} size="lg" />
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest shadow-inner">
+                        <ToolCardEmoji slug={tool.slug} size="lg" />
                       </div>
                       <div className="flex-1 min-w-0 pr-6">
                         <div className="flex items-center gap-2">
@@ -392,8 +392,8 @@ function ToolsPageContent() {
                         : "bg-surface-container-high border-outline-variant shadow-md",
                   )}
                 >
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest shadow-inner">
-                    <ToolSymbol toolName={tool.slug} size="lg" />
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest shadow-inner">
+                    <ToolCardEmoji slug={tool.slug} size="lg" />
                   </div>
                   <div className="flex-1 min-w-0 pr-6">
                     <div className="flex items-center gap-2">
@@ -493,7 +493,7 @@ function ToolsPageContent() {
                       <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="relative z-10 h-full flex flex-col items-center text-center">
                         <div className="mb-6 flex justify-center transition-transform">
-                          <ToolSymbol toolName={tool.slug} size="xl" />
+                          <ToolCardEmoji slug={tool.slug} size="xl" />
                         </div>
                         <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
                         {isToolPending(tool.slug) ? (
@@ -539,7 +539,7 @@ function ToolsPageContent() {
               <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10 h-full flex flex-col items-center text-center">
                 <div className="mb-6 flex justify-center transition-transform">
-                  <ToolSymbol toolName={tool.slug} size="xl" />
+                  <ToolCardEmoji slug={tool.slug} size="xl" />
                 </div>
                 <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
                 {isToolPending(tool.slug) ? (

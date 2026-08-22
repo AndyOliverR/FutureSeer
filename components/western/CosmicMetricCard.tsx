@@ -5,6 +5,8 @@ import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
+export type CosmicMetricColorScheme = 'amber' | 'blue' | 'purple' | 'pink' | 'green' | 'orange' | 'cyan' | 'gradient'
+
 export interface CosmicMetricCardProps {
   icon: ReactNode
   label: string
@@ -13,8 +15,7 @@ export interface CosmicMetricCardProps {
   subValue?: string
   tooltip?: string
   badge?: string
-  /** Kept for call-site compatibility; rainbow palettes are no longer applied. */
-  colorScheme?: 'amber' | 'blue' | 'purple' | 'pink' | 'green' | 'orange' | 'cyan' | 'gradient'
+  colorScheme?: CosmicMetricColorScheme
   size?: 'small' | 'medium' | 'large'
   className?: string
   onClick?: () => void
@@ -41,6 +42,57 @@ const sizeConfig = {
   }
 }
 
+const palettes: Record<CosmicMetricColorScheme, { card: string; icon: string; value: string; badge: string }> = {
+  amber: {
+    card: 'border-sky-200 bg-sky-50 text-sky-900',
+    icon: 'bg-sky-100 text-sky-700',
+    value: 'text-sky-900',
+    badge: 'border-sky-200 bg-sky-100 text-sky-800',
+  },
+  blue: {
+    card: 'border-sky-200 bg-sky-50 text-sky-900',
+    icon: 'bg-sky-100 text-sky-700',
+    value: 'text-sky-900',
+    badge: 'border-sky-200 bg-sky-100 text-sky-800',
+  },
+  cyan: {
+    card: 'border-cyan-200 bg-cyan-50 text-cyan-900',
+    icon: 'bg-cyan-100 text-cyan-700',
+    value: 'text-cyan-900',
+    badge: 'border-cyan-200 bg-cyan-100 text-cyan-800',
+  },
+  purple: {
+    card: 'border-indigo-200 bg-indigo-50 text-indigo-900',
+    icon: 'bg-indigo-100 text-indigo-700',
+    value: 'text-indigo-900',
+    badge: 'border-indigo-200 bg-indigo-100 text-indigo-800',
+  },
+  green: {
+    card: 'border-teal-200 bg-teal-50 text-teal-900',
+    icon: 'bg-teal-100 text-teal-700',
+    value: 'text-teal-900',
+    badge: 'border-teal-200 bg-teal-100 text-teal-800',
+  },
+  pink: {
+    card: 'border-sky-200 bg-slate-50 text-slate-900',
+    icon: 'bg-sky-100 text-sky-700',
+    value: 'text-slate-900',
+    badge: 'border-sky-200 bg-sky-100 text-sky-800',
+  },
+  orange: {
+    card: 'border-sky-200 bg-slate-50 text-slate-900',
+    icon: 'bg-sky-100 text-sky-700',
+    value: 'text-slate-900',
+    badge: 'border-sky-200 bg-sky-100 text-sky-800',
+  },
+  gradient: {
+    card: 'border-cyan-200 bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 text-sky-900',
+    icon: 'bg-sky-100 text-sky-700',
+    value: 'text-sky-900',
+    badge: 'border-cyan-200 bg-cyan-100 text-cyan-800',
+  },
+}
+
 export function CosmicMetricCard({
   icon,
   label,
@@ -49,13 +101,13 @@ export function CosmicMetricCard({
   subValue,
   tooltip,
   badge,
-  colorScheme: _colorScheme = 'amber',
+  colorScheme = 'amber',
   size = 'medium',
   className = '',
   onClick
 }: CosmicMetricCardProps) {
-  void _colorScheme
   const sizes = sizeConfig[size]
+  const palette = palettes[colorScheme] ?? palettes.amber
 
   return (
     <motion.div
@@ -65,29 +117,29 @@ export function CosmicMetricCard({
       className={className}
     >
       <Card 
-        className={`h-full rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] text-[var(--m3-on-surface)] ${onClick ? 'cursor-pointer transition-all duration-300 hover:border-[var(--m3-outline)]' : ''}`}
+        className={`h-full rounded-2xl border ${palette.card} ${onClick ? 'cursor-pointer transition-all duration-300 hover:border-sky-300' : ''}`}
         onClick={onClick}
         title={tooltip}
       >
         <CardContent className="flex h-full flex-col items-center justify-center p-4 text-center sm:p-6">
-          <div className={`${sizes.iconSize} mb-3 flex items-center justify-center rounded-full bg-amber-500/15 text-amber-300`}>
+          <div className={`${sizes.iconSize} mb-3 flex items-center justify-center rounded-full ${palette.icon}`}>
             {icon}
           </div>
-          <div className={`${sizes.labelSize} mb-2 font-medium text-[var(--m3-on-surface-variant)]`}>
+          <div className={`${sizes.labelSize} mb-2 font-medium text-slate-500`}>
             {label}
           </div>
           <div className="mb-2 flex items-center justify-center gap-2">
-            <div className={`${sizes.valueSize} font-medium text-amber-200`}>
+            <div className={`${sizes.valueSize} font-heading tracking-wide font-medium ${palette.value}`}>
               {value}
             </div>
             {badge && (
-              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-xs text-amber-100">
+              <Badge variant="secondary" className={`border text-xs ${palette.badge}`}>
                 {badge}
               </Badge>
             )}
           </div>
           {(subValue ?? subtitle) && (
-            <div className={`${sizes.subtitleSize} text-[var(--m3-on-surface-variant)]`} title={tooltip}>
+            <div className={`${sizes.subtitleSize} text-slate-500`} title={tooltip}>
               {subValue ?? subtitle}
             </div>
           )}

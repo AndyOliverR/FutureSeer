@@ -88,7 +88,7 @@ export default function DualChartDisplay({
       width={chartWidth}
       height={chartHeight}
       title=""
-      backgroundColor="#0b1220"
+      backgroundColor="#ffffff"
     />
   )
 
@@ -110,7 +110,7 @@ export default function DualChartDisplay({
       width={chartWidth}
       height={chartHeight}
       title=""
-      backgroundColor="#0b1220"
+      backgroundColor="#ffffff"
     />
   )
 
@@ -133,31 +133,31 @@ export default function DualChartDisplay({
         </ChartFrame>
       </div>
 
-      <div className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] p-4">
-        <p className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-amber-200">
+      <div className="rounded-2xl border border-sky-200 bg-white p-4">
+        <p className="mb-3 flex items-center justify-center gap-2 font-heading text-sm font-medium tracking-wide text-sky-900">
           <Info className="h-4 w-4" />
           Chart information
         </p>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div className="rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-3 text-center">
-            <h4 className="mb-1 flex items-center justify-center gap-1.5 text-sm font-medium text-amber-200">
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-center">
+            <h4 className="mb-1 flex items-center justify-center gap-1.5 font-heading text-sm font-medium tracking-wide text-sky-900">
               <Sun className="h-4 w-4" /> Natal
             </h4>
-            <p className="text-xs text-[var(--m3-on-surface-variant)]">
+            <p className="text-xs text-slate-500">
               {natalPlanets.length} planets · {natalHouses.length} houses · {natalAspects.length} aspects
             </p>
           </div>
-          <div className="rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-3 text-center">
-            <h4 className="mb-1 flex items-center justify-center gap-1.5 text-sm font-medium text-amber-200">
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-center">
+            <h4 className="mb-1 flex items-center justify-center gap-1.5 font-heading text-sm font-medium tracking-wide text-sky-900">
               <Orbit className="h-4 w-4" /> Transits
             </h4>
-            <p className="text-xs text-[var(--m3-on-surface-variant)]">
+            <p className="text-xs text-slate-500">
               {transitPlanets.length} planets · {transitHouses.length} houses
             </p>
           </div>
-          <div className="rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-low)] p-3 text-center">
-            <h4 className="mb-1 text-sm font-medium text-amber-200">Includes</h4>
-            <p className="text-xs text-[var(--m3-on-surface-variant)]">
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-center">
+            <h4 className="mb-1 font-heading text-sm font-medium tracking-wide text-sky-900">Includes</h4>
+            <p className="text-xs text-slate-500">
               Zodiac ring · aspects · retrograde marks
             </p>
           </div>

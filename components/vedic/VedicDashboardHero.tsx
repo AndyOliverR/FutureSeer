@@ -125,10 +125,10 @@ export function VedicDashboardHero({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="overflow-hidden rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+        <Card className="overflow-hidden rounded-2xl border border-sky-200 bg-white">
           <CardContent className="p-4 sm:p-6">
             <div className="mb-6 text-center">
-              <h2 className="mb-2 text-xl font-medium tracking-wide text-amber-200 sm:text-2xl">
+              <h2 className="mb-2 font-heading text-xl font-medium tracking-wide text-sky-900 sm:text-2xl">
                 Your Vedic Birth Chart
               </h2>
               <p className="text-sm text-[var(--m3-on-surface-variant)]">
@@ -282,34 +282,34 @@ export function VedicDashboardHero({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <Card className="rounded-2xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+        <Card className="rounded-2xl border border-sky-200 bg-sky-50">
           <CardContent className="p-4">
             <div className="flex flex-wrap items-center justify-center gap-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-400" />
-                <span className="text-sm font-medium text-amber-200">Quick Insights:</span>
+                <Sparkles className="h-5 w-5 text-sky-600" />
+                <span className="text-sm font-medium text-sky-900">Quick Insights:</span>
               </div>
               
-              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
+              <Badge variant="secondary" className="border border-sky-200 bg-white text-sky-800">
                 {planets.length} Grahas (Planets)
               </Badge>
               
-              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
+              <Badge variant="secondary" className="border border-sky-200 bg-white text-sky-800">
                 Moon: {formatNakshatra(moonNakshatra)}
               </Badge>
               
-              <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
+              <Badge variant="secondary" className="border border-sky-200 bg-white text-sky-800">
                 Tithi: {tithi}
               </Badge>
               
               {currentDasha.hasData && (
-                <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
+                <Badge variant="secondary" className="border border-sky-200 bg-white text-sky-800">
                   {currentDasha.planet} Dasha
                 </Badge>
               )}
               
               {vedicReading?.yogas && vedicReading.yogas.length > 0 && (
-                <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-100">
+                <Badge variant="secondary" className="border border-sky-200 bg-white text-sky-800">
                   {vedicReading.yogas.length} Yogas
                 </Badge>
               )}

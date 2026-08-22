@@ -191,22 +191,22 @@ export function DivisionalChartsViewer({
       <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>
-            .chart-text { font-family: Arial, sans-serif; font-size: 12px; fill: #ffffff; }
-            .house-text { font-family: Arial, sans-serif; font-size: 14px; fill: #ffd700; font-weight: bold; }
-            .planet-text { font-family: Arial, sans-serif; font-size: 10px; fill: #ffffff; }
-            .degree-text { font-family: Arial, sans-serif; font-size: 8px; fill: #cccccc; }
+            .chart-text { font-family: Arial, sans-serif; font-size: 12px; fill: #0f172a; }
+            .house-text { font-family: Arial, sans-serif; font-size: 14px; fill: #1e40af; font-weight: bold; }
+            .planet-text { font-family: Arial, sans-serif; font-size: 10px; fill: #0f172a; }
+            .degree-text { font-family: Arial, sans-serif; font-size: 8px; fill: #64748b; }
           </style>
         </defs>
         
         <!-- Background -->
-        <rect width="${size}" height="${size}" fill="#1a1a2e" stroke="#ffd700" stroke-width="2"/>
+        <rect width="${size}" height="${size}" fill="#ffffff" stroke="#3b82f6" stroke-width="2"/>
         
         <!-- Title -->
         <text x="${centerX}" y="30" text-anchor="middle" class="house-text">${chartInfo.name} Chart</text>
     `
 
     // Draw outer circle
-    svg += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="none" stroke="#ffd700" stroke-width="2"/>`
+    svg += `<circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="none" stroke="#3b82f6" stroke-width="2"/>`
 
     // Draw house divisions based on chart type
     const houseCount = getHouseCountForChart(chart.chartType)
@@ -218,7 +218,7 @@ export function DivisionalChartsViewer({
       const y1 = centerY + radius * Math.sin(angle * Math.PI / 180)
 
       // House line
-      svg += `<line x1="${centerX}" y1="${centerY}" x2="${x1}" y2="${y1}" stroke="#ffd700" stroke-width="1"/>`
+      svg += `<line x1="${centerX}" y1="${centerY}" x2="${x1}" y2="${y1}" stroke="#3b82f6" stroke-width="1"/>`
       
       // House number
       const houseAngle = angle + (angleStep / 2)
@@ -235,7 +235,7 @@ export function DivisionalChartsViewer({
         
         svg += `
           <g>
-            <circle cx="${planetPosition.x}" cy="${planetPosition.y}" r="12" fill="#1a1a2e" stroke="#ffd700" stroke-width="1"/>
+            <circle cx="${planetPosition.x}" cy="${planetPosition.y}" r="12" fill="#ffffff" stroke="#3b82f6" stroke-width="1"/>
             <text x="${planetPosition.x}" y="${planetPosition.y + 4}" text-anchor="middle" class="planet-text">${planetEmoji}</text>
             <text x="${planetPosition.x}" y="${planetPosition.y + 18}" text-anchor="middle" class="planet-text">${planet.planet}</text>
         `

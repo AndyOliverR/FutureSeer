@@ -4,16 +4,16 @@ const rawSite = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app";
 const site = rawSite.replace("://www.", "://");
 
 export const metadata: Metadata = {
-  title: "FutureSeer Mobile Apps Waitlist",
+  title: "Install FutureSeer",
   description:
-    "Join the iOS and Android app waitlist. Use FutureSeer on desktop or mobile web now while native apps are prepared for launch.",
+    "Install FutureSeer from your browser. The same web app works on phone, tablet, and desktop — no App Store or Play Store required.",
   alternates: {
     canonical: `${site}/mobile-waitlist`,
   },
   openGraph: {
-    title: "FutureSeer Mobile Apps Waitlist",
+    title: "Install FutureSeer",
     description:
-      "Desktop offers the best detailed reading experience today. Mobile apps are coming soon based on demand.",
+      "Add FutureSeer to your home screen from the browser. Same app on iPhone, Android, and desktop.",
     url: `${site}/mobile-waitlist`,
     siteName: "FutureSeer",
     type: "website",

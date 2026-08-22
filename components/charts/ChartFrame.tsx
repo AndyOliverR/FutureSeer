@@ -19,18 +19,18 @@ export function ChartFrame({ title, subtitle, header, children, className }: Cha
   return (
     <div
       className={cn(
-        'flex h-full min-w-0 flex-col rounded-2xl border border-[var(--m3-outline-variant)]',
-        'bg-[var(--m3-surface-container)] text-[var(--m3-on-surface)]',
+        'flex h-full min-w-0 flex-col rounded-2xl border border-sky-200',
+        'bg-white text-slate-900',
         className,
       )}
     >
       {title ? (
-        <h3 className="px-4 pt-4 text-center text-sm font-medium tracking-wide text-amber-200 sm:text-base">
+        <h3 className="font-heading px-4 pt-4 text-center text-sm font-medium tracking-wide text-sky-900 sm:text-base">
           {title}
         </h3>
       ) : null}
       {subtitle ? (
-        <p className="px-4 text-center text-xs text-[var(--m3-on-surface-variant)]">{subtitle}</p>
+        <p className="px-4 text-center text-xs text-slate-500">{subtitle}</p>
       ) : null}
       {header ? <div className="px-3 pt-2 sm:px-4">{header}</div> : null}
       <div className="flex flex-1 items-center justify-center p-3 sm:p-4">

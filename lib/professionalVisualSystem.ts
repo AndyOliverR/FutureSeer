@@ -94,22 +94,22 @@ export interface VisualConfig {
 
 export const PROFESSIONAL_VISUAL_CONFIG: VisualConfig = {
   colors: {
-    primary: '#fbbf24',        // Golden Yellow
-    secondary: '#ffd700',      // Bright Gold
-    accent: '#ffff00',         // Electric Yellow
-    background: '#0f172a',      // Darkest Blue
-    surface: '#1e293b',        // Dark Blue
+    primary: '#3b82f6',
+    secondary: '#64748b',
+    accent: '#2563eb',
+    background: '#ffffff',
+    surface: '#ffffff',
     text: {
-      primary: '#ffffff',      // Pure White
-      secondary: '#e2e8f0',    // Light Gray
-      muted: '#94a3b8'         // Medium Gray
+      primary: '#0f172a',
+      secondary: '#334155',
+      muted: '#64748b'
     },
     chart: {
-      lines: '#ffd700',        // Bright Gold
-      circles: '#fbbf24',      // Golden Yellow
-      planets: '#ffff00',      // Electric Yellow
-      signs: '#ffff00',        // Bright Yellow
-      houses: '#fbbf24'        // Golden Yellow
+      lines: '#3b82f6',
+      circles: '#2563eb',
+      planets: '#0f172a',
+      signs: '#334155',
+      houses: '#64748b'
     }
   },
   
@@ -261,15 +261,15 @@ export const PROFESSIONAL_SVG_FILTERS = `
     
     <!-- Professional Gradient -->
     <radialGradient id="professional-gradient" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" style="stop-color:rgba(59, 130, 246, 0.1);stop-opacity:1" />
-      <stop offset="100%" style="stop-color:rgba(15, 23, 42, 0.95);stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:1" />
     </radialGradient>
     
-    <!-- Golden Gradient -->
+    <!-- Cool stroke gradient -->
     <linearGradient id="golden-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#ffff00;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#7dd3fc;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
     </linearGradient>
   </defs>
 `
@@ -277,12 +277,12 @@ export const PROFESSIONAL_SVG_FILTERS = `
 // Professional CSS Classes
 export const PROFESSIONAL_CSS_CLASSES = `
   .professional-chart-bg { 
-    fill: #0f172a; 
+    fill: #ffffff; 
   }
   
   .professional-outer-circle { 
     fill: none; 
-    stroke: #ffd700; 
+    stroke: #3b82f6; 
     stroke-width: 3; 
     opacity: 1; 
     filter: url(#professional-shadow);
@@ -290,13 +290,13 @@ export const PROFESSIONAL_CSS_CLASSES = `
   
   .professional-inner-circle { 
     fill: none; 
-    stroke: #fbbf24; 
+    stroke: #2563eb; 
     stroke-width: 2; 
     opacity: 0.9; 
   }
   
   .professional-house-line { 
-    stroke: #ffd700; 
+    stroke: #3b82f6; 
     stroke-width: 1.5; 
     opacity: 0.8; 
   }
@@ -393,7 +393,7 @@ export const PROFESSIONAL_CSS_CLASSES = `
   }
   
   .professional-center-dot { 
-    fill: #fbbf24; 
+    fill: #1e40af; 
   }
   
   .professional-retrograde { 
@@ -401,7 +401,7 @@ export const PROFESSIONAL_CSS_CLASSES = `
   }
   
   .professional-chart-title { 
-    fill: #fbbf24; 
+    fill: #1e40af; 
     font-size: 20px; 
     font-weight: 700; 
     text-anchor: middle; 

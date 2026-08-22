@@ -56,7 +56,7 @@ export interface FutureSeerChartTheme {
  */
 export const futureSeerTheme: FutureSeerChartTheme = {
   background: {
-    color: '#0F172A', // slate-900 - matches our dark theme
+    color: '#ffffff',
     opacity: 1
   },
   planets: {
@@ -105,7 +105,7 @@ export const futureSeerTheme: FutureSeerChartTheme = {
     strokeWidth: 2,
     opacity: 0.8,
     numbers: {
-      color: '#F8FAFC', // slate-50
+      color: '#0f172a',
       fontSize: 12,
       fontFamily: 'Inter, system-ui, sans-serif'
     }
@@ -134,7 +134,7 @@ export const futureSeerTheme: FutureSeerChartTheme = {
     }
   },
   text: {
-    color: '#F8FAFC', // slate-50
+    color: '#0f172a',
     fontFamily: 'Inter, system-ui, sans-serif',
     fontSize: 14
   },

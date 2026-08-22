@@ -49,8 +49,8 @@ Commercial AI “horoscope apps” often hide how readings are produced. FutureS
 - **Firebase** Auth + Firestore for profiles and persisted reports
 - **AI**: Groq (primary), optional OpenAI / Vercel AI Gateway — via a shared control layer (gates, budget, fallback)
 - **Astrology pipeline**: local→UTC birth time, tropical (Western) / sidereal Lahiri (Vedic/KP)
-- **Dual design system**: Devotionist web (≥768px) and Material 3 mobile / Capacitor
-- **Capacitor** hybrid mobile + optional Electron desktop
+- **Dual design system**: Devotionist web (≥768px) and Material 3 mobile (viewport under 768px)
+- **PWA**: install from the browser (no App Store / Play Store)
 
 Architecture and agent rules: [AGENTS.md](AGENTS.md) · Runbook: [docs/DEVELOPER_RUNBOOK.md](docs/DEVELOPER_RUNBOOK.md)
 

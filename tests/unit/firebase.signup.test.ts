@@ -94,12 +94,6 @@ jest.mock('@/lib/referralUtils', () => ({
   trackReferralSignup: jest.fn(),
 }));
 
-jest.mock('@capacitor/core', () => ({
-  Capacitor: {
-    isNativePlatform: jest.fn(() => false),
-  },
-}));
-
 jest.mock('@/lib/oauthWebView', () => ({
   shouldPreferOAuthRedirect: jest.fn(() => false),
 }));

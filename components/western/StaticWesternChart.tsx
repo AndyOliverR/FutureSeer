@@ -115,13 +115,14 @@ export default function StaticWesternChart({
         className="w-full h-full"
         style={{ maxWidth: '100%', height: 'auto' }}
       >
+        <rect width="800" height="800" fill="#ffffff" />
         {/* Background circle */}
         <circle
           cx={centerX}
           cy={centerY}
           r={outerRadius + 20}
-          fill="none"
-          stroke="rgba(255, 255, 255, 0.1)"
+          fill="#ffffff"
+          stroke="#3b82f6"
           strokeWidth="1"
         />
 

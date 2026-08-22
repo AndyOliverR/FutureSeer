@@ -25,7 +25,7 @@ export interface BaziDashboardHeroProps {
 const elementColors = {
   'Wood': { bg: 'from-green-500/20 to-emerald-500/20', border: 'border-green-500/50', text: 'text-green-400', icon: '🌳' },
   'Fire': { bg: 'from-red-500/20 to-orange-500/20', border: 'border-red-500/50', text: 'text-red-400', icon: '🔥' },
-  'Earth': { bg: 'from-yellow-500/20 to-amber-500/20', border: 'border-yellow-600/50', text: 'text-yellow-400', icon: '🏔️' },
+  'Earth': { bg: 'from-slate-200 to-sky-200', border: 'border-slate-400', text: 'text-slate-700', icon: '🏔️' },
   'Metal': { bg: 'from-gray-400/20 to-slate-400/20', border: 'border-gray-400/50', text: 'text-gray-300', icon: '⚔️' },
   'Water': { bg: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-500/50', text: 'text-blue-400', icon: '💧' }
 }
@@ -68,7 +68,7 @@ export function BaziDashboardHero({ reading, userProfile, currentAge }: BaziDash
           whileHover={{ y: -4 }}
           transition={m3BouncySpring}
         >
-          <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg hover:shadow-xl rounded-3xl transition-all duration-300 overflow-hidden">
+          <Card className="bg-gradient-to-br from-cyan-50 to-sky-50 border-2 border-cyan-200 shadow-lg hover:shadow-xl rounded-3xl transition-all duration-300 overflow-hidden">
           <CardContent className="p-8">
             {/* Header */}
             <div className="text-center mb-8">
@@ -96,7 +96,7 @@ export function BaziDashboardHero({ reading, userProfile, currentAge }: BaziDash
                 </motion.div>
               </motion.div>
               
-              <h1 className="text-4xl md:text-5xl font-serif font-bold text-amber-900 mb-3">
+              <h1 className="text-4xl md:text-5xl font-serif font-bold text-cyan-900 mb-3">
                 Your BaZi Blueprint
               </h1>
               
@@ -116,24 +116,24 @@ export function BaziDashboardHero({ reading, userProfile, currentAge }: BaziDash
                 whileHover={{}}
                 transition={m3BouncySpring}
               >
-                <Card className="bg-white border-2 border-amber-200 shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-all duration-300">
+                <Card className="bg-white border-2 border-cyan-200 shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-all duration-300">
                 <CardContent className="p-6 text-center">
                   <div className="flex items-center justify-center gap-2 mb-3">
-                    <Crown className="w-5 h-5 text-amber-700" />
-                    <span className="text-sm font-bold text-amber-900 tracking-wide">DAY MASTER 日主</span>
+                    <Crown className="w-5 h-5 text-cyan-700" />
+                    <span className="text-sm font-bold text-cyan-900 tracking-wide">DAY MASTER 日主</span>
                   </div>
                   
                   <div className="text-5xl mb-3">{dayMasterStyle.icon}</div>
                   
-                  <div className="text-3xl font-serif font-bold text-amber-900 mb-2">
+                  <div className="text-3xl font-serif font-bold text-cyan-900 mb-2">
                     {dayMaster.name}
                   </div>
                   
-                  <Badge className="bg-amber-100 text-amber-900 border-2 border-amber-300 text-lg px-4 py-1.5 mb-3">
+                  <Badge className="bg-cyan-100 text-cyan-900 border-2 border-cyan-300 text-lg px-4 py-1.5 mb-3">
                     {dayMaster.element} Element
                   </Badge>
                   
-                  <div className="inline-block px-3 py-1.5 rounded-lg bg-amber-50 border-2 border-amber-200">
+                  <div className="inline-block px-3 py-1.5 rounded-lg bg-amber-50 border-2 border-cyan-200">
                     <span className="text-sm text-slate-700">
                       {dayMaster.yinYang === 'yang' ? '☀ Yang' : '☾ Yin'} Energy
                     </span>
@@ -188,11 +188,11 @@ export function BaziDashboardHero({ reading, userProfile, currentAge }: BaziDash
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...m3SmoothEase, delay: 0.4 }}
             >
-              <Card className="mt-6 bg-white border-2 border-amber-200 shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-all duration-300">
+              <Card className="mt-6 bg-white border-2 border-cyan-200 shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-all duration-300">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-4 h-4 text-amber-700" />
-                  <h3 className="text-sm font-serif font-bold text-amber-900">Element Distribution</h3>
+                  <TrendingUp className="w-4 h-4 text-cyan-700" />
+                  <h3 className="text-sm font-serif font-bold text-cyan-900">Element Distribution</h3>
                 </div>
                 
                 <div className="space-y-3">
@@ -211,7 +211,7 @@ export function BaziDashboardHero({ reading, userProfile, currentAge }: BaziDash
                                 {element.charAt(0).toUpperCase() + element.slice(1)}
                               </span>
                               {isDayMaster && (
-                                <Badge className="bg-amber-100 text-amber-900 border-2 border-amber-300 text-xs">
+                                <Badge className="bg-cyan-100 text-cyan-900 border-2 border-cyan-300 text-xs">
                                   Core
                                 </Badge>
                               )}
@@ -220,10 +220,10 @@ export function BaziDashboardHero({ reading, userProfile, currentAge }: BaziDash
                               {percentage.toFixed(0)}%
                             </span>
                           </div>
-                          <div className="relative w-full bg-amber-100 rounded-full h-2 overflow-hidden">
+                          <div className="relative w-full bg-sky-100 rounded-full h-2 overflow-hidden">
                             <motion.div
-                              className={`h-2 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 ${
-                                isDayMaster ? 'ring-1 ring-amber-500' : ''
+                              className={`h-2 rounded-full bg-gradient-to-r from-sky-400 to-cyan-400 ${
+                                isDayMaster ? 'ring-1 ring-cyan-500' : ''
                               }`}
                               initial={{ width: 0 }}
                               animate={{ width: `${percentage}%` }}

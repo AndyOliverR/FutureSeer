@@ -48,7 +48,6 @@ const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
         className={cn(
           "fixed z-50 flex items-center justify-center gap-3 rounded-full font-medium",
           "m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition",
-          "m3-ripple m3-button-bounce will-change-transform",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2",
           "transition-all m3-transition-emphasized",
           extended ? "px-6 h-14" : "w-14 h-14",
@@ -57,7 +56,7 @@ const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
           className
         )}
         whileHover={{}}
-        whileTap={{ scale: 0.95 }}
+        whileTap={{}}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{

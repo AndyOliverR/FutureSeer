@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/hooks/use-auth";
 import { applyDesignSystemToDocument } from "@/lib/applyPlatformToDocument";
 
@@ -19,7 +18,6 @@ export function DesignSystemSync() {
 
     const apply = () => {
       applyDesignSystemToDocument({
-        isNativePlatform: Capacitor.isNativePlatform(),
         signedInWithApple,
       });
     };

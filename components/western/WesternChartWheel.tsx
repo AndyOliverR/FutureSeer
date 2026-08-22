@@ -112,13 +112,14 @@ export default function WesternChartWheel({
   return (
     <div className="relative w-full h-full">
       <svg width={width} height={height} className="w-full h-full">
+        <rect width={width} height={height} fill="#ffffff" />
         {/* Background circle */}
         <circle
           cx={centerX}
           cy={centerY}
           r={outerRadius}
-          fill="none"
-          stroke="rgba(255, 255, 255, 0.1)"
+          fill="#ffffff"
+          stroke="#3b82f6"
           strokeWidth="1"
         />
 

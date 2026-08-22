@@ -23,9 +23,9 @@ export function LagnaChartSVG({ planets }: { planets: Array<{ planet: string, si
       <defs>
         {/* Professional gradients and filters */}
         <linearGradient id="vedic-gold-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style={{stopColor: '#fbbf24', stopOpacity: 1}} />
-          <stop offset="50%" style={{stopColor: '#ffd700', stopOpacity: 1}} />
-          <stop offset="100%" style={{stopColor: '#ffff00', stopOpacity: 1}} />
+          <stop offset="0%" style={{stopColor: '#7dd3fc', stopOpacity: 1}} />
+          <stop offset="50%" style={{stopColor: '#3b82f6', stopOpacity: 1}} />
+          <stop offset="100%" style={{stopColor: '#1d4ed8', stopOpacity: 1}} />
         </linearGradient>
         
         <filter id="vedic-glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -44,17 +44,17 @@ export function LagnaChartSVG({ planets }: { planets: Array<{ planet: string, si
       {/* Professional outer diamond */}
       <polygon 
         points="150,15 285,150 150,285 15,150" 
-        fill="#0f172a" 
+        fill="#ffffff" 
         stroke="url(#vedic-gold-gradient)" 
         strokeWidth={4} 
         filter="url(#vedic-shadow)"
       />
       
       {/* Professional inner lines */}
-      <line x1="150" y1="15" x2="150" y2="285" stroke="#ffd700" strokeWidth={2.5} opacity={0.9} />
-      <line x1="15" y1="150" x2="285" y2="150" stroke="#ffd700" strokeWidth={2.5} opacity={0.9} />
-      <line x1="50" y1="50" x2="250" y2="250" stroke="#ffd700" strokeWidth={2.5} opacity={0.9} />
-      <line x1="250" y1="50" x2="50" y2="250" stroke="#ffd700" strokeWidth={2.5} opacity={0.9} />
+      <line x1="150" y1="15" x2="150" y2="285" stroke="#3b82f6" strokeWidth={2.5} opacity={0.9} />
+      <line x1="15" y1="150" x2="285" y2="150" stroke="#3b82f6" strokeWidth={2.5} opacity={0.9} />
+      <line x1="50" y1="50" x2="250" y2="250" stroke="#3b82f6" strokeWidth={2.5} opacity={0.9} />
+      <line x1="250" y1="50" x2="50" y2="250" stroke="#3b82f6" strokeWidth={2.5} opacity={0.9} />
       
       {/* House numbers and planets with professional styling */}
       {houseLabels.map((house, i) => {
@@ -71,7 +71,7 @@ export function LagnaChartSVG({ planets }: { planets: Array<{ planet: string, si
               y={y} 
               textAnchor="middle" 
               fontSize={18} 
-              fill="#ffff00" 
+              fill="#1e40af" 
               fontWeight="700"
               fontFamily="'Inter', 'SF Pro Display', 'Arial', sans-serif"
               style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}
@@ -88,7 +88,7 @@ export function LagnaChartSVG({ planets }: { planets: Array<{ planet: string, si
                 y={y + 20 + j * 16} 
                 textAnchor="middle" 
                 fontSize={14} 
-                fill="#e2e8f0"
+                fill="#0f172a"
                 fontWeight="500"
                 fontFamily="'Inter', 'SF Pro Display', 'Arial', sans-serif"
                 style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}

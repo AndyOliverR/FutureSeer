@@ -122,42 +122,6 @@ async function checkRoute(name, path, options = {}) {
   }
 }
 
-function runWithTimeout(name, command, args, env, timeoutMs = 30000) {
-  return new Promise((resolve) => {
-    const proc = spawn(command, args, {
-      env: { ...process.env, ...env },
-      stdio: 'pipe',
-      shell: process.platform === 'win32',
-    });
-
-    let stdout = '';
-    let stderr = '';
-    let timedOut = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
-      proc.kill('SIGTERM');
-    }, timeoutMs);
-
-    proc.stdout?.on('data', (d) => {
-      stdout += String(d);
-    });
-    proc.stderr?.on('data', (d) => {
-      stderr += String(d);
-    });
-
-    proc.on('close', (code) => {
-      clearTimeout(timer);
-      const output = `${stdout}\n${stderr}`.trim().slice(0, 800);
-      if (timedOut) {
-        record(name, false, `timed out after ${timeoutMs}ms`);
-      } else {
-        record(name, code === 0, output || `exit ${code ?? 'unknown'}`);
-      }
-      resolve(code === 0 && !timedOut);
-    });
-  });
-}
-
 async function main() {
   if (process.platform !== 'linux') {
     console.log('This readiness check is designed for Linux hosts.');
@@ -189,16 +153,6 @@ async function main() {
     record('7) /profile renders HTML', false, 'server not reachable');
     record('8) Mobile-width homepage render', false, 'server not reachable');
   }
-
-  runSyncCheck('9) Electron binary health', 'pnpm', ['exec', 'electron', '--version'], (status) => status === 0);
-
-  await runWithTimeout(
-    '10) Headless Electron launch smoke',
-    'xvfb-run',
-    ['--auto-servernum', 'pnpm', 'exec', 'electron', '.'],
-    { ELECTRON_NO_SANDBOX: '1', ELECTRON_EXIT_AFTER_MS: '5000', ELECTRON_APP_URL: BASE_URL },
-    40000
-  );
 
   stopProcess(serverProc);
 

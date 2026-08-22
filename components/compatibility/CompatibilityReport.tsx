@@ -23,7 +23,7 @@ interface CompatibilityReportProps {
 const ASSESSMENT_COLORS = {
   'Excellent': 'text-green-700 border-green-300 bg-green-100',
   'Good': 'text-emerald-700 border-emerald-300 bg-emerald-100',
-  'Moderate': 'text-amber-700 border-amber-300 bg-amber-100',
+  'Moderate': 'text-sky-700 border-sky-300 bg-sky-100',
   'Challenging': 'text-orange-700 border-orange-300 bg-orange-100',
   'Poor': 'text-red-700 border-red-300 bg-red-100'
 }
@@ -34,7 +34,7 @@ export function CompatibilityReport({ report }: CompatibilityReportProps) {
     : report.compatibilityScore >= 65
     ? 'text-emerald-700'
     : report.compatibilityScore >= 50
-    ? 'text-amber-700'
+    ? 'text-sky-700'
     : report.compatibilityScore >= 35
     ? 'text-orange-700'
     : 'text-red-700'
@@ -105,11 +105,11 @@ ${report.recommendations.map(r => `• ${r}`).join('\n')}
 
   return (
     <ScrollArea className="h-[calc(100vh-300px)] lg:h-[calc(100vh-250px)] pr-4">
-      <div className="space-y-6">
+      <div className="space-y-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-6">
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold text-amber-200 mb-2">Compatibility Report</h2>
+            <h2 className="text-2xl font-bold text-indigo-900 mb-2">Compatibility Report</h2>
             <p className="text-slate-400 text-sm">
               Compatibility analysis between you and {report.additionalProfile.name}
             </p>

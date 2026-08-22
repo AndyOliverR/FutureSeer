@@ -24,10 +24,10 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
   // Validate reading data
   if (!reading) {
     return (
-      <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-red-200 rounded-2xl shadow-md">
+      <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 border-2 border-red-200 rounded-2xl shadow-md">
         <CardContent className="p-6 text-center">
           <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h3 className="text-amber-900 font-semibold mb-2">No Reading Data</h3>
+          <h3 className="text-sky-900 font-semibold mb-2">No Reading Data</h3>
           <p className="text-slate-700">Reading data is missing. Please generate a new reading.</p>
         </CardContent>
       </Card>
@@ -39,10 +39,10 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
   // Validate required data
   if (!comprehensiveReport || !castResult) {
     return (
-      <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-yellow-200 rounded-2xl shadow-md">
+      <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 border-2 border-yellow-200 rounded-2xl shadow-md">
         <CardContent className="p-6 text-center">
           <AlertTriangle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-          <h3 className="text-amber-900 font-semibold mb-2">Incomplete Reading Data</h3>
+          <h3 className="text-sky-900 font-semibold mb-2">Incomplete Reading Data</h3>
           <p className="text-slate-700">Some reading data is missing. Please try generating a new reading.</p>
         </CardContent>
       </Card>
@@ -75,30 +75,30 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+            <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 border-2 border-sky-200 rounded-2xl shadow-md">
               <CardHeader>
-                <CardTitle className="text-amber-900 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-amber-700" />
+                <CardTitle className="text-sky-900 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-sky-700" />
                   Reading Overview
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-800 mb-2">Your Question</h3>
-                  <p className="text-amber-900 text-lg italic">"{question}"</p>
+                  <h3 className="text-sm font-semibold text-sky-800 mb-2">Your Question</h3>
+                  <p className="text-sky-900 text-lg italic">"{question}"</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-800 mb-2">Method Used</h3>
-                  <Badge className="bg-amber-200 text-amber-900 border-amber-300 capitalize">
+                  <h3 className="text-sm font-semibold text-sky-800 mb-2">Method Used</h3>
+                  <Badge className="bg-sky-100 text-sky-900 border-sky-300 capitalize">
                     {method}
                   </Badge>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-800 mb-2">Cast Result</h3>
-                  <p className="text-amber-800 font-medium">{castResult.interpretation.primary}</p>
+                  <h3 className="text-sm font-semibold text-sky-800 mb-2">Cast Result</h3>
+                  <p className="text-sky-800 font-medium">{castResult.interpretation.primary}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-800 mb-2">Overview</h3>
+                  <h3 className="text-sm font-semibold text-sky-800 mb-2">Overview</h3>
                   <p className="text-slate-700 leading-relaxed">
                     {safeOverview}
                   </p>
@@ -115,35 +115,35 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+            <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 border-2 border-sky-200 rounded-2xl shadow-md">
               <CardHeader>
-                <CardTitle className="text-amber-900 flex items-center gap-2">
+                <CardTitle className="text-sky-900 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-700" />
                   Detailed Interpretation
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-800 mb-2">Primary Meaning</h3>
+                  <h3 className="text-sm font-semibold text-sky-800 mb-2">Primary Meaning</h3>
                   <p className="text-purple-800 font-medium text-lg mb-4">
                     {castResult.interpretation.primary}
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-800 mb-2">Detailed Analysis</h3>
+                  <h3 className="text-sm font-semibold text-sky-800 mb-2">Detailed Analysis</h3>
                   <p className="text-slate-700 leading-relaxed whitespace-pre-line">
                     {safeInterpretation}
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-800 mb-2">Symbol Meanings</h3>
+                  <h3 className="text-sm font-semibold text-sky-800 mb-2">Symbol Meanings</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {castResult.interpretation.symbols.map((symbol, index) => (
                       <div
                         key={index}
-                        className="bg-white border border-amber-200 rounded-xl p-3"
+                        className="bg-white border border-sky-200 rounded-xl p-3"
                       >
-                        <div className="font-semibold text-sm text-amber-900 mb-1">
+                        <div className="font-semibold text-sm text-sky-900 mb-1">
                           {symbol.name}
                         </div>
                         <div className="text-xs text-slate-700 mb-1">
@@ -168,9 +168,9 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+            <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 border-2 border-sky-200 rounded-2xl shadow-md">
               <CardHeader>
-                <CardTitle className="text-amber-900 flex items-center gap-2">
+                <CardTitle className="text-sky-900 flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-blue-700" />
                   Personalized Insights
                 </CardTitle>
@@ -191,9 +191,9 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+            <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 border-2 border-sky-200 rounded-2xl shadow-md">
               <CardHeader>
-                <CardTitle className="text-amber-900 flex items-center gap-2">
+                <CardTitle className="text-sky-900 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-green-700" />
                   Guidance & Action Steps
                 </CardTitle>
@@ -206,10 +206,10 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-start gap-3 bg-white border border-amber-200 rounded-xl p-4"
+                      className="flex items-start gap-3 bg-white border border-sky-200 rounded-xl p-4"
                     >
                       <CheckCircle className="w-5 h-5 text-green-700 mt-0.5 flex-shrink-0" />
-                      <p className="text-amber-900 flex-1">{item}</p>
+                      <p className="text-sky-900 flex-1">{item}</p>
                     </motion.div>
                   ))}
                 </div>
@@ -225,10 +225,10 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+            <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 border-2 border-sky-200 rounded-2xl shadow-md">
               <CardHeader>
-                <CardTitle className="text-amber-900 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-yellow-700" />
+                <CardTitle className="text-sky-900 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-teal-700" />
                   Remedies & Practices
                 </CardTitle>
               </CardHeader>
@@ -240,10 +240,10 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-start gap-3 bg-white border border-amber-200 rounded-xl p-4"
+                      className="flex items-start gap-3 bg-white border border-sky-200 rounded-xl p-4"
                     >
-                      <Sparkles className="w-5 h-5 text-yellow-700 mt-0.5 flex-shrink-0" />
-                      <p className="text-amber-900 flex-1">{remedy}</p>
+                      <Sparkles className="w-5 h-5 text-teal-700 mt-0.5 flex-shrink-0" />
+                      <p className="text-sky-900 flex-1">{remedy}</p>
                     </motion.div>
                   ))}
                 </div>
@@ -259,9 +259,9 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+            <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 border-2 border-sky-200 rounded-2xl shadow-md">
               <CardHeader>
-                <CardTitle className="text-amber-900 flex items-center gap-2">
+                <CardTitle className="text-sky-900 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-indigo-700" />
                   Historical Context
                 </CardTitle>
@@ -271,7 +271,7 @@ export function SortilegeReport({ reading, activeTab = 'overview' }: SortilegeRe
                   {safeHistory}
                 </p>
                 {castResult.historicalContext && (
-                  <div className="mt-4 pt-4 border-t border-amber-300">
+                  <div className="mt-4 pt-4 border-t border-sky-200">
                     <p className="text-slate-600 text-sm italic">
                       {castResult.historicalContext}
                     </p>

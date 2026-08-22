@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { Capacitor } from "@capacitor/core";
 import { applyPlatformClassToDocument } from "@/lib/applyPlatformToDocument";
 
 /**
@@ -9,9 +8,7 @@ import { applyPlatformClassToDocument } from "@/lib/applyPlatformToDocument";
  * First paint: inline script in app/layout.tsx. This provider keeps classes in sync.
  */
 function applyPlatformClass() {
-  applyPlatformClassToDocument({
-    isNativePlatform: Capacitor.isNativePlatform(),
-  });
+  applyPlatformClassToDocument();
 }
 
 export function PlatformClassProvider() {

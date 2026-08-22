@@ -32,7 +32,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
     if (!svgRef.current) return;
     try {
       const dataUrl = await toPng(svgRef.current as unknown as HTMLElement, {
-        backgroundColor: "#0b0f1a",
+        backgroundColor: "#ffffff",
         pixelRatio: 3,
       });
       const link = document.createElement("a");
@@ -98,15 +98,15 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
         transition={{ duration: 0.8 }}
       >
         {/* Background */}
-        <rect width="600" height="800" fill="#0b0f1a" rx="8" />
+        <rect width="600" height="800" fill="#ffffff" rx="8" />
 
-        {/* Golden border */}
+        {/* Cool blue border */}
         <rect
           x="3"
           y="3"
           width="594"
           height="794"
-          stroke="url(#gold)"
+          stroke="url(#coolRing)"
           strokeWidth="3"
           fill="none"
           rx="8"
@@ -114,13 +114,13 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
 
         {/* Gradient defs */}
         <defs>
-          <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ffd87a" />
-            <stop offset="100%" stopColor="#f6b600" />
+          <linearGradient id="coolRing" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#7dd3fc" />
+            <stop offset="100%" stopColor="#3b82f6" />
           </linearGradient>
           <radialGradient id="houseBg" cx="50%" cy="50%" r="80%">
-            <stop offset="0%" stopColor="#FAFAFA" />
-            <stop offset="100%" stopColor="#F5F5F5" />
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#ffffff" />
           </radialGradient>
         </defs>
 
@@ -132,7 +132,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
             <path
               key={houseKey}
               d={path}
-              fill={isAscendant ? "url(#houseBg)" : "#FAFAFA"}
+              fill={isAscendant ? "url(#houseBg)" : "#ffffff"}
               stroke="#2C3E50"
               strokeWidth="2"
             />
@@ -210,7 +210,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
           y="750"
           textAnchor="middle"
           fontSize="14"
-          fill="#ffd87a"
+          fill="#1e40af"
           fontFamily={CHART_SVG_FONT_FAMILY}
           fontWeight="bold"
         >

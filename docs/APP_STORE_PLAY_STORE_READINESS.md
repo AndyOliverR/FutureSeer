@@ -1,5 +1,7 @@
 # App Store / Play Store readiness
 
+> Historical. FutureSeer ships as a web PWA at [futureseer.app](https://futureseer.app). Capacitor Android/iOS shells were removed from the repo.
+
 ## Remind me later: Mobile and store submission
 
 - **Android (v1):** Capacitor WebView loads **`https://futureseer.app`** (remote-hosted). Run `npx cap sync android` after changing [capacitor.config.ts](../capacitor.config.ts).

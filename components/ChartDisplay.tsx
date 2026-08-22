@@ -93,30 +93,30 @@ export function ChartDisplay({ chartType, name, description, significance, image
   }
 
   return (
-    <Card className="backdrop-blur-md bg-slate-800/20 border border-slate-700/50 shadow-xl rounded-2xl">
+    <Card className="rounded-2xl border border-sky-200 bg-white shadow-xl">
       <CardContent className="p-6">
         {/* Chart Header */}
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h4 className="font-medium text-amber-300 text-lg">{name}</h4>
+            <h4 className="font-heading font-medium tracking-wide text-sky-900 text-lg">{name}</h4>
             <p className="text-slate-400 text-sm">{description}</p>
           </div>
-          <Badge className="bg-amber-100/20 text-amber-300 border-amber-400/50">
+          <Badge className="bg-amber-100/20 text-sky-800 border-amber-400/50">
             {chartType}
           </Badge>
         </div>
 
         {/* Chart Content */}
         <div className="mb-4">
-          <div className="p-3 bg-slate-800/30 rounded-lg mb-4">
-            <div className="text-amber-300 font-medium text-sm mb-1">Significance:</div>
+          <div className="p-3 bg-sky-50 rounded-lg mb-4">
+            <div className="text-sky-800 font-medium text-sm mb-1">Significance:</div>
             <p className="text-slate-300 text-sm">{significance}</p>
           </div>
 
           {/* Chart Image Container */}
           <div className="relative">
             {loading && (
-              <div className="flex items-center justify-center h-48 bg-slate-800/30 rounded-lg border-2 border-dashed border-slate-600">
+              <div className="flex items-center justify-center h-48 bg-sky-50 rounded-lg border-2 border-dashed border-slate-600">
                 <div className="text-center">
                   <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-2" />
                   <p className="text-slate-300 text-sm">Loading {name}...</p>
@@ -144,15 +144,15 @@ export function ChartDisplay({ chartType, name, description, significance, image
             {chartData && !loading && !error && (
               <div className="space-y-4">
                 {/* Chart Preview */}
-                <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
+                <div className="bg-sky-50 rounded-lg p-4 border border-slate-700/50">
                   <div className="flex items-center justify-between mb-3">
-                    <h5 className="text-amber-300 font-medium">Chart Preview</h5>
+                    <h5 className="text-sky-800 font-medium">Chart Preview</h5>
                     <div className="flex gap-2">
                       <Button
                         onClick={handleViewFullChart}
                         size="sm"
                         variant="outline"
-                        className="border-amber-400/50 text-amber-300 hover:bg-amber-500/10"
+                        className="border-amber-400/50 text-sky-800 hover:bg-amber-500/10"
                       >
                         <Eye className="w-4 h-4 mr-1" />
                         {showFullChart ? 'Hide' : 'View'} Full Chart
@@ -161,7 +161,7 @@ export function ChartDisplay({ chartType, name, description, significance, image
                         onClick={handleRefresh}
                         size="sm"
                         variant="outline"
-                        className="border-amber-400/50 text-amber-300 hover:bg-amber-500/10"
+                        className="border-amber-400/50 text-sky-800 hover:bg-amber-500/10"
                       >
                         <RefreshCw className="w-4 h-4 mr-1" />
                         Refresh
@@ -189,12 +189,12 @@ export function ChartDisplay({ chartType, name, description, significance, image
                           // Fallback to placeholder
                           const parent = e.currentTarget.parentElement
                           if (parent) parent.innerHTML = `
-                            <div class="w-full h-64 flex items-center justify-center bg-slate-800/30 rounded-lg border border-slate-600/50">
+                            <div class="w-full h-64 flex items-center justify-center bg-sky-50 rounded-lg border border-slate-600/50">
                               <div class="text-center">
                                 <div class="w-16 h-16 mx-auto mb-2 bg-amber-500/20 rounded-full flex items-center justify-center">
-                                  <span class="text-amber-300 text-xl">📊</span>
+                                  <span class="text-sky-800 text-xl">📊</span>
                                 </div>
-                                <p class="text-amber-300 text-sm font-medium">${name}</p>
+                                <p class="text-sky-800 text-sm font-medium">${name}</p>
                                 <p class="text-slate-400 text-xs">Chart Loading...</p>
                               </div>
                             </div>
@@ -216,10 +216,10 @@ export function ChartDisplay({ chartType, name, description, significance, image
                         )}
                         {/* FutureSeer Chart Display */}
                         <div className="w-32 h-32 mx-auto mb-4 bg-gradient-to-br from-amber-500/20 to-purple-600/20 rounded-full flex items-center justify-center border-2 border-amber-400/30">
-                          <span className="text-amber-300 text-2xl font-bold">✨</span>
+                          <span className="text-sky-800 text-2xl font-bold">✨</span>
                         </div>
                         
-                        <h6 className="text-amber-300 font-medium text-lg mb-2">
+                        <h6 className="text-sky-800 font-medium text-lg mb-2">
                           {chartData.title || name}
                         </h6>
                         
@@ -234,7 +234,7 @@ export function ChartDisplay({ chartType, name, description, significance, image
                               ? 'bg-green-100/20 text-green-300 border-green-400/50'
                               : chartData.status === 'vedastro_api_unavailable' || chartData.status === 'vedastro_api_error'
                               ? 'bg-yellow-100/20 text-yellow-300 border-yellow-400/50'
-                              : 'bg-amber-100/20 text-amber-300 border-amber-400/50'
+                              : 'bg-amber-100/20 text-sky-800 border-amber-400/50'
                           }`}>
                             {chartData.status === 'success' ? '✅ Chart Ready' : 
                              chartData.status === 'vedastro_api_unavailable' ? '⚠️ Generating Chart' :
@@ -250,8 +250,8 @@ export function ChartDisplay({ chartType, name, description, significance, image
                         
                         {/* Chart Information */}
                         {chartData.fallbackData && (
-                          <div className="mt-4 p-3 bg-slate-800/30 rounded-lg border border-slate-600/30">
-                            <p className="text-amber-300 text-sm font-medium mb-2">Chart Details:</p>
+                          <div className="mt-4 p-3 bg-sky-50 rounded-lg border border-slate-600/30">
+                            <p className="text-sky-800 text-sm font-medium mb-2">Chart Details:</p>
                             <p className="text-slate-300 text-xs">{chartData.fallbackData.description}</p>
                           </div>
                         )}
@@ -261,7 +261,7 @@ export function ChartDisplay({ chartType, name, description, significance, image
                     <div className="bg-slate-900/50 rounded-lg p-6 border border-slate-600/50">
                       <div className="text-center">
                         <div className="w-32 h-32 mx-auto mb-4 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-full flex items-center justify-center border-2 border-amber-400/30">
-                          <span className="text-amber-300 text-2xl font-bold">{chartType}</span>
+                          <span className="text-sky-800 text-2xl font-bold">{chartType}</span>
                         </div>
                         <p className="text-slate-300 text-sm mb-2">
                           {chartData.chart?.title || name}
@@ -281,7 +281,7 @@ export function ChartDisplay({ chartType, name, description, significance, image
                   {/* Full Chart Display */}
                   {showFullChart && (
                     <div className="mt-4 p-4 bg-slate-900/30 rounded-lg border border-slate-600/50">
-                      <h6 className="text-amber-300 font-medium mb-3">Full Chart View</h6>
+                      <h6 className="text-sky-800 font-medium mb-3">Full Chart View</h6>
                       <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600/30">
                         {chartData.type === 'svg' ? (
                           <div 
@@ -300,12 +300,12 @@ export function ChartDisplay({ chartType, name, description, significance, image
                                 // Fallback to placeholder
                                 const parent = e.currentTarget.parentElement
                                 if (parent) parent.innerHTML = `
-                                  <div class="w-full h-48 flex items-center justify-center bg-slate-800/30 rounded-lg border border-slate-600/50">
+                                  <div class="w-full h-48 flex items-center justify-center bg-sky-50 rounded-lg border border-slate-600/50">
                                     <div class="text-center">
                                       <div class="w-16 h-16 mx-auto mb-2 bg-amber-500/20 rounded-full flex items-center justify-center">
-                                        <span class="text-amber-300 text-xl">📊</span>
+                                        <span class="text-sky-800 text-xl">📊</span>
                                       </div>
-                                      <p class="text-amber-300 text-sm font-medium">${name}</p>
+                                      <p class="text-sky-800 text-sm font-medium">${name}</p>
                                       <p class="text-slate-400 text-xs">Chart Loading...</p>
                                     </div>
                                   </div>
@@ -317,9 +317,9 @@ export function ChartDisplay({ chartType, name, description, significance, image
                           <div className="text-center text-slate-300">
                             <div className="mb-4">
                               <div className="w-24 h-24 mx-auto mb-3 bg-gradient-to-br from-amber-500/20 to-purple-600/20 rounded-full flex items-center justify-center border-2 border-amber-400/30">
-                                <span className="text-amber-300 text-3xl">✨</span>
+                                <span className="text-sky-800 text-3xl">✨</span>
                               </div>
-                              <h6 className="text-amber-300 font-medium text-lg mb-2">
+                              <h6 className="text-sky-800 font-medium text-lg mb-2">
                                 {chartData.title || name}
                               </h6>
                               <p className="text-slate-300 text-sm mb-3">
@@ -331,18 +331,18 @@ export function ChartDisplay({ chartType, name, description, significance, image
                             <div className="space-y-3 text-left">
                               {chartData.fallbackData && (
                                 <div className="p-3 bg-slate-700/30 rounded-lg">
-                                  <p className="text-amber-300 text-sm font-medium">Chart Information:</p>
+                                  <p className="text-sky-800 text-sm font-medium">Chart Information:</p>
                                   <p className="text-slate-300 text-xs">{chartData.fallbackData.description}</p>
                                 </div>
                               )}
                               
                               <div className="p-3 bg-slate-700/30 rounded-lg">
-                                <p className="text-amber-300 text-sm font-medium">Calculation Method:</p>
+                                <p className="text-sky-800 text-sm font-medium">Calculation Method:</p>
                                 <p className="text-slate-300 text-xs">Advanced Vedic Astrology Calculations</p>
                               </div>
                               
                               <div className="p-3 bg-slate-700/30 rounded-lg">
-                                <p className="text-amber-300 text-sm font-medium">Generated By:</p>
+                                <p className="text-sky-800 text-sm font-medium">Generated By:</p>
                                 <p className="text-slate-300 text-xs">FutureSeer AI-Powered Mystic</p>
                               </div>
                             </div>
@@ -359,9 +359,9 @@ export function ChartDisplay({ chartType, name, description, significance, image
                               <div className="w-full h-48 bg-gradient-to-br from-amber-500/10 to-amber-600/10 rounded-lg border border-amber-400/20 flex items-center justify-center">
                                 <div className="text-center">
                                   <div className="w-16 h-16 mx-auto mb-2 bg-amber-500/20 rounded-full flex items-center justify-center">
-                                    <span className="text-amber-300 text-xl">📊</span>
+                                    <span className="text-sky-800 text-xl">📊</span>
                                   </div>
-                                  <p className="text-amber-300 text-sm font-medium">{name}</p>
+                                  <p className="text-sky-800 text-sm font-medium">{name}</p>
                                   <p className="text-slate-400 text-xs">Interactive Chart</p>
                                 </div>
                               </div>

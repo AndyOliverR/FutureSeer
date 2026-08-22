@@ -89,15 +89,15 @@ export function UnifiedChartDisplay({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      <Card className="border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+      <Card className="border-sky-200 bg-white">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle className="flex items-center gap-2 text-amber-200">
+              <CardTitle className="font-heading flex items-center gap-2 tracking-wide text-sky-900">
                 <Star className="h-5 w-5" />
                 Vedic Astrology Charts
               </CardTitle>
-              <p className="mt-1 text-sm text-[var(--m3-on-surface-variant)]">
+              <p className="mt-1 text-sm text-slate-500">
                 {chart.ascendant?.signName} Ascendant · {chart.metadata?.ayanamsha} Ayanamsha
               </p>
             </div>
@@ -106,7 +106,7 @@ export function UnifiedChartDisplay({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowComparison(!showComparison)}
-                className="border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
+                className="border-sky-200 text-sky-700 hover:bg-sky-50"
               >
                 {showComparison ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 {showComparison ? 'Hide' : 'Show'} Comparison
@@ -115,7 +115,7 @@ export function UnifiedChartDisplay({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
+                className="border-sky-200 text-sky-700 hover:bg-sky-50"
               >
                 <Maximize2 className="h-4 w-4" />
               </Button>
@@ -124,17 +124,17 @@ export function UnifiedChartDisplay({
         </CardHeader>
       </Card>
 
-      <Card className="border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+      <Card className="border-sky-200 bg-white">
         <CardContent className="p-4 sm:p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-6 grid w-full grid-cols-3 border border-amber-500/20 bg-transparent p-1">
+            <TabsList className="mb-6 grid w-full grid-cols-3 border border-sky-200 bg-sky-50 p-1">
               {chartTabs.map((tab) => {
                 const Icon = tab.icon
                 return (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="text-slate-400 hover:text-amber-300 data-[state=active]:text-amber-400"
+                  className="text-slate-500 hover:text-sky-700 data-[state=active]:text-sky-800"
                 >
                   <Icon className="mr-2 h-4 w-4" />
                   {tab.label}
@@ -145,7 +145,7 @@ export function UnifiedChartDisplay({
             {chartTabs.map((tab) => (
               <TabsContent key={tab.id} value={tab.id} className="space-y-4">
                 <div className="mb-4 text-center">
-                  <h3 className="mb-1 text-lg font-medium text-amber-200">
+                  <h3 className="mb-1 font-heading text-lg font-medium tracking-wide text-sky-900">
                     {tab.label} Chart
                   </h3>
                   <p className="text-sm text-[var(--m3-on-surface-variant)]">{tab.description}</p>
@@ -166,9 +166,9 @@ export function UnifiedChartDisplay({
       </Card>
 
       {showComparison && (
-        <Card className="border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+        <Card className="border-sky-200 bg-white">
           <CardHeader>
-            <CardTitle className="text-amber-200">Chart Comparison</CardTitle>
+            <CardTitle className="font-heading tracking-wide text-sky-900">Chart Comparison</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
@@ -182,27 +182,27 @@ export function UnifiedChartDisplay({
         </Card>
       )}
 
-      <Card className="border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
+      <Card className="border-sky-200 bg-white">
         <CardHeader>
-          <CardTitle className="text-amber-200">Chart Summary</CardTitle>
+          <CardTitle className="font-heading tracking-wide text-sky-900">Chart Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
             <div className="space-y-1">
-              <h4 className="font-medium text-amber-200">Ascendant</h4>
-              <p className="text-[var(--m3-on-surface)]">
+              <h4 className="font-heading font-medium tracking-wide text-sky-900">Ascendant</h4>
+              <p className="text-slate-700">
                 {chart.ascendant?.signName} {chart.ascendant?.degreeInSign?.toFixed(1)}°
               </p>
             </div>
             <div className="space-y-1">
-              <h4 className="font-medium text-amber-200">Planets</h4>
-              <p className="text-[var(--m3-on-surface)]">
+              <h4 className="font-heading font-medium tracking-wide text-sky-900">Planets</h4>
+              <p className="text-slate-700">
                 {Object.keys(chart.planets || {}).length} planets placed
               </p>
             </div>
             <div className="space-y-1">
-              <h4 className="font-medium text-amber-200">System</h4>
-              <p className="text-[var(--m3-on-surface)]">
+              <h4 className="font-heading font-medium tracking-wide text-sky-900">System</h4>
+              <p className="text-slate-700">
                 {chart.metadata?.system || 'Whole Sign'} · {chart.metadata?.ayanamsha}
               </p>
             </div>

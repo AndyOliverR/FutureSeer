@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * Sets --vh on document for reliable viewport height in WebView (e.g. Capacitor).
+ * Sets --vh on document for reliable viewport height in mobile browsers and installed PWAs.
  * 100vh is unreliable in mobile WebView; use calc(var(--vh, 1vh) * 100) as fallback.
  */
 export function ViewportHeightSync() {

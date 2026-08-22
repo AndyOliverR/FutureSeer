@@ -80,7 +80,7 @@ export function VedicRelationshipReportPanel({
 
   if (loading && !report) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-amber-200/80">
+      <div className="flex flex-col items-center justify-center py-16 text-cyan-800">
         <Loader2 className="h-8 w-8 animate-spin mb-3" />
         <p className="text-sm">Reading connection, compatibility, and timing from your chart…</p>
       </div>
@@ -103,16 +103,16 @@ export function VedicRelationshipReportPanel({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-amber-500/25 bg-slate-900/50 p-4 md:p-6">
-        <h2 className="text-lg md:text-xl font-heading text-amber-400 tracking-wide flex items-center gap-2">
+      <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-heading text-cyan-900 tracking-wide flex items-center gap-2">
           <Heart className="h-5 w-5" /> Love & relationships
         </h2>
         <p className="text-sm text-slate-400 mt-1 max-w-xl">
           Connection, compatibility, and timing — 7th house, Venus, Moon, and D9 — explained in plain language.
         </p>
         {selectedPartner && (
-          <p className="text-xs text-amber-200/70 mt-2">
-            Including themes with <span className="text-amber-300">{selectedPartner.name}</span> (from your saved profile).
+          <p className="text-xs text-slate-600 mt-2">
+            Including themes with <span className="text-cyan-800">{selectedPartner.name}</span> (from your saved profile).
           </p>
         )}
         <div className="flex flex-wrap gap-2 mt-4">
@@ -134,46 +134,46 @@ export function VedicRelationshipReportPanel({
       </div>
 
       <Accordion type="multiple" defaultValue={['profile', 'compatibility']} className="space-y-2">
-        <AccordionItem value="profile" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">Your connection profile</AccordionTrigger>
+        <AccordionItem value="profile" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">Your connection profile</AccordionTrigger>
           <AccordionContent className="text-slate-300 text-sm leading-relaxed">{report.relationshipProfile}</AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="d9" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">D9 Navamsa</AccordionTrigger>
+        <AccordionItem value="d9" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">D9 Navamsa</AccordionTrigger>
           <AccordionContent className="text-slate-300 text-sm">{report.d9Navamsa}</AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="dasha" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">Dasha & relationships</AccordionTrigger>
+        <AccordionItem value="dasha" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">Dasha & relationships</AccordionTrigger>
           <AccordionContent className="text-slate-300 text-sm">{report.dashaRelationships}</AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="venus-moon" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">Venus & Moon</AccordionTrigger>
+        <AccordionItem value="venus-moon" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">Venus & Moon</AccordionTrigger>
           <AccordionContent className="text-slate-300 text-sm">{report.venusAndMoon}</AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="patterns" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">Partnership patterns</AccordionTrigger>
+        <AccordionItem value="patterns" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">Partnership patterns</AccordionTrigger>
           <AccordionContent className="text-slate-300 text-sm">{report.partnershipPatterns}</AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="compatibility" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">Connection & compatibility</AccordionTrigger>
+        <AccordionItem value="compatibility" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">Connection & compatibility</AccordionTrigger>
           <AccordionContent className="text-slate-300 text-sm">{report.connectionCompatibility}</AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="timing" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium flex items-center gap-2">
+        <AccordionItem value="timing" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium flex items-center gap-2">
             <Calendar className="h-4 w-4" /> Relationship timing
           </AccordionTrigger>
           <AccordionContent className="text-slate-300 text-sm">{report.relationshipTiming}</AccordionContent>
         </AccordionItem>
 
         {report.thirtyDayThemes.length > 0 && (
-          <AccordionItem value="30day" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-            <AccordionTrigger className="text-amber-300 font-medium">Next 30 days</AccordionTrigger>
+          <AccordionItem value="30day" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+            <AccordionTrigger className="text-cyan-800 font-medium">Next 30 days</AccordionTrigger>
             <AccordionContent>
               <ul className="list-disc list-inside text-slate-300 text-sm space-y-1">
                 {report.thirtyDayThemes.map((t, i) => (
@@ -184,12 +184,12 @@ export function VedicRelationshipReportPanel({
           </AccordionItem>
         )}
 
-        <AccordionItem value="months" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">Month-by-month (12 months)</AccordionTrigger>
+        <AccordionItem value="months" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">Month-by-month (12 months)</AccordionTrigger>
           <AccordionContent className="space-y-3">
             {report.monthByMonth.map((m) => (
               <div key={m.month} className="text-sm">
-                <p className="text-amber-400 font-medium">{m.month}</p>
+                <p className="text-cyan-800 font-medium">{m.month}</p>
                 <p className="text-slate-300">{m.focus}</p>
                 <ul className="list-disc list-inside text-slate-400 mt-1">
                   {m.actions.map((a, i) => (
@@ -202,8 +202,8 @@ export function VedicRelationshipReportPanel({
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="advice" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">Practical guidance</AccordionTrigger>
+        <AccordionItem value="advice" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">Practical guidance</AccordionTrigger>
           <AccordionContent>
             <ul className="list-disc list-inside text-slate-300 text-sm space-y-1">
               {report.partnershipAdvice.map((a, i) => (
@@ -213,8 +213,8 @@ export function VedicRelationshipReportPanel({
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="remedies" className="border border-amber-500/20 rounded-xl px-4 bg-slate-900/40">
-          <AccordionTrigger className="text-amber-300 font-medium">Remedies for connection</AccordionTrigger>
+        <AccordionItem value="remedies" className="border border-cyan-200 rounded-xl px-4 bg-cyan-50">
+          <AccordionTrigger className="text-cyan-800 font-medium">Remedies for connection</AccordionTrigger>
           <AccordionContent className="text-slate-300 text-sm">{report.remediesForConnection}</AccordionContent>
         </AccordionItem>
       </Accordion>

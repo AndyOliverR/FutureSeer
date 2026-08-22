@@ -1156,8 +1156,22 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
   }
 };
 
+const TOOL_INTRO_SLUG_ALIASES: Record<string, string> = {
+  vedic: 'vedic-astrology',
+  western: 'western-astrology',
+  iching: 'i-ching',
+  horary: 'horary-astrology',
+  'thirteen-signs-zodiac': 'western-astrology',
+  '13-signs-zodiac': 'western-astrology',
+}
+
 export function getToolIntroduction(slug: string): ToolIntroduction | undefined {
-  return TOOL_INTRODUCTIONS[slug];
+  return TOOL_INTRODUCTIONS[slug] ?? TOOL_INTRODUCTIONS[TOOL_INTRO_SLUG_ALIASES[slug]]
+}
+
+/** Large card emoji (not a thin astrological glyph). */
+export function getToolCardEmoji(slug: string): string {
+  return getToolIntroduction(slug)?.icon ?? '✨'
 }
 
 export function getAllToolIntroductions(): ToolIntroduction[] {
