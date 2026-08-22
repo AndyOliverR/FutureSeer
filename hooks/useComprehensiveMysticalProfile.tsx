@@ -1,7 +1,8 @@
 'use client'
 
 import { useMysticalProfileContext } from '@/contexts/MysticalProfileContext'
-import { classifyToolReportState } from '@/lib/toolReportReadiness'
+import { useAuth } from '@/hooks/use-auth'
+import { classifyToolReportState, reportMatchesProfileHash } from '@/lib/toolReportReadiness'
 import type { PersistedToolStatus } from '@/lib/mysticalStageB'
 
 export type { ComprehensiveMysticalProfile } from '@/contexts/MysticalProfileContext'
@@ -14,6 +15,7 @@ export function useComprehensiveMysticalProfile() {
 
 export function useToolReport(toolSlug: string) {
   const { profile, loading, error, isReportsStale, refreshProfile } = useMysticalProfileContext()
+  const { userProfile } = useAuth()
   const p = profile as Record<string, unknown> | null
   // Resolve from both shapes: top-level (e.g. profile.western) or toolReports[slug].data
   const toolReports = p != null ? (p.toolReports as Record<string, { data?: unknown }> | undefined) : undefined
@@ -26,10 +28,17 @@ export function useToolReport(toolSlug: string) {
   const toolStatusMap = (p != null ? (p.toolStatus as Record<string, PersistedToolStatus> | undefined) : undefined) ?? {}
   const persistedStatus = toolStatusMap[toolSlug]
   const reportState = classifyToolReportState(report, toolSlug)
+  const profileHash =
+    (typeof userProfile?.profileDataHash === 'string' && userProfile.profileDataHash) ||
+    (typeof p?.profileDataHash === 'string' ? p.profileDataHash : undefined)
+  const matchesCurrentHash = reportMatchesProfileHash(report, profileHash)
   // Prefer live classification — stale toolStatus "ready" must not unlock blank shells.
   let state = persistedStatus?.state ?? reportState
   if (state === 'ready' && reportState !== 'ready') {
     state = reportState
+  }
+  if (state === 'ready' && !matchesCurrentHash) {
+    state = 'pending'
   }
   const updatedAt = persistedStatus?.updatedAt ?? persistedStatus?.generatedAt
   const generatedAt = persistedStatus?.generatedAt
@@ -37,7 +46,7 @@ export function useToolReport(toolSlug: string) {
     report: report ?? undefined,
     loading,
     error,
-    hasReport: report !== undefined && report !== null && state === 'ready',
+    hasReport: report !== undefined && report !== null && state === 'ready' && matchesCurrentHash,
     reportState,
     reportStatus: persistedStatus,
     reportStateResolved: state,

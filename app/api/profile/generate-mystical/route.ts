@@ -28,6 +28,7 @@ import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
 import { acquireMysticalGenerationLock, getMysticalLockRuntimeStatus } from '@/lib/generationLock';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 import {
+  clearStaleCatalogReports,
   generateAndPersistToolReports,
   NATAL_CHART_SLUGS,
 } from '@/lib/onDemandToolReports';
@@ -407,6 +408,16 @@ export async function POST(request: NextRequest) {
       baseUrlSource,
       natalTools: NATAL_CHART_SLUGS,
     });
+
+    try {
+      await clearStaleCatalogReports({
+        uid,
+        profileHash: newHash,
+        keepSlugs: NATAL_CHART_SLUGS,
+      });
+    } catch (staleErr) {
+      devLog.warn('[generate-mystical] Failed to clear stale catalog reports', staleErr, 'generate-mystical');
+    }
 
     let natalReady: string[] = [];
     let natalFailed: string[] = [];

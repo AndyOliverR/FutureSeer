@@ -103,6 +103,30 @@ export function isReadyToolReport(report: unknown, toolSlug?: string): boolean {
   return classifyToolReportState(report, toolSlug) === 'ready';
 }
 
+/**
+ * Whether a stored report belongs to the current profile hash.
+ * Reports without `generationIdempotencyKey` are treated as current so legacy
+ * rows are not mass-regenerated. A present key that does not match is stale.
+ */
+export function reportMatchesProfileHash(
+  report: unknown,
+  profileHash: string | null | undefined,
+): boolean {
+  if (!profileHash) return true;
+  if (!report || typeof report !== 'object' || Array.isArray(report)) return false;
+  const key = (report as { generationIdempotencyKey?: unknown }).generationIdempotencyKey;
+  if (typeof key !== 'string' || key.length === 0) return true;
+  return key === profileHash;
+}
+
+export function isCurrentReadyToolReport(
+  report: unknown,
+  profileHash: string | null | undefined,
+  toolSlug?: string,
+): boolean {
+  return isReadyToolReport(report, toolSlug) && reportMatchesProfileHash(report, profileHash);
+}
+
 /** Catalog slugs. Generate commits natal charts; other tools run on visit. */
 export const ALL_TOOL_SLUGS = [
   // Highest-priority unlocks first (critical user wow path)

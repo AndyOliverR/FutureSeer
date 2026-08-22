@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { getDocument, setDocument } from '@/lib/firebase-admin';
+import { deleteDocument, getDocument, setDocument } from '@/lib/firebase-admin';
+import { buildStaleCatalogClearPatch } from '@/lib/staleCatalogReports';
 import type { UserProfile } from '@/lib/firebase';
 import {
   ALL_TOOL_SLUGS,
@@ -145,6 +146,29 @@ export async function generateAndPersistToolReports(params: {
     ...persisted,
     toolReports: result.toolReports,
   };
+}
+
+/**
+ * Drop catalog reports (and Seer Master) that belong to a previous profile hash.
+ * Natal charts for the new hash are written afterwards by persistOnDemandToolReports.
+ */
+export async function clearStaleCatalogReports(params: {
+  uid: string;
+  profileHash: string;
+  keepSlugs?: readonly string[];
+}): Promise<void> {
+  const { uid, profileHash, keepSlugs = [] } = params;
+  const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
+    {}) as Record<string, unknown>;
+  const patch = buildStaleCatalogClearPatch(existingProfile, profileHash, keepSlugs);
+  if (patch) {
+    await setDocument('comprehensiveMysticalProfiles', uid, patch);
+  }
+  const seerMaster = await getDocument('seerMaster', uid);
+  if (seerMaster) {
+    await deleteDocument('seerMaster', uid);
+  }
+  clearCachedDivinationData(uid);
 }
 
 export function storedReportMatchesHash(

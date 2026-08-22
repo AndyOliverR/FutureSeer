@@ -5,7 +5,9 @@
 
 import {
   classifyToolReportState,
+  isCurrentReadyToolReport,
   isReadyToolReport,
+  reportMatchesProfileHash,
   summarizeToolReadiness,
   ALL_TOOL_SLUGS,
 } from '@/lib/toolReportReadiness';
@@ -19,6 +21,30 @@ describe('Report readiness contract', () => {
     expect(classifyToolReportState({ reading: 'ok' })).toBe('ready');
     expect(isReadyToolReport({ reading: 'ok' })).toBe(true);
     expect(isReadyToolReport({ placeholder: true })).toBe(false);
+  });
+
+  it('treats a mismatched generationIdempotencyKey as stale but keeps unkeyed legacy reports', () => {
+    expect(reportMatchesProfileHash({ planets: [{ name: 'Sun' }] }, 'hash-new')).toBe(true);
+    expect(
+      reportMatchesProfileHash(
+        { planets: [{ name: 'Sun' }], generationIdempotencyKey: 'hash-new' },
+        'hash-new',
+      ),
+    ).toBe(true);
+    expect(
+      reportMatchesProfileHash(
+        { planets: [{ name: 'Sun' }], generationIdempotencyKey: 'hash-old' },
+        'hash-new',
+      ),
+    ).toBe(false);
+    expect(isCurrentReadyToolReport({ planets: [{ name: 'Sun' }] }, 'hash-new', 'vedic')).toBe(true);
+    expect(
+      isCurrentReadyToolReport(
+        { planets: [{ name: 'Sun' }], generationIdempotencyKey: 'hash-old' },
+        'hash-new',
+        'vedic',
+      ),
+    ).toBe(false);
   });
 
   it('rejects meta-only and reason-only shells as pending', () => {

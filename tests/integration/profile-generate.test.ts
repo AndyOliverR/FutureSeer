@@ -45,6 +45,7 @@ const mockGenerateAllReports = jest.fn();
 const mockClearCachedDivinationData = jest.fn();
 const mockTryResumeMysticalStageB = jest.fn();
 const mockGenerateAndPersistToolReports = jest.fn();
+const mockClearStaleCatalogReports = jest.fn();
 const mockEnsureAdminAvailable = jest.fn();
 const mockAfterOutputs: Array<void | Promise<void>> = [];
 
@@ -118,6 +119,7 @@ jest.mock('@/lib/mysticalStageB', () => ({
 jest.mock('@/lib/onDemandToolReports', () => ({
   NATAL_CHART_SLUGS: ['vedic', 'western'],
   generateAndPersistToolReports: (...args: unknown[]) => mockGenerateAndPersistToolReports(...args),
+  clearStaleCatalogReports: (...args: unknown[]) => mockClearStaleCatalogReports(...args),
 }));
 
 jest.mock('@/lib/rateLimitFirestore', () => ({
@@ -182,6 +184,7 @@ describe('Profile generate-mystical API', () => {
       failedSlugs: [],
       toolReports: {},
     });
+    mockClearStaleCatalogReports.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -337,6 +340,12 @@ describe('Profile generate-mystical API', () => {
       expect(data.decision).toBe('rerun');
       expect(data.decisionReason).toBe('profile_hash_changed');
       expect(mockGenerateAndPersistToolReports).toHaveBeenCalled();
+      expect(mockClearStaleCatalogReports).toHaveBeenCalledWith(
+        expect.objectContaining({
+          uid,
+          keepSlugs: ['vedic', 'western'],
+        }),
+      );
       expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
     });
 
@@ -367,6 +376,7 @@ describe('Profile generate-mystical API', () => {
       expect(data.decision).toBe('skipped');
       expect(data.decisionReason).toBe('unchanged_hash_committed');
       expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
+      expect(mockClearStaleCatalogReports).not.toHaveBeenCalled();
       expect(mockSetDocument).not.toHaveBeenCalledWith(
         'generationJobs',
         uid,
