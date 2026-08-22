@@ -5,7 +5,11 @@
 
 import { getDocument } from '@/lib/firebase-admin'
 import type { UserProfile } from '@/lib/firebase'
-import { ALL_TOOL_SLUGS, isReadyToolReport, summarizeToolReadiness } from '@/lib/toolReportReadiness'
+import {
+  ALL_TOOL_SLUGS,
+  isCurrentReadyToolReport,
+  summarizeToolReadiness,
+} from '@/lib/toolReportReadiness'
 import { wantsDeeperSeerAnswer } from '@/lib/seerChatVoice'
 
 const SLICE_CHARS_DEFAULT = 1_800
@@ -99,12 +103,23 @@ export function compactReportSlice(value: unknown, maxChars: number): string {
 function resolveStoredReport(
   comprehensive: Record<string, unknown>,
   slug: string,
+  profileHash?: string,
 ): Record<string, unknown> | null {
   const nested = comprehensive.toolReports as Record<string, { data?: unknown }> | undefined
   const val = comprehensive[slug] ?? nested?.[slug]?.data
   if (!val || typeof val !== 'object' || Array.isArray(val)) return null
-  if (!isReadyToolReport(val, slug)) return null
+  if (!isCurrentReadyToolReport(val, profileHash, slug)) return null
   return val as Record<string, unknown>
+}
+
+function resolveProfileHash(
+  profile: UserProfile | null,
+  comprehensive: Record<string, unknown>,
+): string | undefined {
+  if (typeof profile?.profileDataHash === 'string' && profile.profileDataHash) {
+    return profile.profileDataHash
+  }
+  return typeof comprehensive.profileDataHash === 'string' ? comprehensive.profileDataHash : undefined
 }
 
 export function formatReadyToolsIndex(
@@ -139,14 +154,19 @@ export async function loadMainSeerContext(params: {
   const wantsDeep = wantsDeeperSeerAnswer(question)
   const comprehensive = ((await getDocument('comprehensiveMysticalProfiles', userId)) ||
     {}) as Record<string, unknown>
+  const profileHash = resolveProfileHash(profile, comprehensive)
   const readiness = summarizeToolReadiness(comprehensive, ALL_TOOL_SLUGS)
-  const readySlugs = ALL_TOOL_SLUGS.filter((slug) => !readiness.pendingToolSlugs.includes(slug))
+  const readySlugs = ALL_TOOL_SLUGS.filter(
+    (slug) => resolveStoredReport(comprehensive, slug, profileHash) != null,
+  )
+  const pendingSlugs = ALL_TOOL_SLUGS.filter((slug) => !readySlugs.includes(slug))
+  const droppedStaleReady = readiness.pendingToolSlugs.length < pendingSlugs.length
   const selectedSlugs = pickRelevantToolSlugs(question, readySlugs, { deeper: wantsDeep })
   const sliceChars = wantsDeep ? SLICE_CHARS_DEEP : SLICE_CHARS_DEFAULT
 
   const slices = selectedSlugs
     .map((slug) => {
-      const report = resolveStoredReport(comprehensive, slug)
+      const report = resolveStoredReport(comprehensive, slug, profileHash)
       if (!report) return null
       const text = compactReportSlice(report, sliceChars)
       return text ? `### ${slug}\n${text}` : null
@@ -154,7 +174,9 @@ export async function loadMainSeerContext(params: {
     .filter((block): block is string => Boolean(block))
 
   let seerMaster = ((await getDocument('seerMaster', userId)) || null) as Record<string, unknown> | null
-  if (!seerMaster || Object.keys(seerMaster).length === 0) {
+  if (droppedStaleReady) {
+    seerMaster = null
+  } else if (!seerMaster || Object.keys(seerMaster).length === 0) {
     const nested = comprehensive.seerMaster
     if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
       seerMaster = nested as Record<string, unknown>
@@ -164,7 +186,7 @@ export async function loadMainSeerContext(params: {
   return {
     identityText: buildIdentityDossier(profile),
     seerMasterText: formatSeerMasterForPrompt(seerMaster),
-    readyIndexText: formatReadyToolsIndex(readySlugs, readiness.pendingToolSlugs),
+    readyIndexText: formatReadyToolsIndex(readySlugs, pendingSlugs),
     reportSlicesText:
       slices.length > 0
         ? `Relevant stored reports for this question:\n${slices.join('\n\n')}`

@@ -4,8 +4,8 @@ import { getDocument } from '@/lib/firebase-admin';
 import { searchKnowledge, formatKnowledgeForPrompt } from '@/lib/knowledgeLoader';
 import {
   ALL_TOOL_SLUGS,
+  isCurrentReadyToolReport,
   isReadyToolReport,
-  summarizeToolReadiness,
 } from '@/lib/profileGenerationOrchestrator';
 import { truncateToTokenBudget } from '@/lib/aiTokenBudget';
 
@@ -90,11 +90,16 @@ export function isMainSeerToolName(name: string): name is MainSeerToolName {
 function resolveToolReport(
   profile: Record<string, unknown>,
   toolSlug: string,
+  profileHash?: string,
 ): Record<string, unknown> | null {
   const nested = profile.toolReports as Record<string, { data?: unknown }> | undefined;
   const val = profile[toolSlug] ?? nested?.[toolSlug]?.data;
-  if (!val || typeof val !== 'object' || !isReadyToolReport(val)) return null;
+  if (!val || typeof val !== 'object' || !isCurrentReadyToolReport(val, profileHash, toolSlug)) return null;
   return val as Record<string, unknown>;
+}
+
+function profileHashFromStored(profile: Record<string, unknown>): string | undefined {
+  return typeof profile.profileDataHash === 'string' ? profile.profileDataHash : undefined;
 }
 
 function compactJson(value: unknown, maxChars: number): string {
@@ -112,16 +117,30 @@ export async function executeMainSeerTool(
     case 'list_ready_tools': {
       const profile = ((await getDocument('comprehensiveMysticalProfiles', userId)) ||
         {}) as Record<string, unknown>;
-      const readiness = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
-      const readyTools = ALL_TOOL_SLUGS.filter((slug) => !readiness.pendingToolSlugs.includes(slug));
+      const profileHash = profileHashFromStored(profile);
+      const readyTools = ALL_TOOL_SLUGS.filter(
+        (slug) => resolveToolReport(profile, slug, profileHash) != null,
+      );
+      const pendingToolSlugs = ALL_TOOL_SLUGS.filter((slug) => !readyTools.includes(slug));
       return {
         readyTools,
-        readyCount: readiness.readyToolsCount,
-        pendingToolSlugs: readiness.pendingToolSlugs,
-        allReportsReady: readiness.allReportsReady,
+        readyCount: readyTools.length,
+        pendingToolSlugs,
+        allReportsReady: pendingToolSlugs.length === 0,
       };
     }
     case 'get_seer_master_summary': {
+      const storedProfile = ((await getDocument('comprehensiveMysticalProfiles', userId)) ||
+        {}) as Record<string, unknown>;
+      const profileHash = profileHashFromStored(storedProfile);
+      const hasStaleReadyReport = ALL_TOOL_SLUGS.some((slug) => {
+        const nested = storedProfile.toolReports as Record<string, { data?: unknown }> | undefined;
+        const val = storedProfile[slug] ?? nested?.[slug]?.data;
+        return isReadyToolReport(val, slug) && resolveToolReport(storedProfile, slug, profileHash) == null;
+      });
+      if (hasStaleReadyReport) {
+        return { found: false, message: 'Seer Master summary is stale after a profile change.' };
+      }
       const seerMaster = ((await getDocument('seerMaster', userId)) || null) as Record<
         string,
         unknown
@@ -141,7 +160,7 @@ export async function executeMainSeerTool(
       }
       const profile = ((await getDocument('comprehensiveMysticalProfiles', userId)) ||
         {}) as Record<string, unknown>;
-      const report = resolveToolReport(profile, toolSlug);
+      const report = resolveToolReport(profile, toolSlug, profileHashFromStored(profile));
       if (!report) {
         return { found: false, toolSlug, message: 'Report not ready or not found.' };
       }

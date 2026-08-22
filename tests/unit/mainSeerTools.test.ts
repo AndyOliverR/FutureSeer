@@ -50,6 +50,19 @@ describe('mainSeerTools', () => {
     expect(String(result.report)).toContain('Leo');
   });
 
+  it('get_tool_report hides reports stamped for a previous profile hash', async () => {
+    mockGetDocument.mockResolvedValue({
+      profileDataHash: 'new-hash',
+      tarot: { cards: [{ name: 'The Fool' }], generationIdempotencyKey: 'old-hash' },
+    });
+
+    const listed = await executeMainSeerTool('list_ready_tools', {}, 'user-1');
+    expect(listed.readyTools).not.toContain('tarot');
+
+    const result = await executeMainSeerTool('get_tool_report', { toolSlug: 'tarot' }, 'user-1');
+    expect(result.found).toBe(false);
+  });
+
   it('get_tool_report rejects invalid slug', async () => {
     const result = await executeMainSeerTool('get_tool_report', { toolSlug: 'not-a-real-tool' }, 'user-1');
     expect(result.error).toMatch(/Invalid or missing toolSlug/);

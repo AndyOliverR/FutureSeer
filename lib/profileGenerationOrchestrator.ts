@@ -25,7 +25,9 @@ import {
   classifyToolReportState,
   getCoreToolSlugsCore10,
   hasDisplayableReportSubstance,
+  isCurrentReadyToolReport,
   isReadyToolReport,
+  reportMatchesProfileHash,
   summarizeToolReadiness,
   type ReportReadinessState,
 } from '@/lib/toolReportReadiness';
@@ -35,7 +37,9 @@ export {
   classifyToolReportState,
   getCoreToolSlugsCore10,
   hasDisplayableReportSubstance,
+  isCurrentReadyToolReport,
   isReadyToolReport,
+  reportMatchesProfileHash,
   summarizeToolReadiness,
 };
 export type { ReportReadinessState };
