@@ -121,22 +121,16 @@ export function PwaInstallButton({ placement = "hero" }: PwaInstallButtonProps) 
 
   const effectiveMode = mode === "hidden" ? "guide" : mode;
 
-  const chromeButtonClass = isMobileLayout
-    ? cn(
-        "w-full sm:w-auto rounded-xl border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container-high)]",
-        "text-[var(--m3-on-surface)] font-semibold tracking-normal",
-        placement === "hero" && "px-8 py-6",
-      )
-    : cn(
-        "w-full sm:w-auto rounded-full border border-white/25 bg-transparent",
-        "text-white/90 font-light uppercase tracking-[0.2em]",
-        placement === "hero" && "px-8 md:px-10 py-6 md:py-7",
-      );
+  const chromeButtonClass = cn(
+    "w-full sm:w-auto rounded-full border-0 bg-[var(--m3-primary)] text-[var(--m3-on-primary)]",
+    "font-semibold tracking-normal hover:bg-[var(--m3-primary)]/90",
+    placement === "hero" && "px-8 py-6 md:px-10 md:py-7",
+  );
 
   const chromeButton = (
     <Button
       type="button"
-      variant="outline"
+      variant="filled"
       size={placement === "hero" ? "lg" : "default"}
       className={chromeButtonClass}
       onClick={() => {
@@ -144,7 +138,7 @@ export function PwaInstallButton({ placement = "hero" }: PwaInstallButtonProps) 
       }}
     >
       <Download className="w-4 h-4" aria-hidden />
-      Install app
+      Install
     </Button>
   );
 
@@ -163,7 +157,7 @@ export function PwaInstallButton({ placement = "hero" }: PwaInstallButtonProps) 
       isMobileLayout={isMobileLayout}
       placement={placement}
       helpId={guideHelpId}
-      label="Install app"
+      label="Install"
       helpText="Tap Install to add FutureSeer to your device. On Android Chrome or desktop Chrome/Edge, use the Install prompt. On iPhone or iPad, tap Share, then Add to Home Screen."
     />
   );
@@ -213,7 +207,7 @@ function IosInstallInstructions({
   isMobileLayout,
   placement,
   helpId,
-  label = "Add to Home Screen",
+  label = "Install",
   helpText = "Tap Share, then Add to Home Screen. Apple does not allow a one-tap install on iPhone or iPad.",
 }: {
   buttonClass: string;
