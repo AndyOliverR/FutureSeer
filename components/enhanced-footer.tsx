@@ -140,6 +140,10 @@ export function EnhancedFooter() {
             <PwaPlatformIcons />
             <PwaInstallButton placement="footer" />
           </div>
+          <p className="mt-3 text-[10px] leading-relaxed text-surface-on-variant/70">
+            The Android robot is reproduced or modified from work created and shared by Google and used according to
+            terms described in the Creative Commons 3.0 Attribution License. Tux was created by Larry Ewing.
+          </p>
         </div>
       </div>
     </footer>
