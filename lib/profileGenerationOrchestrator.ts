@@ -1718,7 +1718,6 @@ export async function finalizeProfileGenerationFromToolReports(
   toolReports: ToolReports,
   existingProfile?: Record<string, unknown>,
 ): Promise<GenerationResult> {
-  const baseUrl = getServerBaseUrl();
   const profile: UserProfile = {
     ...userProfile,
     birthTime: normalizeBirthTime(userProfile.birthTime) || userProfile.birthTime || '12:00:00',
@@ -1777,34 +1776,30 @@ export async function finalizeProfileGenerationFromToolReports(
       const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
       if (birthDate && fullName && moonSign !== 'Unknown') {
         const numerologyProfile = calculateVedicNumerologyProfile(fullName, birthDate);
-        const res = await fetch(`${baseUrl}/api/vedic-astro-numerology/analysis`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            birthDate,
-            fullName,
-            moonSign,
-            lagnaSign: lagnaSign !== 'Unknown' ? lagnaSign : 'Aries',
-            sunSign: sunSign !== 'Unknown' ? sunSign : 'Aries',
-            numerologyProfile,
-          }),
+        // Lazy import: avoid loading Groq/Admin into Jest suites that only import the orchestrator.
+        const { generateVedicAstroNumerologyAnalysis } = await import(
+          './vedicAstroNumerology/generateVedicAstroNumerologyAnalysis'
+        );
+        const result = await generateVedicAstroNumerologyAnalysis({
+          userId,
+          birthDate,
+          fullName,
+          moonSign,
+          lagnaSign: lagnaSign !== 'Unknown' ? lagnaSign : 'Aries',
+          sunSign: sunSign !== 'Unknown' ? sunSign : 'Aries',
+          numerologyProfile,
+          useCache: true,
         });
-        if (res.ok) {
-          const result = await res.json();
-          addResponseUsage(aggregateUsage, result);
-          const data = result?.data ?? result;
+        if (result.ok) {
           toolReports.vedicAstroNumerology = {
             status: 'success',
-            data: data as Record<string, unknown>,
+            data: result.data as unknown as Record<string, unknown>,
             generatedAt: vedicAstroNumGeneratedAt,
-            _usage: result._usage ?? result.usage,
           };
         } else {
-          const err = await res.json().catch(() => ({}));
           toolReports.vedicAstroNumerology = {
             status: 'failed',
-            error: err?.error ?? `API ${res.status}`,
+            error: result.error,
             generatedAt: vedicAstroNumGeneratedAt,
           };
           failedTools.push('vedicAstroNumerology');
@@ -1849,26 +1844,27 @@ export async function finalizeProfileGenerationFromToolReports(
     const birthDate = profile.birthDate ?? '';
     const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
     if (birthDate && fullName && sunSign !== 'Unknown') {
-      const res = await fetch(`${baseUrl}/api/astro-numerology/analysis`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, birthDate, fullName, sunSign }),
+      // Lazy import: avoid loading Groq/Admin into Jest suites that only import the orchestrator.
+      const { generateAstroNumerologyAnalysis } = await import(
+        './astroNumerology/generateAstroNumerologyAnalysis'
+      );
+      const result = await generateAstroNumerologyAnalysis({
+        userId,
+        birthDate,
+        fullName,
+        sunSign,
+        useCache: true,
       });
-      if (res.ok) {
-        const result = await res.json();
-        addResponseUsage(aggregateUsage, result);
-        const data = result?.data ?? result;
+      if (result.ok) {
         toolReports.astroNumerology = {
           status: 'success',
-          data: data as Record<string, unknown>,
+          data: result.data as unknown as Record<string, unknown>,
           generatedAt: astroNumGeneratedAt,
-          _usage: result._usage ?? result.usage,
         };
       } else {
-        const err = await res.json().catch(() => ({}));
         toolReports.astroNumerology = {
           status: 'failed',
-          error: (err as { error?: string })?.error ?? `API ${res.status}`,
+          error: result.error,
           generatedAt: astroNumGeneratedAt,
         };
         failedTools.push('astroNumerology');
