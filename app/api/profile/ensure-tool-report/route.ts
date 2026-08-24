@@ -107,6 +107,15 @@ export async function POST(request: NextRequest) {
       skipVedicComprehensive: false,
       extraInputs,
     });
+    if (result.skippedStaleHash) {
+      return NextResponse.json(
+        {
+          error: 'Your profile was updated while this reading was generating. Open the tool again.',
+          code: 'profile_hash_changed',
+        },
+        { status: 409 },
+      );
+    }
     const report = result.toolReports[toolSlug]?.data ?? stored[toolSlug] ?? null;
     const failed = result.failedSlugs.includes(toolSlug);
 
