@@ -47,6 +47,20 @@ function mergeToolStatus(
 }
 
 /**
+ * True when a slower on-demand persist would clobber a newer Generate Full Report.
+ */
+export function isStaleOnDemandPersist(
+  liveProfileHash: unknown,
+  requestedHash: string,
+): boolean {
+  return (
+    typeof liveProfileHash === 'string' &&
+    liveProfileHash.length > 0 &&
+    liveProfileHash !== requestedHash
+  );
+}
+
+/**
  * Persist one or more tool reports. Catalog is on-demand: do not mark missing
  * tools as a running pipeline (`allReportsReady` means profile is committed).
  */
@@ -54,8 +68,17 @@ export async function persistOnDemandToolReports(params: {
   uid: string;
   profileHash: string;
   toolReports: Record<string, ToolReportEntry>;
-}): Promise<{ readySlugs: string[]; failedSlugs: string[] }> {
+}): Promise<{ readySlugs: string[]; failedSlugs: string[]; skippedStaleHash: boolean }> {
   const { uid, profileHash, toolReports } = params;
+  const liveUser = ((await getDocument('users', uid)) || {}) as Record<string, unknown>;
+  if (isStaleOnDemandPersist(liveUser.profileDataHash, profileHash)) {
+    return {
+      readySlugs: [],
+      failedSlugs: Object.keys(toolReports),
+      skippedStaleHash: true,
+    };
+  }
+
   const now = Date.now();
   const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
     {}) as Record<string, unknown>;
@@ -116,7 +139,7 @@ export async function persistOnDemandToolReports(params: {
     updatedAt: now,
   });
   clearCachedDivinationData(uid);
-  return { readySlugs, failedSlugs };
+  return { readySlugs, failedSlugs, skippedStaleHash: false };
 }
 
 export async function generateAndPersistToolReports(params: {
@@ -129,6 +152,7 @@ export async function generateAndPersistToolReports(params: {
 }): Promise<{
   readySlugs: string[];
   failedSlugs: string[];
+  skippedStaleHash: boolean;
   toolReports: Record<string, ToolReportEntry>;
 }> {
   const { uid, profile, profileHash, toolSlugs, skipVedicComprehensive, extraInputs } = params;

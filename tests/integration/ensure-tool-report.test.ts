@@ -51,6 +51,7 @@ describe('ensure-tool-report API', () => {
     mockGenerateAndPersistToolReports.mockResolvedValue({
       readySlugs: ['tarot'],
       failedSlugs: [],
+      skippedStaleHash: false,
       toolReports: { tarot: { status: 'success', data: { cards: [{ name: 'The Fool' }] } } },
     });
   });
@@ -135,5 +136,22 @@ describe('ensure-tool-report API', () => {
         extraInputs: expect.objectContaining({ question: 'What is my path this year?' }),
       }),
     );
+  });
+
+  it('returns 409 when persist skipped because the profile hash changed mid-generation', async () => {
+    mockGetDocument.mockImplementation((collection: string) => {
+      if (collection === 'users') return Promise.resolve({ uid, mysticalProfileGenerated: true });
+      return Promise.resolve({});
+    });
+    mockGenerateAndPersistToolReports.mockResolvedValue({
+      readySlugs: [],
+      failedSlugs: ['tarot'],
+      skippedStaleHash: true,
+      toolReports: { tarot: { status: 'success', data: { cards: [{ name: 'The Fool' }] } } },
+    });
+    const res = await callEnsure({ toolSlug: 'tarot' });
+    const data = await res.json();
+    expect(res.status).toBe(409);
+    expect(data.code).toBe('profile_hash_changed');
   });
 });
