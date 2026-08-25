@@ -114,6 +114,9 @@ describe('ensure-tool-report API', () => {
     expect(mockGenerateAndPersistToolReports).toHaveBeenCalledWith(
       expect.objectContaining({ uid, toolSlugs: ['tarot'] }),
     );
+    expect(mockGenerateAndPersistToolReports.mock.calls[0][0]).not.toEqual(
+      expect.objectContaining({ finalizeGeneration: true }),
+    );
   });
 
   it('regenerates when extraInputs are present even if a report is already stored', async () => {

@@ -49,21 +49,29 @@ function mergeToolStatus(
 /**
  * Persist one or more tool reports. Catalog is on-demand: do not mark missing
  * tools as a running pipeline (`allReportsReady` means profile is committed).
+ *
+ * `finalizeGeneration` must be true only for Generate Full Report natal commit.
+ * Per-tool visits must not complete `generationLocks` / `generationJobs` or
+ * rewrite `users.profileDataHash` — that unlocks an in-flight natal generate
+ * (409 redirect to /tools, then open a tool).
  */
 export async function persistOnDemandToolReports(params: {
   uid: string;
   profileHash: string;
   toolReports: Record<string, ToolReportEntry>;
+  finalizeGeneration?: boolean;
 }): Promise<{ readySlugs: string[]; failedSlugs: string[] }> {
-  const { uid, profileHash, toolReports } = params;
+  const { uid, profileHash, toolReports, finalizeGeneration = false } = params;
   const now = Date.now();
   const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
     {}) as Record<string, unknown>;
   let toolStatus = (existingProfile.toolStatus as PersistedToolStatusMap | undefined) ?? {};
   const profilePatch: Record<string, unknown> = {
     lastProgressAt: now,
-    profileDataHash: profileHash,
   };
+  if (finalizeGeneration) {
+    profilePatch.profileDataHash = profileHash;
+  }
   const readySlugs: string[] = [];
   const failedSlugs: string[] = [];
 
@@ -83,38 +91,40 @@ export async function persistOnDemandToolReports(params: {
 
   profilePatch.toolStatus = toolStatus;
   await setDocument('comprehensiveMysticalProfiles', uid, profilePatch);
-  await setDocument('users', uid, {
-    mysticalProfileGenerated: true,
-    mysticalProfileGeneratedAt: now,
-    profileDataHash: profileHash,
-    profileStatus: 'completed',
-    allReportsReady: true,
-    pendingToolSlugs: [],
-    toolStatus,
-    lastProgressAt: now,
-    updatedAt: now,
-  });
-  await setDocument('generationLocks', uid, {
-    lockedAt: null,
-    status: 'completed',
-    phase: 'completed',
-    completedAt: now,
-    allReportsReady: true,
-    pendingToolSlugs: [],
-    readyToolsCount: readySlugs.length,
-    toolStatus,
-    updatedAt: now,
-  });
-  await setDocument('generationJobs', uid, {
-    status: 'completed',
-    phase: 'completed',
-    completedAt: now,
-    allReportsReady: true,
-    pendingToolSlugs: [],
-    queueDrained: true,
-    pipelineMode: 'on_demand',
-    updatedAt: now,
-  });
+  if (finalizeGeneration) {
+    await setDocument('users', uid, {
+      mysticalProfileGenerated: true,
+      mysticalProfileGeneratedAt: now,
+      profileDataHash: profileHash,
+      profileStatus: 'completed',
+      allReportsReady: true,
+      pendingToolSlugs: [],
+      toolStatus,
+      lastProgressAt: now,
+      updatedAt: now,
+    });
+    await setDocument('generationLocks', uid, {
+      lockedAt: null,
+      status: 'completed',
+      phase: 'completed',
+      completedAt: now,
+      allReportsReady: true,
+      pendingToolSlugs: [],
+      readyToolsCount: readySlugs.length,
+      toolStatus,
+      updatedAt: now,
+    });
+    await setDocument('generationJobs', uid, {
+      status: 'completed',
+      phase: 'completed',
+      completedAt: now,
+      allReportsReady: true,
+      pendingToolSlugs: [],
+      queueDrained: true,
+      pipelineMode: 'on_demand',
+      updatedAt: now,
+    });
+  }
   clearCachedDivinationData(uid);
   return { readySlugs, failedSlugs };
 }
@@ -126,12 +136,13 @@ export async function generateAndPersistToolReports(params: {
   toolSlugs: readonly string[];
   skipVedicComprehensive?: boolean;
   extraInputs?: ToolReportExtraInputs;
+  finalizeGeneration?: boolean;
 }): Promise<{
   readySlugs: string[];
   failedSlugs: string[];
   toolReports: Record<string, ToolReportEntry>;
 }> {
-  const { uid, profile, profileHash, toolSlugs, skipVedicComprehensive, extraInputs } = params;
+  const { uid, profile, profileHash, toolSlugs, skipVedicComprehensive, extraInputs, finalizeGeneration } = params;
   const result = await runProfileGenerationToolSlugs(uid, profile, toolSlugs, {
     skipVedicComprehensive,
     extraInputs,
@@ -140,6 +151,7 @@ export async function generateAndPersistToolReports(params: {
     uid,
     profileHash,
     toolReports: result.toolReports,
+    finalizeGeneration,
   });
   return {
     ...persisted,
