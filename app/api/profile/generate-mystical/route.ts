@@ -417,6 +417,7 @@ export async function POST(request: NextRequest) {
         profileHash: newHash,
         toolSlugs: NATAL_CHART_SLUGS,
         skipVedicComprehensive: true,
+        finalizeGeneration: true,
       });
       natalReady = natal.readySlugs;
       natalFailed = natal.failedSlugs;

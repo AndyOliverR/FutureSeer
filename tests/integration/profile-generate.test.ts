@@ -300,7 +300,12 @@ describe('Profile generate-mystical API', () => {
       expect(Array.isArray(data.pendingToolSlugs)).toBe(true);
       expect(data.pendingToolSlugs).toEqual([]);
       expect(typeof data.message).toBe('string');
-      expect(mockGenerateAndPersistToolReports).toHaveBeenCalled();
+      expect(mockGenerateAndPersistToolReports).toHaveBeenCalledWith(
+        expect.objectContaining({
+          finalizeGeneration: true,
+          toolSlugs: ['vedic', 'western'],
+        }),
+      );
       expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
       expect(mockSetDocument).toHaveBeenCalledWith(
         'generationLocks',
