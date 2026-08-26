@@ -27,6 +27,18 @@ jest.mock('@/lib/aiAuditEvents', () => ({
   recordAiAuditEvent: jest.fn(),
 }));
 
+const mockConsumeBillingAction = jest.fn(async () => ({
+  ok: true as const,
+  charged: true,
+  creditsCharged: 1,
+  creditBalance: 9,
+  usedFreeInstance: false,
+}));
+
+jest.mock('@/lib/billingCreditsServer', () => ({
+  consumeBillingAction: (...args: unknown[]) => mockConsumeBillingAction(...args),
+}));
+
 describe('enforceToolSeerGate', () => {
   function post(body: Record<string, unknown>) {
     return new NextRequest('http://localhost/api/ask-tarot-seer', {
@@ -39,6 +51,10 @@ describe('enforceToolSeerGate', () => {
   it('extractToolSeerQuestion trims question field', () => {
     expect(extractToolSeerQuestion({ question: '  hello  ' })).toBe('hello');
     expect(extractToolSeerQuestion({})).toBe('');
+  });
+
+  beforeEach(() => {
+    mockConsumeBillingAction.mockClear();
   });
 
   it('returns SSE stream when injection pattern is blocked', async () => {
@@ -55,6 +71,7 @@ describe('enforceToolSeerGate', () => {
     expect(res!.headers.get('Content-Type')).toBe('text/event-stream');
     const text = await res!.text();
     expect(text).toBe(SEER_INPUT_BLOCKED_MESSAGE);
+    expect(mockConsumeBillingAction).not.toHaveBeenCalled();
   });
 
   it('returns JSON when blockedResponseFormat is json', async () => {
@@ -70,23 +87,43 @@ describe('enforceToolSeerGate', () => {
     const data = await res!.json();
     expect(data.inputBlocked).toBe(true);
     expect(data.response).toBe(SEER_INPUT_BLOCKED_MESSAGE);
+    expect(mockConsumeBillingAction).not.toHaveBeenCalled();
   });
 
-  it('passes through when question is empty (route handles 400)', async () => {
+  it('returns 400 and does not bill when question is empty', async () => {
     const res = await enforceToolSeerGate(
       post({ userId: 'user-1', question: '' }),
       { userId: 'user-1', question: '' },
       'ask_tarot_seer',
     );
-    expect(res).toBeNull();
+    expect(res).not.toBeNull();
+    expect(res!.status).toBe(400);
+    const data = await res!.json();
+    expect(data.success).toBe(false);
+    expect(data.error).toBe('Question is required');
+    expect(mockConsumeBillingAction).not.toHaveBeenCalled();
   });
 
-  it('passes through for normal questions', async () => {
+  it('returns 400 and does not bill when question is whitespace', async () => {
+    const res = await enforceToolSeerGate(
+      post({ userId: 'user-1', question: '   ' }),
+      { userId: 'user-1', question: '   ' },
+      'ask_tarot_seer',
+    );
+    expect(res).not.toBeNull();
+    expect(res!.status).toBe(400);
+    expect(mockConsumeBillingAction).not.toHaveBeenCalled();
+  });
+
+  it('passes through for normal questions after billing succeeds', async () => {
     const res = await enforceToolSeerGate(
       post({ userId: 'user-1', question: 'What does the Tower mean?' }),
       { userId: 'user-1', question: 'What does the Tower mean?' },
       'ask_tarot_seer',
     );
     expect(res).toBeNull();
+    expect(mockConsumeBillingAction).toHaveBeenCalledWith('user-1', 'tool_seer', {
+      toolSlug: 'ask_tarot_seer',
+    });
   });
 });

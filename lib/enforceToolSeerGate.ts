@@ -90,6 +90,14 @@ export async function enforceToolSeerGate(
     rateUid = auth.uid;
   }
 
+  const question = extractToolSeerQuestion(body);
+  if (!question) {
+    return NextResponse.json(
+      { success: false, error: 'Question is required' },
+      { status: 400 },
+    );
+  }
+
   const rl = await checkRateLimitWithOptionalFirestore(
     rateLimiters.ai,
     `tool_seer_${routeLogicalKey}`,
@@ -109,7 +117,6 @@ export async function enforceToolSeerGate(
     );
   }
 
-  const question = extractToolSeerQuestion(body);
   const blocked = blockSeerQuestionIfNeeded(question, routeLogicalKey, {
     blockedResponseFormat: options?.blockedResponseFormat ?? 'stream',
     userId: rateUid,
