@@ -102,14 +102,14 @@ async function handleSeerChatRequest(req: NextRequest) {
     const responseStyle = body.responseStyle;
     const wantStream = body.stream === true;
 
-    if (!message) {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
       return NextResponse.json({ error: "message is required." }, { status: 400 });
     }
     if (!userId) {
       return NextResponse.json({ error: "userId must match authenticated user." }, { status: 403 });
     }
 
-    const trimmedMessage = message.trim();
     const inputBlocked = blockSeerQuestionIfNeeded(trimmedMessage, 'seer-chat', {
       blockedResponseFormat: 'seer_chat',
       userId,
