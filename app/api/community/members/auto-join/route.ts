@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
-import { getLevelFromKarma, getReputation, calculateBadges } from '@/lib/firestore/communityHelpers';
+import { getLevelFromKarma } from '@/lib/firestore/communityHelpers';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 // POST - Auto-create/update community member profile when user signs in
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'community-auto-join');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { userId, userName, email, photoURL, joinDate } = body;
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
 
-    if (!userId || !userName) {
+    if (!ownedUserId || !userName) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, userName' },
-        { status: 400 }
+        { error: 'Missing required fields: userId, userName (userId must match authenticated user)' },
+        { status: 403 }
       );
     }
 
@@ -23,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     if (typeof window === 'undefined') {
       // Server-side: Use Admin SDK
-      const memberRef = db.collection('communityMembers').doc(userId);
+      const memberRef = db.collection('communityMembers').doc(ownedUserId);
       const memberDoc = await memberRef.get();
 
       const now = new Date();
@@ -31,8 +38,11 @@ export async function POST(request: NextRequest) {
 
       const founderUid = process.env.FOUNDER_UID?.trim();
       const founderEmail = process.env.FOUNDER_EMAIL?.trim()?.toLowerCase();
-      const userEmailNorm = (email || '').trim().toLowerCase();
-      const isFounder = (founderUid && founderUid === userId) || (founderEmail && userEmailNorm && userEmailNorm === founderEmail);
+      const authEmailNorm = (auth.email || '').trim().toLowerCase();
+      const isFounder =
+        Boolean(founderUid && founderUid === ownedUserId) ||
+        Boolean(founderEmail && authEmailNorm && authEmailNorm === founderEmail);
+      const memberEmail = auth.email || email || null;
 
       if (memberDoc.exists) {
         // Update existing member profile
@@ -45,7 +55,7 @@ export async function POST(request: NextRequest) {
         // Update profile info; do not overwrite karma/streak/flair for founder
         const updatePayload: Record<string, unknown> = {
           name: userName,
-          email: email || null,
+          email: memberEmail,
           photoURL: photoURL || null,
           lastActive: now,
           joinDate: existingJoinDate < userJoinDate ? existingJoinDate : userJoinDate,
@@ -65,7 +75,7 @@ export async function POST(request: NextRequest) {
           message: 'Community member profile updated',
           member: {
             id: memberDoc.id,
-            userId,
+            userId: ownedUserId,
             name: userName,
             karma: isFounder ? 10000 : karma,
             level: isFounder ? 'Grandmaster' : getLevelFromKarma(karma),
@@ -77,9 +87,9 @@ export async function POST(request: NextRequest) {
         // Create new community member profile
         const newMemberData = isFounder
           ? {
-              userId,
+              userId: ownedUserId,
               name: userName,
-              email: email || null,
+              email: memberEmail,
               photoURL: photoURL || null,
               karma: 10000,
               contributions: 0,
@@ -92,9 +102,9 @@ export async function POST(request: NextRequest) {
               flair: 'Founder',
             }
           : {
-              userId,
+              userId: ownedUserId,
               name: userName,
-              email: email || null,
+              email: memberEmail,
               photoURL: photoURL || null,
               karma: 0,
               contributions: 0,

@@ -19,6 +19,8 @@ import { RecaptchaScript } from '@/components/RecaptchaScript';
 import { useToast } from '@/components/ui/use-toast';
 import { getReturningPaymentCommitDestination } from '@/lib/authRouting';
 import { analytics } from '@/lib/analytics';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+
 interface UserContribution {
   id: string;
   type: 'feedback' | 'suggestion' | 'bug-report' | 'feature-request';
@@ -194,7 +196,7 @@ export default function CommunityAttributionPage() {
       const displayName = user.displayName || user.email || 'Anonymous';
 
       // Run auto-join, members, discussions, and attribution in parallel (wait for slowest, not sum)
-      const autoJoinPromise = fetch('/api/community/members/auto-join', {
+      const autoJoinPromise = fetchWithFirebaseAuthRequired('/api/community/members/auto-join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
