@@ -19,6 +19,8 @@ import { RecaptchaScript } from '@/components/RecaptchaScript';
 import { useToast } from '@/components/ui/use-toast';
 import { getReturningPaymentCommitDestination } from '@/lib/authRouting';
 import { analytics } from '@/lib/analytics';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+
 interface UserContribution {
   id: string;
   type: 'feedback' | 'suggestion' | 'bug-report' | 'feature-request';
@@ -230,7 +232,7 @@ export default function CommunityAttributionPage() {
         return null;
       });
 
-      const requestsPromise = fetch(`/api/community/connections?userId=${uid}&type=incoming`)
+      const requestsPromise = fetchWithFirebaseAuthRequired(`/api/community/connections?userId=${uid}&type=incoming`)
         .then(async (r) => {
           if (!r.ok) return null;
           const data = await r.json();
@@ -496,7 +498,7 @@ export default function CommunityAttributionPage() {
     if (!user?.uid) return;
     setRequestsLoading(true);
     try {
-      const response = await fetch(`/api/community/connections?userId=${user.uid}&type=all`);
+      const response = await fetchWithFirebaseAuthRequired(`/api/community/connections?userId=${user.uid}&type=all`);
       if (!response.ok) throw new Error('Failed to load requests');
       const data = await response.json();
       const requests = (data.requests ?? []).map((request: Record<string, unknown>) => ({
@@ -522,7 +524,7 @@ export default function CommunityAttributionPage() {
   const respondToConnectionRequest = async (requestId: string, action: 'accept' | 'decline') => {
     if (!user?.uid) return;
     try {
-      const response = await fetch(`/api/community/connections/${requestId}`, {
+      const response = await fetchWithFirebaseAuthRequired(`/api/community/connections/${requestId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, userId: user.uid }),
@@ -557,7 +559,7 @@ export default function CommunityAttributionPage() {
     }
 
     try {
-      const response = await fetch('/api/community/connections', {
+      const response = await fetchWithFirebaseAuthRequired('/api/community/connections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

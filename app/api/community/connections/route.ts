@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Query, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 // Must be dynamic: GET uses searchParams + Firestore; force-static breaks per-request handling.
 export const dynamic = 'force-dynamic';
@@ -84,10 +85,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
-    const body: ConnectionRequestData = await request.json();
-    const { fromUserId, fromUserName, toUserId, toUserName, topic, message } = body;
+    const auth = await verifyUserRequest(request, 'community-connections');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (!fromUserId || !fromUserName || !toUserId || !toUserName || !topic || !message) {
+    const body: ConnectionRequestData = await request.json();
+    const { fromUserName, toUserId, toUserName, topic, message } = body;
+    const fromUserId = resolveOwnedUserId(body.fromUserId, auth.uid);
+
+    if (!fromUserId) {
+      return NextResponse.json(
+        { error: 'fromUserId is required and must match the authenticated user' },
+        { status: 403 }
+      );
+    }
+
+    if (!fromUserName || !toUserId || !toUserName || !topic || !message) {
       return NextResponse.json(
         { error: 'Missing required fields: fromUserId, fromUserName, toUserId, toUserName, topic, message' },
         { status: 400 }
@@ -169,12 +183,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
+    const auth = await verifyUserRequest(request, 'community-connections');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = resolveOwnedUserId(searchParams.get('userId'), auth.uid);
     const type = searchParams.get('type') || 'all'; // all, incoming, outgoing
 
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'User ID is required and must match the authenticated user' },
+        { status: 403 }
+      );
     }
 
     const db = adminDb;

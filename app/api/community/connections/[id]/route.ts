@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +18,24 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
+    const auth = await verifyUserRequest(request, 'community-connections');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id: connectionId } = await params;
     const body = await request.json();
-    const { action, userId } = body; // action: 'accept' | 'decline'
+    const { action } = body; // action: 'accept' | 'decline'
+    const userId = resolveOwnedUserId(body.userId, auth.uid);
 
-    if (!action || !userId) {
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'userId is required and must match the authenticated user' },
+        { status: 403 }
+      );
+    }
+
+    if (!action) {
       return NextResponse.json(
         { error: 'Missing required fields: action, userId' },
         { status: 400 }
