@@ -19,6 +19,8 @@ import { RecaptchaScript } from '@/components/RecaptchaScript';
 import { useToast } from '@/components/ui/use-toast';
 import { getReturningPaymentCommitDestination } from '@/lib/authRouting';
 import { analytics } from '@/lib/analytics';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+
 interface UserContribution {
   id: string;
   type: 'feedback' | 'suggestion' | 'bug-report' | 'feature-request';
@@ -472,7 +474,7 @@ export default function CommunityAttributionPage() {
   const handleCreateComment = async () => {
     if (!selectedThread || !newComment.trim() || !user?.uid) return;
     try {
-      const response = await fetch('/api/community/comments', {
+      const response = await fetchWithFirebaseAuthRequired('/api/community/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
