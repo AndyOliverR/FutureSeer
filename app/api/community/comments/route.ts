@@ -6,6 +6,7 @@ import { calculateKarmaForAction, calculateMemberStatsUpdate } from '@/lib/fires
 import { consumeGuestCommunityWriteSlot, getCommunityGuestClientIp } from '@/lib/communityGuestRateLimit';
 import { verifyRecaptchaEnterpriseToken } from '@/lib/recaptcha/verifyEnterpriseCaptcha';
 import { RECAPTCHA_ACTIONS } from '@/lib/recaptcha/actions';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 interface CommentData {
   discussionId: string;
@@ -125,12 +126,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { discussionId, content, parentCommentId, userId, authorName } = body;
+    const auth = await verifyUserRequest(request, 'community-comments');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (!discussionId || !content || !userId || !authorName) {
+    const { discussionId, content, parentCommentId, userId, authorName } = body;
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
+
+    if (!discussionId || !content || !ownedUserId || !authorName) {
       return NextResponse.json(
-        { error: 'Missing required fields: discussionId, content, userId, authorName' },
-        { status: 400 }
+        { error: 'Missing required fields: discussionId, content, userId, authorName (userId must match authenticated user)' },
+        { status: 403 }
       );
     }
 
@@ -162,7 +169,7 @@ export async function POST(request: NextRequest) {
       const commentRef = discussionRef.collection('comments').doc();
       const commentData = {
         content,
-        authorId: userId,
+        authorId: ownedUserId,
         authorName,
         discussionId, // Store for easy reference
         parentCommentId: parentCommentId || null,
@@ -182,10 +189,10 @@ export async function POST(request: NextRequest) {
       });
 
       // Update member stats
-      await updateMemberStats(db, userId, 'createComment');
+      await updateMemberStats(db, ownedUserId, 'createComment');
 
       // Ensure member profile exists
-      await ensureMemberProfile(db, userId, authorName);
+      await ensureMemberProfile(db, ownedUserId, authorName);
 
       // Update community stats
       await updateCommunityStats(db, { comments: 1 });

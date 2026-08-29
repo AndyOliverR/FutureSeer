@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-static'
 
@@ -17,9 +18,22 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
+    const auth = await verifyUserRequest(request, 'community-comments');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id: commentId } = await params;
     const body = await request.json();
     const { content, discussionId, userId } = body;
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
+
+    if (!ownedUserId) {
+      return NextResponse.json(
+        { error: 'Unauthorized: userId must match authenticated user' },
+        { status: 403 }
+      );
+    }
 
     if (!discussionId) {
       return NextResponse.json({ error: 'Discussion ID is required' }, { status: 400 });
@@ -43,7 +57,7 @@ export async function PATCH(
       const commentData = commentDoc.data();
 
       // Check if user is the author
-      if (commentData?.authorId !== userId) {
+      if (commentData?.authorId !== ownedUserId) {
         return NextResponse.json({ error: 'Unauthorized: Only author can update' }, { status: 403 });
       }
 
@@ -81,13 +95,25 @@ export async function DELETE(
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
+    const auth = await verifyUserRequest(request, 'community-comments');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id: commentId } = await params;
     const { searchParams } = new URL(request.url);
     const discussionId = searchParams.get('discussionId');
-    const userId = searchParams.get('userId');
+    const ownedUserId = resolveOwnedUserId(searchParams.get('userId'), auth.uid);
 
-    if (!discussionId || !userId) {
-      return NextResponse.json({ error: 'Discussion ID and User ID are required' }, { status: 400 });
+    if (!ownedUserId) {
+      return NextResponse.json(
+        { error: 'Unauthorized: userId must match authenticated user' },
+        { status: 403 }
+      );
+    }
+
+    if (!discussionId) {
+      return NextResponse.json({ error: 'Discussion ID is required' }, { status: 400 });
     }
 
     const db = adminDb;
@@ -108,7 +134,7 @@ export async function DELETE(
       const commentData = commentDoc.data();
 
       // Check if user is the author (TODO: add admin check)
-      if (commentData?.authorId !== userId) {
+      if (commentData?.authorId !== ownedUserId) {
         return NextResponse.json({ error: 'Unauthorized: Only author can delete' }, { status: 403 });
       }
 
