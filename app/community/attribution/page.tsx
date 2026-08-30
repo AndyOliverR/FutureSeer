@@ -19,6 +19,7 @@ import { RecaptchaScript } from '@/components/RecaptchaScript';
 import { useToast } from '@/components/ui/use-toast';
 import { getReturningPaymentCommitDestination } from '@/lib/authRouting';
 import { analytics } from '@/lib/analytics';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 interface UserContribution {
   id: string;
   type: 'feedback' | 'suggestion' | 'bug-report' | 'feature-request';
@@ -311,7 +312,7 @@ export default function CommunityAttributionPage() {
         // Load user votes in background so we don't block first paint
         const votePromises = discussionsData.map(async (d: Record<string, unknown>) => {
           try {
-            const voteResponse = await fetch(`/api/community/votes?userId=${uid}&discussionId=${String(d.id ?? '')}`);
+            const voteResponse = await fetchWithFirebaseAuthRequired(`/api/community/votes?userId=${uid}&discussionId=${String(d.id ?? '')}`);
             if (!voteResponse.ok) return null;
             const voteData = await voteResponse.json();
             if (voteData.success && voteData.hasVoted) {
@@ -643,7 +644,7 @@ export default function CommunityAttributionPage() {
       });
 
       // Send vote to API
-      const response = await fetch('/api/community/votes', {
+      const response = await fetchWithFirebaseAuthRequired('/api/community/votes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -700,7 +701,7 @@ export default function CommunityAttributionPage() {
     }
 
     try {
-      const response = await fetch('/api/community/discussions', {
+      const response = await fetchWithFirebaseAuthRequired('/api/community/discussions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
