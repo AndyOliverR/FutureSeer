@@ -4,7 +4,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { calculateKarmaForAction } from '@/lib/firestore/communityHelpers';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic';
 
 interface VoteData {
   userId: string;
