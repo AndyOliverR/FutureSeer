@@ -26,6 +26,12 @@ export interface EnforceToolSeerGateOptions {
    * - json: JSON body (e.g. medical-seer)
    */
   blockedResponseFormat?: ToolSeerBlockedResponseFormat;
+  /**
+   * Route-specific required context (chart, reading, profile payload).
+   * When set, the gate returns 400 **before** rate-limit and billing so PAYG
+   * users are not charged for a question the tool cannot answer yet.
+   */
+  missingContextError?: string | null;
 }
 
 /** Extract trimmed `question` from a tool Seer POST body. */
@@ -88,6 +94,17 @@ export async function enforceToolSeerGate(
     rateUid = owned;
   } else {
     rateUid = auth.uid;
+  }
+
+  const missingContextError =
+    typeof options?.missingContextError === 'string' ? options.missingContextError.trim() : '';
+  if (missingContextError) {
+    const res = NextResponse.json(
+      { success: false, error: missingContextError },
+      { status: 400 },
+    );
+    res.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+    return res;
   }
 
   const rl = await checkRateLimitWithOptionalFirestore(

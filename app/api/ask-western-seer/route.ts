@@ -126,23 +126,16 @@ interface WesternSeerStoredPayload {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as WesternSeerRequest;
-    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_western_seer');
-    if (__toolSeerGate) return __toolSeerGate;
     const { userId, question, userProfile, westernChartData, astroNumerologyData, sessionId } = body;
-
-    if (!userId || !question || !userProfile) {
-      return jsonWithRobots({
-        success: false,
-        error: 'Missing required parameters: userId, question, or userProfile'
-      }, { status: 400 });
-    }
-
-    if (!westernChartData) {
-      return jsonWithRobots({
-        success: false,
-        error: 'Missing Western chart data. Please ensure you are accessing this from the Western astrology page.'
-      }, { status: 400 });
-    }
+    const missingContextError = !userId || !question || !userProfile
+      ? 'Missing required parameters: userId, question, or userProfile'
+      : !westernChartData
+        ? 'Missing Western chart data. Please ensure you are accessing this from the Western astrology page.'
+        : null;
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_western_seer', {
+      missingContextError,
+    });
+    if (__toolSeerGate) return __toolSeerGate;
 
     devLog.info('🔮 Western Seer API: Processing question for user:', userId, 'ask-western-seer');
 
