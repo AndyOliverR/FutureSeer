@@ -123,30 +123,17 @@ function transitSummaryFromChart(
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as VedicSeerRequest;
-    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_vedic_seer');
-    if (__toolSeerGate) return __toolSeerGate;
     const { userId, question, userProfile, vedicChartData, vedicNumerologyData, sessionId, focusLens, planetFocus } =
       body;
-
-    if (!userId || !question || !userProfile) {
-      return jsonWithRobots(
-        {
-          success: false,
-          error: 'Missing required parameters: userId, question, or userProfile',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!vedicChartData) {
-      return jsonWithRobots(
-        {
-          success: false,
-          error: 'Missing Vedic chart data. Please ensure you are accessing this from the Vedic astrology page.',
-        },
-        { status: 400 }
-      );
-    }
+    const missingContextError = !userId || !question || !userProfile
+      ? 'Missing required parameters: userId, question, or userProfile'
+      : !vedicChartData
+        ? 'Missing Vedic chart data. Please ensure you are accessing this from the Vedic astrology page.'
+        : null;
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_vedic_seer', {
+      missingContextError,
+    });
+    if (__toolSeerGate) return __toolSeerGate;
 
     devLog.info('🔮 Vedic Seer API: Processing question for user:', userId, 'vedic-seer');
 
