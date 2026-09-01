@@ -28,26 +28,16 @@ const REFUSAL_MESSAGE =
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as HellenisticSeerRequest;
-    const __toolSeerGate = await enforceToolSeerGate(request, body, 'hellenistic_ask_seer');
+    const { userId, question, hellenisticContext } = body;
+    const missingContextError = !question || !question.trim()
+      ? 'Question is required'
+      : !hellenisticContext
+        ? 'Missing Hellenistic chart data. Please generate a reading first.'
+        : null;
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'hellenistic_ask_seer', {
+      missingContextError,
+    });
     if (__toolSeerGate) return __toolSeerGate;
-    const { userId, question, userProfile, hellenisticContext, sessionId } = body;
-
-    if (!question || !question.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Question is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!hellenisticContext) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing Hellenistic chart data. Please generate a reading first.',
-        },
-        { status: 400 }
-      );
-    }
 
     devLog.info('🔮 Hellenistic Seer API: Processing question for user:', userId, 'ask-hellenistic-seer');
 
