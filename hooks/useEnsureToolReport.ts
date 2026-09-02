@@ -59,6 +59,17 @@ export function useEnsureToolReport(toolSlug: string | null) {
     }
   }, [toolSlug, user, userProfile?.mysticalProfileGenerated, hasReport, loading, report, reportState, refreshProfile, retryNonce])
 
+  useEffect(() => {
+    if (!toolSlug || !user || hasReport) return
+    if (userProfile?.mysticalProfileGenerated !== true) return
+    const state = report ? classifyToolReportState(report, toolSlug) : reportState
+    if (state === 'placeholder' || state === 'failed') return
+    const id = window.setInterval(() => {
+      void refreshProfile()
+    }, 4000)
+    return () => window.clearInterval(id)
+  }, [toolSlug, user, userProfile?.mysticalProfileGenerated, hasReport, report, reportState, refreshProfile])
+
   const retryEnsure = () => {
     startedRef.current = null
     setEnsureError(null)

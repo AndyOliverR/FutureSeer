@@ -7,6 +7,7 @@ import {
   classifyToolReportState,
   isReadyToolReport,
   runProfileGenerationToolSlugs,
+  summarizeToolReadiness,
   type ToolReportEntry,
 } from '@/lib/profileGenerationOrchestrator';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
@@ -47,14 +48,19 @@ function mergeToolStatus(
 }
 
 /**
- * Persist one or more tool reports. Catalog is on-demand: do not mark missing
- * tools as a running pipeline (`allReportsReady` means profile is committed).
+ * Persist one or more tool reports and derive catalog readiness from the merged
+ * profile. Do not claim allReportsReady while other catalog tools are still missing.
  */
 export async function persistOnDemandToolReports(params: {
   uid: string;
   profileHash: string;
   toolReports: Record<string, ToolReportEntry>;
-}): Promise<{ readySlugs: string[]; failedSlugs: string[] }> {
+}): Promise<{
+  readySlugs: string[];
+  failedSlugs: string[];
+  readiness: ReturnType<typeof summarizeToolReadiness>;
+  toolStatus: PersistedToolStatusMap;
+}> {
   const { uid, profileHash, toolReports } = params;
   const now = Date.now();
   const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
@@ -82,41 +88,39 @@ export async function persistOnDemandToolReports(params: {
   }
 
   profilePatch.toolStatus = toolStatus;
+  const mergedProfile = { ...existingProfile, ...profilePatch };
+  const readiness = summarizeToolReadiness(mergedProfile, ALL_TOOL_SLUGS);
   await setDocument('comprehensiveMysticalProfiles', uid, profilePatch);
   await setDocument('users', uid, {
     mysticalProfileGenerated: true,
     mysticalProfileGeneratedAt: now,
     profileDataHash: profileHash,
-    profileStatus: 'completed',
-    allReportsReady: true,
-    pendingToolSlugs: [],
+    profileStatus: readiness.allReportsReady ? 'completed' : 'running',
+    allReportsReady: readiness.allReportsReady,
+    pendingToolSlugs: readiness.pendingToolSlugs,
     toolStatus,
     lastProgressAt: now,
     updatedAt: now,
   });
-  await setDocument('generationLocks', uid, {
-    lockedAt: null,
-    status: 'completed',
-    phase: 'completed',
-    completedAt: now,
-    allReportsReady: true,
-    pendingToolSlugs: [],
-    readyToolsCount: readySlugs.length,
+  const lockPatch: Record<string, unknown> = {
+    status: readiness.allReportsReady ? 'completed' : 'running',
+    phase: readiness.allReportsReady ? 'completed' : 'catalog',
+    allReportsReady: readiness.allReportsReady,
+    pendingToolSlugs: readiness.pendingToolSlugs,
+    readyToolsCount: readiness.readyToolsCount,
+    totalTools: ALL_TOOL_SLUGS.length,
+    completedTools: readiness.readyToolsCount,
+    pipelineMode: 'catalog',
     toolStatus,
     updatedAt: now,
-  });
-  await setDocument('generationJobs', uid, {
-    status: 'completed',
-    phase: 'completed',
-    completedAt: now,
-    allReportsReady: true,
-    pendingToolSlugs: [],
-    queueDrained: true,
-    pipelineMode: 'on_demand',
-    updatedAt: now,
-  });
+  };
+  if (readiness.allReportsReady) {
+    lockPatch.lockedAt = null;
+    lockPatch.completedAt = now;
+  }
+  await setDocument('generationLocks', uid, lockPatch);
   clearCachedDivinationData(uid);
-  return { readySlugs, failedSlugs };
+  return { readySlugs, failedSlugs, readiness, toolStatus };
 }
 
 export async function generateAndPersistToolReports(params: {
@@ -130,6 +134,8 @@ export async function generateAndPersistToolReports(params: {
   readySlugs: string[];
   failedSlugs: string[];
   toolReports: Record<string, ToolReportEntry>;
+  readiness: ReturnType<typeof summarizeToolReadiness>;
+  toolStatus: PersistedToolStatusMap;
 }> {
   const { uid, profile, profileHash, toolSlugs, skipVedicComprehensive, extraInputs } = params;
   const result = await runProfileGenerationToolSlugs(uid, profile, toolSlugs, {

@@ -1,20 +1,25 @@
 /**
  * Shared first-generation timing copy for Profile + Occult tools surfaces.
- * Flow: Profile Generate commits natal charts → /tools. Each tool generates on visit.
+ * Flow: Generate stays on Profile until all catalog reports are saved, then /tools.
+ * Reports do not regenerate until the user edits profile data and clicks Generate again.
  */
 
 export const GENERATION_ETA_PRE_GENERATE =
-  "Natal charts are ready in seconds. Open any Occult / Divination tool to generate that reading — it stays saved on your profile.";
+  "One click generates every tool report. Stay on this page until all readings are saved — usually a few minutes.";
 
-/** Shown under the Generate button from click until redirect to /tools. */
+/** Shown under the Generate button from click until natal charts finish. */
 export const GENERATION_ETA_PREPARING =
-  "Saving your profile and natal charts… You'll open Occult / Divination tools next.";
+  "Saving your profile and natal charts… Remaining reports generate next. Stay on this page.";
 
 export const GENERATION_ETA_IN_PROGRESS =
-  "Profile saved. Open a tool to generate its reading — one tool at a time, usually a few seconds.";
+  "Natal charts are ready. Generating the rest of your reports — stay on this page.";
 
 export const GENERATION_ETA_TOOLS_BANNER =
-  "Open any tool to generate its reading. Charts you already opened stay saved.";
+  "Your reports are saved from Generate. Open a tool to read it — nothing regenerates until you edit your profile and generate again.";
 
 export const GENERATION_SUCCESS_ALERT =
-  "Profile saved. Open Occult / Divination tools — each reading generates when you open it. Then Ask the Seer for the cross-tool read.";
+  "All tool reports are saved. Open Occult / Divination tools to read them. Then Ask the Seer for the cross-tool read.";
+
+export function generationCatalogProgress(ready: number, total: number): string {
+  return `Generating reports… ${ready} of ${total}. Stay on this page until every reading is saved.`;
+}
