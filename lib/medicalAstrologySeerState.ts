@@ -43,6 +43,88 @@ export type MedicalAstrologyQuestionType =
   | 'general'
   | 'refusal';
 
+export const MEDICAL_SEER_CHART_REQUIRED =
+  'Medical Astrology requires chart data. Generate your medical astrology analysis first to use Ask the Seer.';
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+/**
+ * Normalize the Medical Ask-the-Seer request body into a chart payload.
+ * Returns null when the client has no chart yet (Ask the Seer tab with analysis=null).
+ */
+export function resolveMedicalSeerChartPayload(input: {
+  analysis?: unknown;
+  chartData?: unknown;
+  comprehensiveProfile?: unknown;
+}): MedicalAstrologyChartPayload | null {
+  const analysis = asRecord(input.analysis);
+  const nestedData = asRecord(analysis?.data);
+  if (nestedData?.chart) {
+    return { data: nestedData as MedicalAstrologyChartPayload['data'] };
+  }
+
+  if (analysis?.chart) {
+    const data = { ...analysis } as NonNullable<MedicalAstrologyChartPayload['data']> & {
+      chart?: MedicalAstrologyChartPayload['data'] extends { chart?: infer C } ? C : unknown;
+    };
+    let chart = data.chart && typeof data.chart === 'object' ? { ...data.chart } : data.chart;
+    if (chart && Array.isArray((chart as { planets?: unknown }).planets)) {
+      const byName: Record<string, { sign?: string; house?: number }> = {};
+      (chart as { planets: Array<{ name?: string; sign?: string; house?: number }> }).planets.forEach(
+        (p) => {
+          const name = p?.name;
+          if (name) byName[name] = { sign: p.sign, house: p.house };
+        },
+      );
+      chart = { ...(chart as object), planets: byName } as typeof chart;
+    }
+    data.chart = chart;
+    return { data };
+  }
+
+  if (input.chartData) {
+    return { data: { chart: input.chartData as NonNullable<MedicalAstrologyChartPayload['data']>['chart'] } };
+  }
+
+  const profile = asRecord(input.comprehensiveProfile);
+  const med =
+    asRecord(profile?.medicalAstrology) ?? asRecord(profile?.['Medical Astrology']);
+  if (med) {
+    const medData = asRecord(med.data);
+    const chart = med.chart ?? medData?.chart;
+    if (!chart) return null;
+    return {
+      data: {
+        chart: chart as NonNullable<MedicalAstrologyChartPayload['data']>['chart'],
+        timing: (med.timing ?? medData?.timing) as NonNullable<
+          MedicalAstrologyChartPayload['data']
+        >['timing'],
+      },
+    };
+  }
+
+  return null;
+}
+
+/** 400 copy when Medical Ask the Seer is used without a usable chart. Null when ready. */
+export function medicalSeerMissingChartError(input: {
+  analysis?: unknown;
+  chartData?: unknown;
+  comprehensiveProfile?: unknown;
+}): string | null {
+  const payload = resolveMedicalSeerChartPayload(input);
+  if (!payload) return MEDICAL_SEER_CHART_REQUIRED;
+  try {
+    buildMedicalAstrologyState(payload);
+    return null;
+  } catch {
+    return MEDICAL_SEER_CHART_REQUIRED;
+  }
+}
+
 /** Payload from client: analysis.data from medical chart API. */
 export interface MedicalAstrologyChartPayload {
   data?: {

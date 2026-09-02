@@ -6,8 +6,10 @@ import {
   buildMedicalAstrologyState,
   classifyMedicalAstrologyQuestion,
   getMedicalAstrologySliceForQuestionType,
+  medicalSeerMissingChartError,
+  resolveMedicalSeerChartPayload,
   MEDICAL_DISCLAIMER,
-  type MedicalAstrologyChartPayload,
+  MEDICAL_SEER_CHART_REQUIRED,
 } from '@/lib/medicalAstrologySeerState'
 import { buildMedicalAstrologySeerSystemPrompt } from '@/lib/medicalAstrologySeerPrompts'
 import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
@@ -19,11 +21,13 @@ const REFUSAL_PHRASE = 'This question requires professional medical evaluation.'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const { question, userProfile } = body
+    const missingContextError = medicalSeerMissingChartError(body)
     const __toolSeerGate = await enforceToolSeerGate(request, body, 'medical_astrology_seer', {
       blockedResponseFormat: 'json',
+      missingContextError,
     })
     if (__toolSeerGate) return __toolSeerGate
-    const { question, analysis, chartData, comprehensiveProfile, userProfile } = body
 
     if (!question) {
       return NextResponse.json(
@@ -42,45 +46,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Payload normalization: derive MedicalAstrologyChartPayload from analysis, chartData, or comprehensiveProfile
-    // Medical page sends analysis = { chart, healthIndicators, ... } (data object); API also accepts analysis.data.chart (nested).
-    let payload: MedicalAstrologyChartPayload
-    if (analysis?.data?.chart) {
-      payload = { data: analysis.data }
-    } else if (analysis?.chart) {
-      const data = { ...analysis }
-      let chart = data.chart && typeof data.chart === 'object' ? { ...data.chart } : data.chart
-      if (chart && Array.isArray(chart.planets)) {
-        const byName: Record<string, { sign?: string; house?: number }> = {}
-        chart.planets.forEach((p: { name?: string; sign?: string; house?: number }) => {
-          const name = p?.name
-          if (name) byName[name] = { sign: p.sign, house: p.house }
-        })
-        chart = { ...chart, planets: byName }
-      }
-      data.chart = chart
-      payload = { data }
-    } else if (chartData) {
-      payload = { data: { chart: chartData } }
-    } else if (comprehensiveProfile?.medicalAstrology || comprehensiveProfile?.['Medical Astrology']) {
-      const med = comprehensiveProfile.medicalAstrology ?? comprehensiveProfile['Medical Astrology']
-      const chart = med.chart ?? med.data?.chart
-      if (!chart) {
-        return NextResponse.json(
-          {
-            error:
-              'Medical Astrology requires chart data. Generate your medical astrology analysis first to use Ask the Seer.',
-          },
-          { status: 400 }
-        )
-      }
-      payload = { data: { chart, timing: med.timing ?? med.data?.timing } }
-    } else {
+    const payload = resolveMedicalSeerChartPayload(body)
+    if (!payload) {
       return NextResponse.json(
-        {
-          error:
-            'Medical Astrology requires chart data. Generate your medical astrology analysis first to use Ask the Seer.',
-        },
+        { error: MEDICAL_SEER_CHART_REQUIRED },
         { status: 400 }
       )
     }
