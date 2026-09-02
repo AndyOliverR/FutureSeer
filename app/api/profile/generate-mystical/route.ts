@@ -1,8 +1,9 @@
 /**
  * POST /api/profile/generate-mystical
  *
- * Commits the user profile and persists natal charts (vedic + western, no catalog LLM).
- * Remaining tools generate on visit via POST /api/profile/ensure-tool-report.
+ * Commits the user profile and persists natal charts (vedic + western).
+ * Remaining catalog tools are filled from Profile via POST /api/profile/generate-catalog-batch
+ * before the user is sent to /tools. Reports stay until profile data changes and Generate is clicked again.
  *
  * Header: Authorization: Bearer <Firebase ID token>
  */
@@ -33,7 +34,7 @@ import {
 } from '@/lib/onDemandToolReports';
 
 export const dynamic = 'force-dynamic';
-/** Natal charts only (vedic + western). Full catalog is on-demand per tool. */
+/** Natal charts only (vedic + western). Catalog fill continues on generate-catalog-batch. */
 export const maxDuration = 60;
 const HEARTBEAT_STALE_MS = 45_000;
 
@@ -86,6 +87,7 @@ function buildToolStatus(
 type RegenDecisionReason =
   | 'unchanged_hash_committed'
   | 'unchanged_hash_all_ready'
+  | 'unchanged_hash_catalog_incomplete'
   | 'profile_hash_changed'
   | 'payment_blocked';
 
@@ -281,7 +283,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Idempotent: same hash already committed — remaining tools generate on visit.
+    // Idempotent: same hash + full catalog already saved — skip until the user edits and generates again.
     const effectiveHash = calculateProfileDataHash(profileWithUid as Partial<UserProfile>);
     const hashMatches =
       userProfile.mysticalProfileGenerated === true &&
@@ -294,24 +296,48 @@ export async function POST(request: NextRequest) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
       const storedProfile = (stored || {}) as Record<string, unknown>;
       const readiness = summarizeToolReadiness(storedProfile, ALL_TOOL_SLUGS);
+      if (readiness.allReportsReady) {
+        const auditId = await writeRegenDecisionTelemetry(uid, {
+          event: 'mystical_regen_skipped_unchanged',
+          generationMode,
+          hashMatch: true,
+          pendingToolCount: 0,
+          reason: 'unchanged_hash_committed',
+        });
+        return NextResponse.json({
+          success: true,
+          message: 'Profile already generated. All tool reports are saved.',
+          alreadyGenerated: true,
+          allReportsReady: true,
+          readyToolsCount: readiness.readyToolsCount,
+          pendingToolSlugs: [],
+          totalTools: ALL_TOOL_SLUGS.length,
+          skipReason: 'unchanged_hash_committed',
+          decision: 'skipped',
+          decisionReason: 'unchanged_hash_committed',
+          generationState: 'completed',
+          auditId,
+        });
+      }
       const auditId = await writeRegenDecisionTelemetry(uid, {
-        event: 'mystical_regen_skipped_unchanged',
+        event: 'mystical_regen_fill_catalog',
         generationMode,
         hashMatch: true,
-        pendingToolCount: 0,
-        reason: 'unchanged_hash_committed',
+        pendingToolCount: readiness.pendingToolSlugs.length,
+        reason: 'unchanged_hash_catalog_incomplete',
       });
       return NextResponse.json({
         success: true,
-        message: 'Profile already generated. Open a tool to generate its reading.',
+        message: 'Natal charts are saved. Remaining tool reports will generate next.',
         alreadyGenerated: true,
-        allReportsReady: true,
+        allReportsReady: false,
         readyToolsCount: readiness.readyToolsCount,
-        pendingToolSlugs: [],
-        skipReason: 'unchanged_hash_committed',
-        decision: 'skipped',
-        decisionReason: 'unchanged_hash_committed',
-        generationState: 'completed',
+        pendingToolSlugs: readiness.pendingToolSlugs,
+        totalTools: ALL_TOOL_SLUGS.length,
+        decision: 'fill_catalog',
+        decisionReason: 'unchanged_hash_catalog_incomplete',
+        generationState: 'in_progress',
+        phase: 'catalog',
         auditId,
       });
     }
@@ -389,12 +415,12 @@ export async function POST(request: NextRequest) {
     const lockWriteOk = await setDocument('generationLocks', uid, {
       status: 'running',
       phase: 'natal',
-      totalTools: NATAL_CHART_SLUGS.length,
+      totalTools: ALL_TOOL_SLUGS.length,
       completedTools: 0,
       startedAt: now,
       updatedAt: now,
       currentToolSlug: 'vedic',
-      pipelineMode: 'on_demand',
+      pipelineMode: 'catalog',
     });
     if (!userWriteOk || !lockWriteOk) {
       throw new Error('Failed to persist generation state. Check Firebase Admin availability.');
@@ -410,62 +436,122 @@ export async function POST(request: NextRequest) {
 
     let natalReady: string[] = [];
     let natalFailed: string[] = [];
-    try {
-      const natal = await generateAndPersistToolReports({
-        uid,
-        profile: profileWithUid as unknown as UserProfile,
-        profileHash: newHash,
-        toolSlugs: NATAL_CHART_SLUGS,
-        skipVedicComprehensive: true,
-      });
-      natalReady = natal.readySlugs;
-      natalFailed = natal.failedSlugs;
-    } catch (natalErr) {
-      devLog.warn('[generate-mystical] Natal chart persist failed (profile still committed)', natalErr, 'generate-mystical');
-      natalFailed = [...NATAL_CHART_SLUGS];
+    let natalReadiness: ReturnType<typeof summarizeToolReadiness> | null = null;
+    for (let natalAttempt = 0; natalAttempt < 2; natalAttempt += 1) {
+      try {
+        const natal = await generateAndPersistToolReports({
+          uid,
+          profile: profileWithUid as unknown as UserProfile,
+          profileHash: newHash,
+          toolSlugs: NATAL_CHART_SLUGS,
+          skipVedicComprehensive: true,
+        });
+        natalReady = natal.readySlugs;
+        natalFailed = natal.failedSlugs;
+        natalReadiness = natal.readiness ?? null;
+        if (natalFailed.length === 0 && natalReady.length >= NATAL_CHART_SLUGS.length) {
+          break;
+        }
+      } catch (natalErr) {
+        devLog.warn('[generate-mystical] Natal chart persist failed', natalErr, 'generate-mystical');
+        natalFailed = [...NATAL_CHART_SLUGS];
+        natalReady = [];
+      }
+    }
+
+    const natalOk =
+      natalFailed.length === 0 && natalReady.length >= NATAL_CHART_SLUGS.length;
+    if (!natalOk) {
+      const failedAt = Date.now();
       await setDocument('users', uid, {
-        mysticalProfileGenerated: true,
-        mysticalProfileGeneratedAt: Date.now(),
-        profileDataHash: newHash,
-        profileStatus: 'completed',
-        allReportsReady: true,
-        pendingToolSlugs: [],
-        updatedAt: Date.now(),
+        mysticalProfileGenerated: false,
+        profileStatus: 'failed',
+        allReportsReady: false,
+        pendingToolSlugs: [...ALL_TOOL_SLUGS],
+        updatedAt: failedAt,
       });
       await setDocument('generationLocks', uid, {
         lockedAt: null,
-        status: 'completed',
-        phase: 'completed',
-        allReportsReady: true,
-        pendingToolSlugs: [],
-        updatedAt: Date.now(),
+        status: 'failed',
+        phase: 'failed',
+        allReportsReady: false,
+        pendingToolSlugs: [...ALL_TOOL_SLUGS],
+        failedAt,
+        updatedAt: failedAt,
       });
+      auditGeneration('post_natal_failed', {
+        uid,
+        natalReady,
+        natalFailed,
+        baseUrlSource,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Natal charts could not be generated. Please try again.',
+          natalReady,
+          natalFailed,
+          allReportsReady: false,
+          pendingToolSlugs: [...ALL_TOOL_SLUGS],
+          totalTools: ALL_TOOL_SLUGS.length,
+          generationState: 'failed',
+        },
+        { status: 500 },
+      );
     }
+
+    const storedAfterNatal =
+      ((await getDocument('comprehensiveMysticalProfiles', uid)) || {}) as Record<string, unknown>;
+    const readiness =
+      natalReadiness ?? summarizeToolReadiness(storedAfterNatal, ALL_TOOL_SLUGS);
+    await setDocument('users', uid, {
+      mysticalProfileGenerated: true,
+      mysticalProfileGeneratedAt: Date.now(),
+      profileDataHash: newHash,
+      profileStatus: readiness.allReportsReady ? 'completed' : 'running',
+      allReportsReady: readiness.allReportsReady,
+      pendingToolSlugs: readiness.pendingToolSlugs,
+      updatedAt: Date.now(),
+    });
+    await setDocument('generationLocks', uid, {
+      status: readiness.allReportsReady ? 'completed' : 'running',
+      phase: readiness.allReportsReady ? 'completed' : 'catalog',
+      pipelineMode: 'catalog',
+      totalTools: ALL_TOOL_SLUGS.length,
+      completedTools: readiness.readyToolsCount,
+      allReportsReady: readiness.allReportsReady,
+      pendingToolSlugs: readiness.pendingToolSlugs,
+      updatedAt: Date.now(),
+      ...(readiness.allReportsReady ? { lockedAt: null, completedAt: Date.now() } : {}),
+    });
 
     auditGeneration('post_committed', {
       uid,
       natalReady,
       natalFailed,
+      pendingCount: readiness.pendingToolSlugs.length,
       baseUrlSource,
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Profile saved. Natal charts are ready — open any tool to generate its reading.',
-      generationState: 'completed',
+      message: readiness.allReportsReady
+        ? 'Profile saved. All tool reports are ready.'
+        : 'Profile saved. Natal charts are ready — generating remaining reports.',
+      generationState: readiness.allReportsReady ? 'completed' : 'in_progress',
       generationMode,
       decision: 'rerun',
       decisionReason: 'profile_hash_changed',
       auditId: decisionAuditId,
-      phase: 'completed',
-      completedTools: natalReady.length,
-      totalTools: NATAL_CHART_SLUGS.length,
-      readyToolsCount: natalReady.length,
-      pendingToolSlugs: [],
-      allReportsReady: true,
+      phase: readiness.allReportsReady ? 'completed' : 'catalog',
+      completedTools: readiness.readyToolsCount,
+      totalTools: ALL_TOOL_SLUGS.length,
+      readyToolsCount: readiness.readyToolsCount,
+      pendingToolSlugs: readiness.pendingToolSlugs,
+      allReportsReady: readiness.allReportsReady,
       natalReady,
       natalFailed,
-      toolStatus: buildToolStatus({}, now),
+      toolStatus: buildToolStatus(storedAfterNatal, now),
     });
   } catch (err) {
     // Release generation lock on failure
@@ -533,36 +619,41 @@ export async function GET(request: NextRequest) {
       generationJobStatus === 'running' &&
       (lastHeartbeatAt == null || Date.now() - lastHeartbeatAt > HEARTBEAT_STALE_MS);
     const inProgress = lockRuntime.isRunning && !lockRuntime.isStale && !runningHeartbeatStale;
-    const catalogCommitted = generated && !inProgress;
-    const allReportsReady = catalogCommitted;
-    const pendingToolSlugs: string[] = [];
-    const partialReady = false;
-    const completed = catalogCommitted;
+    const allReportsReady = readiness.allReportsReady;
+    const pendingToolSlugs = readiness.pendingToolSlugs;
+    const partialReady = readiness.readyToolsCount > 0 && !allReportsReady;
+    const completed = allReportsReady;
     const generationState = inProgress
       ? 'running'
-      : catalogCommitted
+      : allReportsReady
         ? 'completed'
-        : 'not_started';
+        : generated
+          ? 'running'
+          : 'not_started';
 
-    if (generated && (!Boolean(user?.allReportsReady) || (Array.isArray(user?.pendingToolSlugs) && (user.pendingToolSlugs as unknown[]).length > 0))) {
+    const userReadyMismatch =
+      Boolean(user?.allReportsReady) !== allReportsReady ||
+      (Array.isArray(user?.pendingToolSlugs) &&
+        (user.pendingToolSlugs as unknown[]).join(',') !== pendingToolSlugs.join(','));
+    if (generated && userReadyMismatch) {
       await setDocument('users', uid, {
-        allReportsReady: true,
-        pendingToolSlugs: [],
-        profileStatus: inProgress ? 'running' : 'completed',
+        allReportsReady,
+        pendingToolSlugs,
+        profileStatus: inProgress || !allReportsReady ? 'running' : 'completed',
         updatedAt: Date.now(),
       });
     }
 
     if (lockRuntime.isRunning && lockRuntime.isStale) {
       await setDocument('generationLocks', uid, {
-        status: 'completed',
+        status: allReportsReady ? 'completed' : 'failed',
         phase: 'stale_timeout',
         staleRecovered: true,
         staleRecoveredAt: Date.now(),
         completedTools: readiness.readyToolsCount,
         readyToolsCount: readiness.readyToolsCount,
-        pendingToolSlugs: [],
-        allReportsReady: true,
+        pendingToolSlugs,
+        allReportsReady,
         updatedAt: Date.now(),
       });
     }

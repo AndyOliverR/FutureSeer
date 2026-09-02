@@ -292,13 +292,14 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).not.toBe(true);
-      expect(data.generationState).toBe('completed');
+      expect(data.generationState).toBe('in_progress');
       expect(data.decision).toBe('rerun');
       expect(data.decisionReason).toBe('profile_hash_changed');
-      expect(data.phase).toBe('completed');
-      expect(data.allReportsReady).toBe(true);
+      expect(data.phase).toBe('catalog');
+      expect(data.allReportsReady).toBe(false);
       expect(Array.isArray(data.pendingToolSlugs)).toBe(true);
-      expect(data.pendingToolSlugs).toEqual([]);
+      expect(data.pendingToolSlugs.length).toBeGreaterThan(0);
+      expect(data.totalTools).toBe(ALL_TOOL_SLUGS.length);
       expect(typeof data.message).toBe('string');
       expect(mockGenerateAndPersistToolReports).toHaveBeenCalled();
       expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
@@ -308,7 +309,36 @@ describe('Profile generate-mystical API', () => {
         expect.objectContaining({
           status: 'running',
           phase: 'natal',
-          pipelineMode: 'on_demand',
+          pipelineMode: 'catalog',
+        }),
+      );
+    });
+
+    it('does not mark the profile generated when natal charts fail', async () => {
+      const profile = { ...baseProfile };
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve(profile);
+        if (collection === 'generationLocks') return Promise.resolve(null);
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
+        return Promise.resolve(undefined);
+      });
+      mockGenerateAndPersistToolReports.mockResolvedValue({
+        readySlugs: [],
+        failedSlugs: ['vedic', 'western'],
+        toolReports: {},
+      });
+      const res = await callGenerate();
+      const data = await res.json();
+      expect(res.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.allReportsReady).toBe(false);
+      expect(mockSetDocument).toHaveBeenCalledWith(
+        'users',
+        uid,
+        expect.objectContaining({
+          mysticalProfileGenerated: false,
+          allReportsReady: false,
+          profileStatus: 'failed',
         }),
       );
     });
@@ -340,7 +370,7 @@ describe('Profile generate-mystical API', () => {
       expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
     });
 
-    it('skips catalog backfill when hash matches even if some tools are missing', async () => {
+    it('returns fill_catalog when hash matches but some tools are missing', async () => {
       const profile = { ...baseProfile };
       const hash = calculateProfileDataHash(profile);
       mockGetDocument.mockImplementation((collection: string) => {
@@ -364,16 +394,11 @@ describe('Profile generate-mystical API', () => {
       const data = await res.json();
       expect(res.status).toBe(200);
       expect(data.alreadyGenerated).toBe(true);
-      expect(data.decision).toBe('skipped');
-      expect(data.decisionReason).toBe('unchanged_hash_committed');
+      expect(data.decision).toBe('fill_catalog');
+      expect(data.decisionReason).toBe('unchanged_hash_catalog_incomplete');
+      expect(data.allReportsReady).toBe(false);
+      expect(data.pendingToolSlugs.length).toBeGreaterThan(0);
       expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
-      expect(mockSetDocument).not.toHaveBeenCalledWith(
-        'generationJobs',
-        uid,
-        expect.objectContaining({
-          status: 'queued',
-        }),
-      );
     });
   });
 
@@ -495,7 +520,7 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(200);
       expect(data.inProgress).toBe(true);
       expect(data.generationState).toBe('running');
-      expect(data.partialReady).toBe(false);
+      expect(data.partialReady).toBe(true);
       expect(data.completed).toBe(false);
     });
 
@@ -519,7 +544,7 @@ describe('Profile generate-mystical API', () => {
       expect(data.allReportsReady).toBe(true);
     });
 
-    it('returns completed when profile is committed even if the catalog is incomplete', async () => {
+    it('returns running when profile is committed even if the catalog is incomplete', async () => {
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
         if (collection === 'generationLocks') return Promise.resolve({ status: 'failed', phase: 'failed', updatedAt: Date.now() });
@@ -532,10 +557,12 @@ describe('Profile generate-mystical API', () => {
 
       expect(res.status).toBe(200);
       expect(data.inProgress).toBe(false);
-      expect(data.partialReady).toBe(false);
-      expect(data.completed).toBe(true);
-      expect(data.generationState).toBe('completed');
+      expect(data.partialReady).toBe(true);
+      expect(data.completed).toBe(false);
+      expect(data.allReportsReady).toBe(false);
+      expect(data.generationState).toBe('running');
       expect(data.readyToolsCount).toBeGreaterThan(0);
+      expect(data.pendingToolSlugs.length).toBeGreaterThan(0);
     });
 
     it('does not mark baseline input-dependent tools as pending when baseline payload exists', async () => {
@@ -600,8 +627,9 @@ describe('Profile generate-mystical API', () => {
 
       expect(res.status).toBe(200);
       expect(data.inProgress).toBe(false);
-      expect(data.partialReady).toBe(false);
-      expect(data.generationState).toBe('completed');
+      expect(data.partialReady).toBe(true);
+      expect(data.generationState).toBe('running');
+      expect(data.allReportsReady).toBe(false);
       expect(data.lockStaleRecovered).toBe(true);
       expect(mockSetDocument).toHaveBeenCalledWith(
         'generationLocks',
@@ -765,7 +793,8 @@ describe('Profile generate-mystical API', () => {
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.generationState).toBe('completed');
+      expect(data.generationState).toBe('in_progress');
+      expect(data.allReportsReady).toBe(false);
     });
 
     it('preserves zero-value coordinates in overrides (0 is valid)', async () => {

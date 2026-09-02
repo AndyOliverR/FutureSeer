@@ -45,7 +45,13 @@ import {
   GENERATION_ETA_PRE_GENERATE,
   GENERATION_ETA_PREPARING,
   GENERATION_SUCCESS_ALERT,
+  generationCatalogProgress,
 } from "@/lib/generationEtaCopy"
+import { ALL_TOOL_SLUGS } from "@/lib/toolReportReadiness"
+import {
+  fillRemainingCatalogReports,
+  waitForGenerationLockClear,
+} from "@/lib/fillCatalogReportsClient"
 
 type BirthTimeAmPm = "AM" | "PM"
 
@@ -366,6 +372,7 @@ export default function ProfilePage() {
   const [acceptedFreeTrialTerms, setAcceptedFreeTrialTerms] = useState(false)
   const [generationStatus, setGenerationStatus] = useState<string>("")
   const generationAbortRef = useRef<AbortController | null>(null)
+  const catalogResumeStartedRef = useRef(false)
   const autoEditBootstrappedRef = useRef(false)
   const isMountedRef = useRef(true)
   const draftRestoreAttemptedRef = useRef(false)
@@ -394,6 +401,7 @@ export default function ProfilePage() {
   }, [])
 
   useEffect(() => {
+    catalogResumeStartedRef.current = false
     draftRestoreAttemptedRef.current = false
     canPersistDraftRef.current = false
   }, [user?.uid])
@@ -847,22 +855,17 @@ export default function ProfilePage() {
         signal: abort.signal,
       })
       const data = await res.json().catch(() => ({}))
-      if (res.status === 409) {
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
-          sessionStorage.removeItem("futureSeer:generationError")
-        }
-        setError(null)
-        if (mode === "full") {
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem(ONBOARDING_FULL_REPORT_BYPASS_KEY, "1")
-            window.dispatchEvent(new CustomEvent("futureSeer:onboardingBypassChanged"))
-          }
-          router.push("/tools")
-        }
-        return
-      }
-      if (!res.ok) {
+      if (res.status === 409 || res.status === 202) {
+        setGenerationStatus(GENERATION_ETA_IN_PROGRESS)
+        await waitForGenerationLockClear({
+          getToken: async () => {
+            const token = await user?.getIdToken()
+            if (!token) throw new Error("Please sign in again to continue.")
+            return token
+          },
+          signal: abort.signal,
+        })
+      } else if (!res.ok) {
         if (res.status === 403) setCanGenerateMysticalProfile(false)
         const payload = data as { error?: string; blockReason?: string; missingFields?: string[] }
         if (payload.blockReason === "missing_fields" && Array.isArray(payload.missingFields) && payload.missingFields.length > 0) {
@@ -877,37 +880,56 @@ export default function ProfilePage() {
         throw new Error(payload.error || "Profile generation failed. Please try again.")
       }
       setGenerationStatus(GENERATION_ETA_IN_PROGRESS)
+      await refreshProfile()
+
+      let allReportsReady = Boolean((data as { allReportsReady?: boolean }).allReportsReady)
+      let readyToolsCount = Number((data as { readyToolsCount?: number }).readyToolsCount ?? 0)
+      let totalTools = Number((data as { totalTools?: number }).totalTools ?? ALL_TOOL_SLUGS.length)
+      if (res.status === 409 || res.status === 202) {
+        allReportsReady = false
+      }
+      if (!allReportsReady) {
+        const fill = await fillRemainingCatalogReports({
+          getToken: async () => {
+            const token = await user?.getIdToken()
+            if (!token) throw new Error("Please sign in again to continue.")
+            return token
+          },
+          signal: abort.signal,
+          onProgress: (progress) => {
+            readyToolsCount = progress.readyToolsCount
+            totalTools = progress.totalTools
+            allReportsReady = progress.allReportsReady
+            if (isMountedRef.current) {
+              setGenerationStatus(generationCatalogProgress(progress.readyToolsCount, progress.totalTools))
+            }
+          },
+        })
+        readyToolsCount = fill.readyToolsCount
+        totalTools = fill.totalTools
+        allReportsReady = fill.allReportsReady || fill.catalogFillComplete
+      }
+
+      await refreshProfile()
+      await refreshComprehensiveProfile()
       if (typeof window !== "undefined" && mode === "full") {
         sessionStorage.setItem(ONBOARDING_FULL_REPORT_BYPASS_KEY, "1")
         window.dispatchEvent(new CustomEvent("futureSeer:onboardingBypassChanged"))
       }
-      router.push("/tools")
-      if ((data as { inProgress?: boolean }).inProgress) {
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
-        }
-        return
-      }
       if (data.success && data.comprehensiveProfile) {
         applyGeneratedProfile(data.comprehensiveProfile)
-      } else if (data.success && data.alreadyGenerated) {
-        await refreshComprehensiveProfile()
       }
-      const generationState = (data as { generationState?: string }).generationState
-      const allReportsReady = Boolean((data as { allReportsReady?: boolean }).allReportsReady)
-      // Unified queue: keep generating flag until every tool report is ready (no Stage A/B).
-      const isStillGenerating = !allReportsReady && generationState !== "completed"
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("futureSeer:generationStatus", isStillGenerating ? "in_progress" : "completed")
+        sessionStorage.setItem("futureSeer:generationStatus", "completed")
       }
       window.dispatchEvent(
         new CustomEvent("futureSeer:profileGenerationCompleted", {
           detail: {
             success: true,
-            pending: isStillGenerating,
-            phase: (data as { phase?: string }).phase,
-            completedTools: (data as { completedTools?: number }).completedTools,
-            totalTools: (data as { totalTools?: number }).totalTools,
+            pending: false,
+            phase: "completed",
+            completedTools: readyToolsCount,
+            totalTools,
             comprehensiveProfile: data.comprehensiveProfile,
           },
         }),
@@ -919,7 +941,7 @@ export default function ProfilePage() {
       if (isFirstHookUser) {
         analytics.trackFirstTimeOnboardingCompleted({
           surface,
-          generation_state: generationState ?? "completed",
+          generation_state: "completed",
         })
       }
       if (user?.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
@@ -935,6 +957,7 @@ export default function ProfilePage() {
       } catch {
         /* ignore */
       }
+      router.push("/tools")
     } catch (e: unknown) {
       if (e instanceof Error && e.name === "AbortError") return
       analytics.trackProfileGenerationCompleted(false, {
@@ -962,6 +985,73 @@ export default function ProfilePage() {
       generationAbortRef.current = null
     }
   }
+
+  useEffect(() => {
+    if (authLoading || !user) return
+    if (isEditing || isGeneratingProfile) return
+    if (userProfile?.mysticalProfileGenerated !== true) return
+    if (userProfile.allReportsReady === true) return
+    if (catalogResumeStartedRef.current) return
+    catalogResumeStartedRef.current = true
+    const abort = new AbortController()
+    generationAbortRef.current = abort
+    setIsGeneratingProfile(true)
+    setError(null)
+    setGenerationStatus(GENERATION_ETA_IN_PROGRESS)
+    void (async () => {
+      try {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
+          sessionStorage.removeItem("futureSeer:generationError")
+        }
+        const fill = await fillRemainingCatalogReports({
+          getToken: async () => {
+            const token = await user.getIdToken()
+            if (!token) throw new Error("Please sign in again to continue.")
+            return token
+          },
+          signal: abort.signal,
+          onProgress: (progress) => {
+            if (isMountedRef.current) {
+              setGenerationStatus(generationCatalogProgress(progress.readyToolsCount, progress.totalTools))
+            }
+          },
+        })
+        await refreshProfile()
+        await refreshComprehensiveProfile()
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("futureSeer:generationStatus", "completed")
+        }
+        if (isMountedRef.current) {
+          setSuccess(GENERATION_SUCCESS_ALERT)
+        }
+        if (fill.allReportsReady || fill.catalogFillComplete) {
+          router.push("/tools")
+        }
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === "AbortError") return
+        catalogResumeStartedRef.current = false
+        const msg = e instanceof Error ? e.message : "Generation failed. Please check your connection and try again."
+        if (isMountedRef.current) setError(msg)
+      } finally {
+        if (isMountedRef.current) {
+          setIsGeneratingProfile(false)
+          setGenerationStatus("")
+        }
+        generationAbortRef.current = null
+      }
+    })()
+  }, [
+    authLoading,
+    user,
+    isEditing,
+    isGeneratingProfile,
+    userProfile?.mysticalProfileGenerated,
+    userProfile?.allReportsReady,
+    refreshProfile,
+    refreshComprehensiveProfile,
+    router,
+  ])
 
   const handleSave = async () => {
     if (!user?.uid) return

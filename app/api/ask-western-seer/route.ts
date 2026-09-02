@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
+import { enforceToolSeerGate, storedToolReportFromSeerBody } from '@/lib/enforceToolSeerGate';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -128,7 +128,10 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as WesternSeerRequest;
     const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_western_seer');
     if (__toolSeerGate) return __toolSeerGate;
-    const { userId, question, userProfile, westernChartData, astroNumerologyData, sessionId } = body;
+    const { userId, question, userProfile, astroNumerologyData, sessionId } = body;
+    const westernChartData =
+      body.westernChartData ??
+      (storedToolReportFromSeerBody(body, 'western') as typeof body.westernChartData | undefined);
 
     if (!userId || !question || !userProfile) {
       return jsonWithRobots({

@@ -5,6 +5,7 @@
 import 'server-only';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getDocument } from '@/lib/firebase-admin';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 import { rateLimiters } from '@/lib/rateLimit';
 import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
@@ -57,6 +58,34 @@ export function extractToolSeerQuestion(body: unknown): string {
       ? (body as Record<string, unknown>)
       : {};
   return typeof rec.question === 'string' ? rec.question.trim() : '';
+}
+
+/** Stored catalog first; request body overrides so a live tool page still wins. */
+export function mergeStoredCatalogIntoSeerBody(
+  body: unknown,
+  stored: Record<string, unknown> | null | undefined,
+): void {
+  if (!body || typeof body !== 'object' || Array.isArray(body) || !stored) return;
+  const rec = body as Record<string, unknown>;
+  const existing =
+    rec.comprehensiveProfile &&
+    typeof rec.comprehensiveProfile === 'object' &&
+    !Array.isArray(rec.comprehensiveProfile)
+      ? (rec.comprehensiveProfile as Record<string, unknown>)
+      : {};
+  rec.comprehensiveProfile = { ...stored, ...existing };
+}
+
+export function storedToolReportFromSeerBody(
+  body: unknown,
+  slug: string,
+): Record<string, unknown> | undefined {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return undefined;
+  const cp = (body as Record<string, unknown>).comprehensiveProfile;
+  if (!cp || typeof cp !== 'object' || Array.isArray(cp)) return undefined;
+  const val = (cp as Record<string, unknown>)[slug];
+  if (!val || typeof val !== 'object' || Array.isArray(val)) return undefined;
+  return val as Record<string, unknown>;
 }
 
 export async function enforceToolSeerGate(
@@ -124,6 +153,14 @@ export async function enforceToolSeerGate(
       return billingInsufficientCreditsResponse(billing);
     }
     return billingInsufficientCreditsStreamResponse(billing);
+  }
+
+  try {
+    const stored = ((await getDocument('comprehensiveMysticalProfiles', rateUid)) ||
+      null) as Record<string, unknown> | null;
+    mergeStoredCatalogIntoSeerBody(body, stored);
+  } catch {
+    /* catalog merge is best-effort; routes still accept client-sent reports */
   }
 
   return null;

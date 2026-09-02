@@ -29,7 +29,7 @@ export interface ToolReportGuardProps {
   toolLabel?: string
   /** Pipeline / Firestore slug. Inferred from /tools/[path] when omitted. */
   toolSlug?: string
-  /** When false, shows a prompt to generate profile instead of rendering children. Defaults to true for backward compatibility. */
+  /** When false, shows generating/empty instead of the tool shell. Omit to use the stored report. */
   hasReport?: boolean
   /** Custom CTA label when error is shown (default: "Open profile") */
   errorCtaLabel?: string
@@ -59,7 +59,7 @@ export function ToolReportGuard({
   error,
   toolLabel,
   toolSlug: toolSlugProp,
-  hasReport = true,
+  hasReport: hasReportProp,
   errorCtaLabel = 'Open profile',
   errorCtaHref = '/profile',
   viral = null,
@@ -72,7 +72,8 @@ export function ToolReportGuard({
     () => toolSlugProp ?? viral?.toolSlug ?? inferToolSlugFromPath(pathname ?? ''),
     [toolSlugProp, viral?.toolSlug, pathname],
   )
-  const { ensuring, ensureError, retryEnsure } = useEnsureToolReport(inferredSlug)
+  const { ensuring, ensureError, retryEnsure, hasReport: hookHasReport } = useEnsureToolReport(inferredSlug)
+  const hasReport = hasReportProp ?? hookHasReport
   const profileGenerated = userProfile?.mysticalProfileGenerated === true
   const reportState: ReportReadinessState = report ? classifyToolReportState(report) : 'pending'
   const shouldEnforceReportState = report !== undefined

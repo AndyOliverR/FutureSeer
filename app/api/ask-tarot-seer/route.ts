@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
+import { enforceToolSeerGate, storedToolReportFromSeerBody } from '@/lib/enforceToolSeerGate'
 
 import { appendAttribution } from '@/lib/attribution/attributionStamp'
 import { callTextStream } from '@/lib/aiStructuredOutput';
@@ -92,7 +92,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const profileSource = tarotProfileData || combinedSystemData?.tarotProfile
+    const profileSource =
+      tarotProfileData ||
+      combinedSystemData?.tarotProfile ||
+      storedToolReportFromSeerBody(body, 'tarot')
     const tarotState = buildTarotState(profileSource, currentReading)
     const chartSlice = getTarotSliceForQuestionType(questionType, tarotState)
 

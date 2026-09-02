@@ -73,7 +73,9 @@ function ToolsPageContent() {
   )
   const allReportsReady = Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady)
   const generationHasPendingTools =
-    Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && activePendingToolSlugs.length > 0
+    Boolean(userProfile?.mysticalProfileGenerated) &&
+    !allReportsReady &&
+    readiness.pendingToolSlugs.length > 0
   const generatingParam = searchParams.get("generating") === "1"
   const [sessionGeneratingInitial] = useState(() => {
     if (typeof window === "undefined") return false
@@ -322,7 +324,7 @@ function ToolsPageContent() {
               <p>{GENERATION_ETA_TOOLS_BANNER}</p>
               {readiness.readyToolsCount > 0 ? (
                 <p className="text-amber-200/80 text-xs">
-              {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open a tool when its card unlocks.
+              {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — stay on Generate until all are saved, or wait here.
                 </p>
               ) : (
                 <p className="text-amber-200/80 text-xs">Waiting for the first tools to unlock…</p>
@@ -443,7 +445,7 @@ function ToolsPageContent() {
             <p>{GENERATION_ETA_TOOLS_BANNER}</p>
             {readiness.readyToolsCount > 0 ? (
               <p className="text-amber-200/80 text-xs">
-                {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — open a tool when its card unlocks.
+                {readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready — stay on Generate until all are saved, or wait here.
               </p>
             ) : (
               <p className="text-amber-200/80 text-xs">Waiting for the first tools to unlock…</p>

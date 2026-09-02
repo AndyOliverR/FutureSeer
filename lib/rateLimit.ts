@@ -129,6 +129,13 @@ export const rateLimiters = {
     message: 'Too many user actions. Please try again in 5 minutes.',
   }),
 
+  /** POST /api/profile/generate-catalog-batch — many small calls during one Generate. */
+  catalogBatch: new RateLimiter({
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 100,
+    message: 'Report generation is busy. Wait a few seconds and it will continue.',
+  }),
+
   /**
    * POST /api/profile/generate-mystical — expensive; keyed by uid in route handler.
    * Tune with RATE_LIMIT_PROFILE_GEN_MAX_PER_HOUR or RATE_LIMIT_STRICT=1 (tighter cap).

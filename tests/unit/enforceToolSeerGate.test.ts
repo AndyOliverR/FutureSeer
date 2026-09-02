@@ -6,6 +6,8 @@ import { NextRequest } from 'next/server';
 import {
   enforceToolSeerGate,
   extractToolSeerQuestion,
+  mergeStoredCatalogIntoSeerBody,
+  storedToolReportFromSeerBody,
 } from '@/lib/enforceToolSeerGate';
 import { SEER_INPUT_BLOCKED_MESSAGE } from '@/lib/seerInputGuard';
 
@@ -14,6 +16,10 @@ jest.mock('@/lib/userApiAuth', () => ({
   resolveOwnedUserId: jest.fn((requested: string, authUid: string) =>
     requested === authUid ? requested : null,
   ),
+}));
+
+jest.mock('@/lib/firebase-admin', () => ({
+  getDocument: jest.fn(async () => ({ tarot: { profile: { birthCard: { name: 'The Fool' } } } })),
 }));
 
 jest.mock('@/lib/rateLimitFirestore', () => ({
@@ -88,5 +94,19 @@ describe('enforceToolSeerGate', () => {
       'ask_tarot_seer',
     );
     expect(res).toBeNull();
+  });
+
+  it('merges stored catalog under comprehensiveProfile without clobbering body reports', () => {
+    const body: Record<string, unknown> = {
+      comprehensiveProfile: { tarot: { fromClient: true } },
+    };
+    mergeStoredCatalogIntoSeerBody(body, {
+      tarot: { fromStore: true },
+      vedic: { planets: [{ name: 'Sun' }] },
+    });
+    const cp = body.comprehensiveProfile as Record<string, unknown>;
+    expect(cp.tarot).toEqual({ fromClient: true });
+    expect(cp.vedic).toEqual({ planets: [{ name: 'Sun' }] });
+    expect(storedToolReportFromSeerBody(body, 'vedic')).toEqual({ planets: [{ name: 'Sun' }] });
   });
 });
