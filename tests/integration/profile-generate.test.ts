@@ -400,6 +400,42 @@ describe('Profile generate-mystical API', () => {
       expect(data.pendingToolSlugs.length).toBeGreaterThan(0);
       expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
     });
+
+    it('returns fill_catalog when hash matches but stored tools belong to a previous hash', async () => {
+      const profile = { ...baseProfile };
+      const hash = calculateProfileDataHash(profile);
+      const staleCatalog = allToolsDisplayableProfile();
+      for (const slug of ALL_TOOL_SLUGS) {
+        staleCatalog[slug] = {
+          ...(staleCatalog[slug] as Record<string, unknown>),
+          generationIdempotencyKey: 'previous-hash',
+        };
+      }
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') {
+          return Promise.resolve({
+            ...profile,
+            mysticalProfileGenerated: true,
+            profileDataHash: hash,
+          });
+        }
+        if (collection === 'generationLocks') return Promise.resolve(null);
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve(staleCatalog);
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerate();
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.alreadyGenerated).toBe(true);
+      expect(data.decision).toBe('fill_catalog');
+      expect(data.decisionReason).toBe('unchanged_hash_catalog_incomplete');
+      expect(data.allReportsReady).toBe(false);
+      expect(data.pendingToolSlugs).toContain('tarot');
+      expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
+    });
   });
 
   describe('Auth and validation', () => {
@@ -738,6 +774,59 @@ describe('Profile generate-mystical API', () => {
       expect(data.lastHeartbeatAt).toBe(staleHeartbeat);
       expect(data.currentToolElapsedMs).toBe(92000);
       expect(mockTryResumeMysticalStageB).not.toHaveBeenCalled();
+    });
+
+    it('does not mark the catalog complete when stored tools belong to a previous hash', async () => {
+      const currentHash = calculateProfileDataHash(baseProfile);
+      const staleCatalog = allToolsDisplayableProfile();
+      staleCatalog.vedic = {
+        ...(staleCatalog.vedic as Record<string, unknown>),
+        generationIdempotencyKey: currentHash,
+      };
+      staleCatalog.western = {
+        ...(staleCatalog.western as Record<string, unknown>),
+        generationIdempotencyKey: currentHash,
+      };
+      for (const slug of ALL_TOOL_SLUGS) {
+        if (slug === 'vedic' || slug === 'western') continue;
+        staleCatalog[slug] = {
+          ...(staleCatalog[slug] as Record<string, unknown>),
+          generationIdempotencyKey: 'previous-hash',
+        };
+      }
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') {
+          return Promise.resolve({
+            ...baseProfile,
+            mysticalProfileGenerated: true,
+            profileDataHash: currentHash,
+            allReportsReady: true,
+            pendingToolSlugs: [],
+          });
+        }
+        if (collection === 'generationLocks') {
+          return Promise.resolve({ status: 'completed', phase: 'completed', updatedAt: Date.now() });
+        }
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve(staleCatalog);
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.allReportsReady).toBe(false);
+      expect(data.completed).toBe(false);
+      expect(data.pendingToolSlugs).toContain('tarot');
+      expect(data.pendingToolSlugs).not.toContain('vedic');
+      expect(mockSetDocument).toHaveBeenCalledWith(
+        'users',
+        uid,
+        expect.objectContaining({
+          allReportsReady: false,
+        }),
+      );
     });
 
     it('reconciles user allReportsReady false when profile shows all tools ready', async () => {

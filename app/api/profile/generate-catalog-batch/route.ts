@@ -72,7 +72,8 @@ export async function POST(request: NextRequest) {
       string,
       unknown
     >;
-    const before = summarizeToolReadiness(stored, ALL_TOOL_SLUGS);
+    const profileHash = calculateProfileDataHash(userProfile);
+    const before = summarizeToolReadiness(stored, ALL_TOOL_SLUGS, profileHash);
     const toolStatus = (stored.toolStatus as PersistedToolStatusMap | undefined) ?? {};
     if (before.allReportsReady) {
       return NextResponse.json({
@@ -103,7 +104,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const profileHash = calculateProfileDataHash(userProfile);
     const result = await generateAndPersistToolReports({
       uid,
       profile: { ...userProfile, uid },
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       skipVedicComprehensive: false,
     });
 
-    const readiness = result.readiness ?? summarizeToolReadiness(stored, ALL_TOOL_SLUGS);
+    const readiness = result.readiness ?? summarizeToolReadiness(stored, ALL_TOOL_SLUGS, profileHash);
     const next = selectRunnableCatalogSlugs(
       readiness.pendingToolSlugs,
       result.toolStatus ?? toolStatus,

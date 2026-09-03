@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
     if (hashMatches) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
       const storedProfile = (stored || {}) as Record<string, unknown>;
-      const readiness = summarizeToolReadiness(storedProfile, ALL_TOOL_SLUGS);
+      const readiness = summarizeToolReadiness(storedProfile, ALL_TOOL_SLUGS, effectiveHash);
       if (readiness.allReportsReady) {
         const auditId = await writeRegenDecisionTelemetry(uid, {
           event: 'mystical_regen_skipped_unchanged',
@@ -503,7 +503,7 @@ export async function POST(request: NextRequest) {
     const storedAfterNatal =
       ((await getDocument('comprehensiveMysticalProfiles', uid)) || {}) as Record<string, unknown>;
     const readiness =
-      natalReadiness ?? summarizeToolReadiness(storedAfterNatal, ALL_TOOL_SLUGS);
+      natalReadiness ?? summarizeToolReadiness(storedAfterNatal, ALL_TOOL_SLUGS, newHash);
     await setDocument('users', uid, {
       mysticalProfileGenerated: true,
       mysticalProfileGeneratedAt: Date.now(),
@@ -613,7 +613,8 @@ export async function GET(request: NextRequest) {
     const generationJobStatus = typeof generationJob?.status === 'string' ? generationJob.status : null;
     const lockRuntime = getMysticalLockRuntimeStatus(lock, mysticalLockStaleMs());
     const generated = Boolean(user?.mysticalProfileGenerated) || Boolean(profileDoc);
-    const readiness = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
+    const currentHash = typeof user?.profileDataHash === 'string' ? user.profileDataHash : undefined;
+    const readiness = summarizeToolReadiness(profile, ALL_TOOL_SLUGS, currentHash);
     const lastHeartbeatAt = typeof generationJob?.lastHeartbeatAt === 'number' ? generationJob.lastHeartbeatAt : null;
     const runningHeartbeatStale =
       generationJobStatus === 'running' &&

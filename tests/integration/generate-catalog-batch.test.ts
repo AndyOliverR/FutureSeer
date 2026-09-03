@@ -145,6 +145,42 @@ describe('generate-catalog-batch API', () => {
     expect(data.allReportsReady).toBe(false);
   });
 
+  it('generates hash-mismatched tools instead of treating the old catalog as complete', async () => {
+    mockGetDocument.mockImplementation((collection: string) => {
+      if (collection === 'users') return Promise.resolve({ uid, mysticalProfileGenerated: true });
+      if (collection === 'comprehensiveMysticalProfiles') {
+        const stored = allToolsDisplayableProfile();
+        stored.vedic = {
+          ...displayableReportForSlug('vedic'),
+          generationIdempotencyKey: 'hash-1',
+        };
+        stored.western = {
+          ...displayableReportForSlug('western'),
+          generationIdempotencyKey: 'hash-1',
+        };
+        for (const slug of ALL_TOOL_SLUGS) {
+          if (slug === 'vedic' || slug === 'western') continue;
+          stored[slug] = {
+            ...displayableReportForSlug(slug),
+            generationIdempotencyKey: 'old-hash',
+          };
+        }
+        return Promise.resolve(stored);
+      }
+      return Promise.resolve({});
+    });
+    const res = await callBatch();
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(mockGenerateAndPersistToolReports).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toolSlugs: ['hellenistic', 'esotericAstrology'],
+      }),
+    );
+    expect(data.generatedSlugs).toEqual(['hellenistic', 'esotericAstrology']);
+    expect(data.allReportsReady).toBe(false);
+  });
+
   it('skips exhausted failed slugs and generates the next runnable tools', async () => {
     mockGetDocument.mockImplementation((collection: string) => {
       if (collection === 'users') return Promise.resolve({ uid, mysticalProfileGenerated: true });
