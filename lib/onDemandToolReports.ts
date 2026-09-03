@@ -89,7 +89,7 @@ export async function persistOnDemandToolReports(params: {
 
   profilePatch.toolStatus = toolStatus;
   const mergedProfile = { ...existingProfile, ...profilePatch };
-  const readiness = summarizeToolReadiness(mergedProfile, ALL_TOOL_SLUGS);
+  const readiness = summarizeToolReadiness(mergedProfile, ALL_TOOL_SLUGS, profileHash);
   await setDocument('comprehensiveMysticalProfiles', uid, profilePatch);
   await setDocument('users', uid, {
     mysticalProfileGenerated: true,

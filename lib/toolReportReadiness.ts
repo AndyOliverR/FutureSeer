@@ -168,9 +168,27 @@ export function getCoreToolSlugsCore10(): string[] {
   return [...CORE10_TOOL_SLUGS];
 }
 
+/**
+ * When a current profile hash is supplied, reports keyed to a *different*
+ * generationIdempotencyKey are treated as pending so a birth-data regen
+ * refills the catalog instead of keeping the previous natal's readings.
+ * Reports with no key stay ready (legacy rows) unless Generate clears them.
+ */
+export function reportMatchesCurrentProfileHash(
+  report: unknown,
+  currentProfileHash: string | undefined,
+): boolean {
+  if (!currentProfileHash) return true;
+  if (!report || typeof report !== 'object') return true;
+  const key = (report as Record<string, unknown>).generationIdempotencyKey;
+  if (typeof key !== 'string' || key.length === 0) return true;
+  return key === currentProfileHash;
+}
+
 export function summarizeToolReadiness(
   profile: Record<string, unknown> | null | undefined,
   toolSlugs: readonly string[] = ALL_TOOL_SLUGS,
+  currentProfileHash?: string,
 ): { readyToolsCount: number; pendingToolSlugs: string[]; allReportsReady: boolean } {
   if (!profile) {
     return {
@@ -184,7 +202,7 @@ export function summarizeToolReadiness(
   const pendingToolSlugs: string[] = [];
   for (const slug of toolSlugs) {
     const report = profile[slug] ?? toolReports?.[slug]?.data;
-    if (isReadyToolReport(report, slug)) {
+    if (isReadyToolReport(report, slug) && reportMatchesCurrentProfileHash(report, currentProfileHash)) {
       readyToolsCount += 1;
     } else {
       pendingToolSlugs.push(slug);

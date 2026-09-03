@@ -91,4 +91,32 @@ describe('Report readiness contract', () => {
     expect(summary.pendingToolSlugs).not.toContain('nameAnalysis');
     expect(summary.pendingToolSlugs).not.toContain('vastu');
   });
+
+  it('treats generationIdempotencyKey mismatches as pending when a current hash is given', () => {
+    const profile = {
+      vedic: { planets: [{ name: 'Sun' }], generationIdempotencyKey: 'hash-new' },
+      western: { planets: [{ name: 'Moon' }], generationIdempotencyKey: 'hash-old' },
+      tarot: { profile: { birthCard: { name: 'The Fool' } } },
+    } as Record<string, unknown>;
+    const summary = summarizeToolReadiness(profile, ALL_TOOL_SLUGS, 'hash-new');
+    expect(summary.pendingToolSlugs).not.toContain('vedic');
+    expect(summary.pendingToolSlugs).toContain('western');
+    expect(summary.pendingToolSlugs).not.toContain('tarot');
+    expect(summary.allReportsReady).toBe(false);
+  });
+
+  it('does not treat missing keys as stale when summarizing for a current hash', () => {
+    const slugs = ['dreamSymbols', 'ogham'] as const;
+    const keyed = {
+      dreamSymbols: { reading: 'ok', generationIdempotencyKey: 'hash-1' },
+      ogham: { reading: 'ok', generationIdempotencyKey: 'hash-1' },
+    };
+    const unkeyed = {
+      dreamSymbols: { reading: 'ok' },
+      ogham: { reading: 'ok' },
+    };
+    expect(summarizeToolReadiness(keyed, slugs, 'hash-1').allReportsReady).toBe(true);
+    expect(summarizeToolReadiness(unkeyed, slugs, 'hash-1').allReportsReady).toBe(true);
+    expect(summarizeToolReadiness(keyed, slugs, 'hash-2').allReportsReady).toBe(false);
+  });
 });
