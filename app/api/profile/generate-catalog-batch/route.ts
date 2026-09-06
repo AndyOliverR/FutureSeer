@@ -19,6 +19,7 @@ import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
 import { logServerError } from '@/lib/serverErrorLogging';
 import { devLog } from '@/lib/devLogger';
 import { generateAndPersistToolReports } from '@/lib/onDemandToolReports';
+import { isCommittedProfileHash } from '@/lib/profileHashCommit';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 
 export const dynamic = 'force-dynamic';
@@ -104,6 +105,16 @@ export async function POST(request: NextRequest) {
     }
 
     const profileHash = calculateProfileDataHash(userProfile);
+    if (!isCommittedProfileHash(userProfile.profileDataHash, profileHash)) {
+      return NextResponse.json(
+        {
+          error:
+            'Birth details changed. Click Generate to rebuild natal charts before filling remaining reports.',
+          code: 'profile_hash_changed',
+        },
+        { status: 409 },
+      );
+    }
     const result = await generateAndPersistToolReports({
       uid,
       profile: { ...userProfile, uid },
