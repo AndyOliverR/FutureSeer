@@ -17,6 +17,43 @@ describe('selectRunnableCatalogSlugs', () => {
     expect(exhausted).toEqual(['hellenistic']);
     expect(batch).toEqual(['tarot', 'numerology']);
   });
+
+  it('skips slugs that stayed placeholder after three attempts', () => {
+    const { batch, exhausted } = selectRunnableCatalogSlugs(
+      ['faceReading', 'palmistry', 'tarot'],
+      {
+        faceReading: { state: 'placeholder', attempts: 3 },
+        palmistry: { state: 'placeholder', attempts: 3 },
+      },
+      2,
+    );
+    expect(exhausted).toEqual(['faceReading', 'palmistry']);
+    expect(batch).toEqual(['tarot']);
+  });
+
+  it('keeps retrying placeholders until the attempt cap', () => {
+    const { batch, exhausted } = selectRunnableCatalogSlugs(
+      ['faceReading', 'tarot'],
+      {
+        faceReading: { state: 'placeholder', attempts: 2 },
+      },
+      2,
+    );
+    expect(exhausted).toEqual([]);
+    expect(batch).toEqual(['faceReading', 'tarot']);
+  });
+
+  it('returns an empty batch when every pending slug is an exhausted placeholder', () => {
+    const { batch, exhausted } = selectRunnableCatalogSlugs(
+      ['faceReading'],
+      {
+        faceReading: { state: 'placeholder', attempts: 3 },
+      },
+      2,
+    );
+    expect(exhausted).toEqual(['faceReading']);
+    expect(batch).toEqual([]);
+  });
 });
 
 describe('fillRemainingCatalogReports', () => {

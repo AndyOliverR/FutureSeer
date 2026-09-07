@@ -169,4 +169,24 @@ describe('generate-catalog-batch API', () => {
     );
     expect(data.generatedSlugs).toEqual(['esotericAstrology', 'kabbalisticAstrology']);
   });
+
+  it('completes catalog fill when only exhausted placeholders remain', async () => {
+    const profile = allToolsDisplayableProfile();
+    profile.faceReading = { placeholder: true, reason: 'Physiognomy is only stored when features can be read from the photo.' };
+    profile.toolStatus = {
+      faceReading: { state: 'placeholder', attempts: 3 },
+    };
+    mockGetDocument.mockImplementation((collection: string) => {
+      if (collection === 'users') return Promise.resolve({ uid, mysticalProfileGenerated: true });
+      if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve(profile);
+      return Promise.resolve({});
+    });
+    const res = await callBatch();
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(data.catalogFillComplete).toBe(true);
+    expect(data.allReportsReady).toBe(false);
+    expect(data.pendingToolSlugs).toEqual(['faceReading']);
+    expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
+  });
 });
