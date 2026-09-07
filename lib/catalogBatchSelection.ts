@@ -1,6 +1,8 @@
 /**
  * Pick the next catalog tools to generate, skipping slugs that already failed
- * CATALOG_SLUG_MAX_ATTEMPTS times so one LLM error cannot block the rest.
+ * or returned a terminal placeholder CATALOG_SLUG_MAX_ATTEMPTS times so one
+ * LLM error (or a tool that never becomes ready, e.g. faceReading) cannot
+ * block the rest of Generate.
  */
 
 export const CATALOG_SLUG_MAX_ATTEMPTS = 3
@@ -11,12 +13,16 @@ export type CatalogToolStatusLite = {
   attempts?: number
 }
 
+function isTerminalCatalogState(state: string | undefined): boolean {
+  return state === 'failed' || state === 'placeholder'
+}
+
 export function isCatalogSlugExhausted(
   status: CatalogToolStatusLite | undefined,
   maxAttempts = CATALOG_SLUG_MAX_ATTEMPTS,
 ): boolean {
   if (!status) return false
-  return status.state === 'failed' && (status.attempts ?? 0) >= maxAttempts
+  return isTerminalCatalogState(status.state) && (status.attempts ?? 0) >= maxAttempts
 }
 
 export function selectRunnableCatalogSlugs(
