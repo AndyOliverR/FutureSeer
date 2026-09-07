@@ -3,9 +3,17 @@ import { devLog } from '@/lib/devLogger';
 import { callTextAI } from '@/lib/aiStructuredOutput';
 import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 import { securityEvents } from '@/lib/securityMonitor';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+
+const MAX_QUESTION_CHARS = 4_000;
 
 async function handleOpenAIRequest(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'openai-compat');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Check if OpenAI is configured (either via Gateway or direct API)
     if (!process.env.OPENAI_API_KEY && !process.env.AI_GATEWAY_API_KEY) {
       devLog.error("OpenAI not configured - missing API key", undefined, 'route');
@@ -24,10 +32,20 @@ async function handleOpenAIRequest(request: NextRequest) {
       )
     }
 
-    const { question, astroData, symbolicData, userId } = await request.json()
+    const body = await request.json().catch(() => null);
+    const question = typeof body?.question === 'string' ? body.question.trim() : '';
+    const astroData = body?.astroData;
+    const symbolicData = body?.symbolicData;
+    const userId = auth.uid;
 
     if (!question) {
       return NextResponse.json({ error: "Question is required" }, { status: 400 })
+    }
+    if (question.length > MAX_QUESTION_CHARS) {
+      return NextResponse.json(
+        { error: `Question too long (max ${MAX_QUESTION_CHARS} characters)` },
+        { status: 400 },
+      );
     }
 
     // Log AI prediction request for security monitoring

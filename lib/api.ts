@@ -1,5 +1,6 @@
 import posthog from "posthog-js"
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 // Initialize PostHog only if API key is provided.
 // iOS App Store: if analytics qualifies as "tracking", request ATT before enabling IDFA-linked features; see docs/MOBILE_APP_STORE_COMPLIANCE.md
@@ -116,10 +117,10 @@ export async function generateSymbolicImage(prompt: string) {
   }
 }
 
-// OpenAI for AI predictions and summaries - Server-side only
+// OpenAI for AI predictions and summaries (requires signed-in Firebase user)
 export async function generateAIPrediction(question: string, astroData: any, symbolicData: any) {
   try {
-    const response = await fetch("/api/openai", {
+    const response = await fetchWithFirebaseAuthRequired("/api/openai", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
