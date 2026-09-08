@@ -23,6 +23,25 @@ export function isOnDemandToolSlug(slug: string): slug is OnDemandToolSlug {
   return (ALL_TOOL_SLUGS as readonly string[]).includes(slug);
 }
 
+function isRealStoredReport(report: unknown): boolean {
+  if (!report || typeof report !== 'object') return false;
+  return (report as { placeholder?: boolean }).placeholder !== true;
+}
+
+/**
+ * Stage B persist already refuses to clobber a real reading with a placeholder.
+ * Catalog fill, ensure-tool-report extraInputs, and overlapping generate/visit
+ * races all share persistOnDemandToolReports — apply the same guard here.
+ */
+export function shouldKeepExistingReportOverPlaceholder(
+  existing: unknown,
+  incoming: unknown,
+): boolean {
+  if (!isRealStoredReport(existing)) return false;
+  if (!incoming || typeof incoming !== 'object') return false;
+  return (incoming as { placeholder?: boolean }).placeholder === true;
+}
+
 function mergeToolStatus(
   existing: PersistedToolStatusMap,
   slug: string,
@@ -74,13 +93,21 @@ export async function persistOnDemandToolReports(params: {
   const failedSlugs: string[] = [];
 
   for (const [slug, entry] of Object.entries(toolReports)) {
+    const incomingData =
+      entry.status === 'success' && entry.data && typeof entry.data === 'object'
+        ? collapseDuplicateReportFields(entry.data as Record<string, unknown>)
+        : null;
+    if (incomingData && shouldKeepExistingReportOverPlaceholder(existingProfile[slug], incomingData)) {
+      failedSlugs.push(slug);
+      continue;
+    }
     toolStatus = mergeToolStatus(toolStatus, slug, entry, now);
-    if (entry.status === 'success' && entry.data && typeof entry.data === 'object') {
+    if (incomingData) {
       profilePatch[slug] = {
-        ...collapseDuplicateReportFields(entry.data as Record<string, unknown>),
+        ...incomingData,
         generationIdempotencyKey: profileHash,
       };
-      if (isReadyToolReport(entry.data, slug)) readySlugs.push(slug);
+      if (isReadyToolReport(incomingData, slug)) readySlugs.push(slug);
       else failedSlugs.push(slug);
     } else {
       failedSlugs.push(slug);
