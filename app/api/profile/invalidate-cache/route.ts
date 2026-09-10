@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
-import { deleteDocument, isAdminAvailable } from '@/lib/firebase-admin';
 import { devLog } from '@/lib/devLogger';
 
 /**
  * POST /api/profile/invalidate-cache
- * Clears server-side divination cache for the authenticated user after profile regenerate.
+ * Clears the in-memory divination cache for the authenticated user after a profile
+ * save. Does not delete stored tool reports — those persist until Generate rewrites
+ * them for a new profile hash.
  * Header: Authorization: Bearer <Firebase ID token>
  */
 export async function POST(request: NextRequest) {
@@ -26,9 +27,6 @@ export async function POST(request: NextRequest) {
     }
 
     clearCachedDivinationData(uid);
-    if (isAdminAvailable()) {
-      await deleteDocument('comprehensiveMysticalProfiles', uid);
-    }
     return NextResponse.json({ success: true });
   } catch (err) {
     devLog.error('Profile invalidate-cache API error', err, 'invalidate-cache');
