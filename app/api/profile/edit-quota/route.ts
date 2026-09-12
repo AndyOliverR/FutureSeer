@@ -26,9 +26,11 @@ export async function GET(request: NextRequest) {
     }
 
     let uid: string;
+    let authEmail: string | undefined;
     try {
       const decoded = await getAuth().verifyIdToken(idToken);
       uid = decoded.uid;
+      authEmail = decoded.email;
     } catch {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
     }
@@ -54,8 +56,7 @@ export async function GET(request: NextRequest) {
         canGenerate: true,
       });
     }
-    const email = (user.email ?? user.Email) as string | undefined;
-    if (isNoChargeSubscriptionEmail(email)) {
+    if (isNoChargeSubscriptionEmail(authEmail)) {
       return NextResponse.json({
         count: 0,
         limit: 8,

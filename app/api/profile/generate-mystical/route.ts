@@ -22,7 +22,7 @@ import {
   isNoChargeSubscriptionEmail,
 } from '@/lib/subscriptionConfig';
 import { consumeBillingAction } from '@/lib/billingCreditsServer';
-import { hasUnlimitedBillingAccess } from '@/lib/billingAccess';
+import { hasUnlimitedBillingAccess, withTrustedBillingEmail } from '@/lib/billingAccess';
 import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
 import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
@@ -126,6 +126,7 @@ async function writeRegenDecisionTelemetry(
 
 export async function POST(request: NextRequest) {
   let uid: string | undefined;
+  let authEmail: string | undefined;
   try {
     const baseUrlSource = resolveBaseUrlSource();
     if (!ensureAdminAvailable('POST /api/profile/generate-mystical')) {
@@ -151,6 +152,7 @@ export async function POST(request: NextRequest) {
     try {
       const decoded = await getAuth().verifyIdToken(idToken);
       uid = decoded.uid;
+      authEmail = decoded.email;
     } catch {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
     }
@@ -192,10 +194,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const email = (userProfile.email ?? userProfile.Email) as string | undefined;
     // Onboarding is intentionally low-friction: generation should not be blocked by payment/plan choice.
     // Keep this read so existing no-charge account logic remains compatible for downstream analytics/meta.
-    void isNoChargeSubscriptionEmail(email);
+    void isNoChargeSubscriptionEmail(authEmail);
 
     // Launch hotfix: do not block mystical profile generation by edit quota.
     // We keep counting edits elsewhere so telemetry remains intact.
@@ -251,7 +252,10 @@ export async function POST(request: NextRequest) {
         );
       }
       if (!isFirstOnboardingGeneration) {
-        const profileForBilling = profileWithUid as Partial<UserProfile>;
+        const profileForBilling = withTrustedBillingEmail(
+          profileWithUid as Partial<UserProfile>,
+          authEmail,
+        );
         if (!hasUnlimitedBillingAccess(profileForBilling)) {
           const billing = await consumeBillingAction(uid, 'profile_regen');
           if (!billing.ok) {

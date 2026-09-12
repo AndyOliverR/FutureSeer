@@ -79,6 +79,7 @@ service cloud.firestore {
         'subscriptionId',
         'subscriptionStatus',
         'noChargeAccount',
+        'email',
         'trialEndDate',
         'trialEndTime',
         'nextBillingDate',
