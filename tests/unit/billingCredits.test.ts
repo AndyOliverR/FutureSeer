@@ -4,7 +4,11 @@ import {
   creditBalanceFromProfile,
 } from '@/lib/billingFreeUse';
 import { getCreditPackPrice, toolSlugFromSeerRoute } from '@/lib/billingConfig';
-import { hasUnlimitedBillingAccess } from '@/lib/billingAccess';
+import {
+  hasUnlimitedBillingAccess,
+  trustedBillingEmail,
+  withTrustedBillingEmail,
+} from '@/lib/billingAccess';
 
 describe('billingFreeUse', () => {
   it('tracks per-tool first free Seer use', () => {
@@ -45,5 +49,35 @@ describe('billingAccess', () => {
       }),
     ).toBe(true);
     expect(creditBalanceFromProfile({ creditBalance: 5 })).toBe(5);
+  });
+
+  it('does not trust a client-written Firestore email for billing identity', () => {
+    const previous = process.env.NO_CHARGE_SUBSCRIPTION_EMAILS;
+    process.env.NO_CHARGE_SUBSCRIPTION_EMAILS = 'founder@example.com';
+    try {
+      expect(trustedBillingEmail(undefined)).toBeUndefined();
+      expect(trustedBillingEmail('')).toBeUndefined();
+      expect(trustedBillingEmail('  ')).toBeUndefined();
+      expect(trustedBillingEmail('user@example.com')).toBe('user@example.com');
+
+      expect(hasUnlimitedBillingAccess({ email: 'founder@example.com' })).toBe(true);
+
+      const fromFirestore = withTrustedBillingEmail(
+        { email: 'founder@example.com', creditBalance: 3 },
+        undefined,
+      );
+      expect(fromFirestore.email).toBeUndefined();
+      expect(hasUnlimitedBillingAccess(fromFirestore)).toBe(false);
+
+      const fromAuth = withTrustedBillingEmail(
+        { email: 'founder@example.com', creditBalance: 3 },
+        'user@example.com',
+      );
+      expect(fromAuth.email).toBe('user@example.com');
+      expect(hasUnlimitedBillingAccess(fromAuth)).toBe(false);
+    } finally {
+      if (previous === undefined) delete process.env.NO_CHARGE_SUBSCRIPTION_EMAILS;
+      else process.env.NO_CHARGE_SUBSCRIPTION_EMAILS = previous;
+    }
   });
 });

@@ -2,9 +2,9 @@ import 'server-only';
 
 import { FieldValue } from 'firebase-admin/firestore';
 import { devLog } from '@/lib/devLogger';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, getAuth } from '@/lib/firebase-admin';
 import { CREDIT_COSTS, CREDIT_PACK_DEFS } from '@/lib/billingConfig';
-import { hasUnlimitedBillingAccess } from '@/lib/billingAccess';
+import { hasUnlimitedBillingAccess, withTrustedBillingEmail } from '@/lib/billingAccess';
 import {
   creditBalanceFromProfile,
   isFreeInstanceAvailable,
@@ -17,6 +17,15 @@ import type {
   ConsumeBillingResult,
   CreditPackId,
 } from '@/lib/billingTypes';
+
+async function authEmailForUser(userId: string): Promise<string | undefined> {
+  try {
+    const user = await getAuth().getUser(userId);
+    return typeof user.email === 'string' ? user.email : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function userBillingFromData(data: FirebaseFirestore.DocumentData | undefined): BillingUserFields {
   if (!data) return {};
@@ -46,7 +55,8 @@ export async function getBillingSnapshot(userId: string): Promise<{
     return { creditBalance: 0, billingMode: 'payg', unlimited: false, freeUseConsumed: {} };
   }
   const snap = await adminDb.collection('users').doc(userId).get();
-  const profile = userBillingFromData(snap.data());
+  const authEmail = await authEmailForUser(userId);
+  const profile = withTrustedBillingEmail(userBillingFromData(snap.data()), authEmail);
   const unlimited = hasUnlimitedBillingAccess(profile);
   return {
     creditBalance: creditBalanceFromProfile(profile),
@@ -79,6 +89,7 @@ export async function consumeBillingAction(
   const toolSlug = opts?.toolSlug?.trim() || undefined;
   const userRef = adminDb.collection('users').doc(userId);
   const ledgerRef = userRef.collection('billingLedger').doc();
+  const authEmail = await authEmailForUser(userId);
 
   try {
     return await adminDb.runTransaction(async (tx) => {
@@ -92,7 +103,7 @@ export async function consumeBillingAction(
         };
       }
 
-      const profile = userBillingFromData(snap.data());
+      const profile = withTrustedBillingEmail(userBillingFromData(snap.data()), authEmail);
       if (hasUnlimitedBillingAccess(profile)) {
         return {
           ok: true as const,
