@@ -39,8 +39,6 @@ const REGENERATE_MESSAGE =
 const UNAVAILABLE_MESSAGE =
   "The request didn't go through. Please try again in a moment.";
 
-const RETRY_DELAY_MS = 1500;
-
 const FACE_READING_STARTER_QUESTIONS = [
   'What does my face say about my personality?',
   'What strengths or challenges does my face indicate?',
@@ -144,16 +142,9 @@ export default function FaceReadingSeerChatInterface({
       );
     };
 
-    const isRetryableStatus = (status: number) =>
-      status === 500 || status >= 502;
-
     try {
-      let response = await performFetch();
-
-      if (!response.ok && isRetryableStatus(response.status)) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-        response = await performFetch();
-      }
+      // Do not auto-retry: enforceToolSeerGate debits before the LLM runs.
+      const response = await performFetch();
 
       if (!response.ok) {
         setStreamingMessageId(null);
@@ -198,34 +189,7 @@ export default function FaceReadingSeerChatInterface({
     } catch (err) {
       devLog.error('Face Reading Seer error', err, 'FaceReadingSeerChatInterface');
       setStreamingMessageId(null);
-      try {
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-        const retryResponse = await performFetch();
-        if (!retryResponse.ok) {
-          setUnavailableMessage();
-          return;
-        }
-        const reader = retryResponse.body?.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedContent = '';
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value);
-            accumulatedContent += chunk;
-            streamingLengthRef.current = accumulatedContent.length;
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
-              )
-            );
-          }
-        }
-        setStreamingMessageId(null);
-      } catch {
-        setUnavailableMessage();
-      }
+      setUnavailableMessage();
     } finally {
       setIsLoading(false);
     }

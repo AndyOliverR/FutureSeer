@@ -1115,7 +1115,7 @@ export default function ProfilePage() {
       setIsEditing(false)
       setSuccess("Profile updated successfully!")
 
-      // Clear stored mystical profile so user can regenerate from updated data
+      // Drop in-memory divination cache only. Stored reports stay until Generate.
       try {
         const token = await user.getIdToken()
         await fetch('/api/profile/invalidate-cache', {
