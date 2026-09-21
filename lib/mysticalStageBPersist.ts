@@ -9,6 +9,11 @@ import {
 } from '@/lib/profileGenerationOrchestrator';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
+import {
+  StageBClaimLostError,
+  assertStageBClaimHeld,
+  mergeGenerationJobIfClaimHeld,
+} from '@/lib/mysticalStageBClaim';
 import { cleanData } from '@/lib/mysticalStageBQueueUtils';
 
 function stableStringify(value: unknown): string {
@@ -56,7 +61,10 @@ export async function applyStageBFinalPersistence(params: {
   result: GenerationResult;
   pipelineMode: 'legacy_staged' | 'unified';
 }): Promise<void> {
-  const { uid, profileHash, attempt, result, pipelineMode } = params;
+  const { uid, profileHash, claimId, attempt, result, pipelineMode } = params;
+  // Stale worker must not mark completed after another claim drained remaining tools.
+  await assertStageBClaimHeld(uid, claimId);
+
   const finalToStore = cleanData(result.comprehensiveProfile) as Record<string, unknown>;
   delete finalToStore.toolReports;
   const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) || {}) as Record<string, unknown>;
@@ -91,6 +99,10 @@ export async function applyStageBFinalPersistence(params: {
   }
   finalToStore.toolStatus = toolStatus;
   const finalReadiness = summarizeToolReadiness(finalToStore, ALL_TOOL_SLUGS);
+
+  // Re-check immediately before multi-doc write so a reclaim cannot be finalized over.
+  await assertStageBClaimHeld(uid, claimId);
+
   const batchSuccessFinal = await batchSetDocuments([
     { collection: 'comprehensiveMysticalProfiles', docId: uid, data: finalToStore },
     {
@@ -136,7 +148,7 @@ export async function applyStageBFinalPersistence(params: {
     toolStatus,
     updatedAt: completedAt,
   });
-  await setDocument('generationJobs', uid, {
+  const completedOk = await mergeGenerationJobIfClaimHeld(uid, claimId, {
     status: 'completed',
     phase: 'completed',
     completedAt,
@@ -149,5 +161,8 @@ export async function applyStageBFinalPersistence(params: {
     queueDrained: true,
     pipelineMode,
   });
+  if (!completedOk) {
+    throw new StageBClaimLostError(uid, claimId);
+  }
   clearCachedDivinationData(uid);
 }
