@@ -4,6 +4,11 @@ import { createPlan, createSubscription } from '@/lib/razorpay';
 import { isRazorpayPlanCurrency } from '@/lib/razorpayPlanCurrencies';
 import { convertToUsdCents, convertSmallestUnitToInrPaise } from '@/lib/currencyConversion';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
+import { resolveTrustedBillingCountryCode } from '@/lib/billingCountry';
+import {
+  getSubscriptionPlanAmountInSmallestUnit,
+  isSubscriptionPlanId,
+} from '@/lib/subscriptionPlanAmount';
 import { getFirebaseDB } from '@/lib/firebase';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { getAuth, setDocument, isAdminAvailable, getDocument } from '@/lib/firebase-admin';
@@ -35,14 +40,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { plan, amount, email, name, country, userId, enableTrial } = body;
+    const { plan, email, name, country, userId, enableTrial } = body;
     const ownedUserId = resolveOwnedUserId(userId, auth.uid);
 
-    if (!plan || !email || !name || !country || !ownedUserId) {
+    if (!plan || !email || !name || !ownedUserId) {
       return NextResponse.json(
         { error: 'Missing required fields or invalid user ownership' },
         { status: 400 }
       );
+    }
+    if (!isSubscriptionPlanId(plan)) {
+      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
     if (auth.email && auth.email.toLowerCase() !== String(email).trim().toLowerCase()) {
       return NextResponse.json(
@@ -152,7 +160,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const config = getCountryPricingConfig(country);
+    // Prefer persisted profile country; never trust client amount for paid plans.
+    let profileCountry: unknown;
+    if (isAdminAvailable()) {
+      try {
+        const profileData = await getDocument('users', ownedUserId);
+        if (profileData && typeof profileData === 'object') {
+          profileCountry = (profileData as Record<string, unknown>).country;
+        }
+      } catch (err) {
+        devLog.warn('[create-subscription] Could not load profile country', err, 'route');
+      }
+    }
+    const trustedCountry = resolveTrustedBillingCountryCode({
+      profileCountry,
+      requestedCountry: country,
+    });
+    const config = getCountryPricingConfig(trustedCountry);
+    const { amountInSmallestUnit: planAmount } = getSubscriptionPlanAmountInSmallestUnit(
+      plan,
+      trustedCountry,
+    );
 
     // Determine plan period and create Razorpay plan if needed
     let planPeriod: 'monthly' | 'quarterly' | 'yearly' = 'monthly';
@@ -173,8 +201,7 @@ export async function POST(request: NextRequest) {
       totalCount = 12;
     }
 
-    // Validate amount for paid plans (Razorpay requires minimum 1 in smallest unit)
-    if (plan !== 'power-user-trial' && (!amount || amount <= 0)) {
+    if (planAmount <= 0) {
       return NextResponse.json(
         { error: 'Invalid amount. Amount must be greater than 0 for paid plans.' },
         { status: 400 }
@@ -185,12 +212,6 @@ export async function POST(request: NextRequest) {
     // Create or get Razorpay plan
     const planName = `${plan === 'buy-coffee' ? 'Monthly' : plan === 'treat-me' ? 'Quarterly' : plan === 'festive-hamper' ? 'Annual' : 'Trial'} membership`;
     const planDescription = `${CHECKOUT_DISPLAY_NAME} — ${planName}`;
-
-    // For trial, use subscription minimum so gateway shows "charge ₹99 every month" (or equivalent). Paid plans use request amount.
-    const noSubUnit = config.currency === 'IDR' || config.currency === 'VND';
-    const planAmount = plan === 'power-user-trial'
-      ? Math.round(config.pricingTiers.allFeatures * (noSubUnit ? 1 : 100))
-      : amount;
 
     // Razorpay Plans API supports only INR and USD; others (e.g. AED) return "Currency provided is not supported".
     const useFallbackCurrency = !isRazorpayPlanCurrency(config.currency);
@@ -266,7 +287,7 @@ export async function POST(request: NextRequest) {
       startAt: isTrial ? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60 : undefined,
       notes: {
         plan: plan,
-        country: country,
+        country: trustedCountry,
         contribution_type: plan,
         ...(uid ? { user_id: uid } : {}),
       },
