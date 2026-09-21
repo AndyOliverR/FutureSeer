@@ -73,6 +73,28 @@ export async function createOrder(params: {
   }
 }
 
+/** Fetch a Razorpay order by id (server-side source of truth for pack notes/amount). */
+export async function fetchOrder(orderId: string) {
+  const razorpay = getRazorpayClient();
+  try {
+    return await razorpay.orders.fetch(orderId);
+  } catch (error: unknown) {
+    devLog.error('Error fetching Razorpay order:', error, 'razorpay');
+    throw new Error(`Failed to fetch order: ${getRazorpayErrorMessage(error)}`);
+  }
+}
+
+/** Fetch a Razorpay payment by id. */
+export async function fetchPayment(paymentId: string) {
+  const razorpay = getRazorpayClient();
+  try {
+    return await razorpay.payments.fetch(paymentId);
+  } catch (error: unknown) {
+    devLog.error('Error fetching Razorpay payment:', error, 'razorpay');
+    throw new Error(`Failed to fetch payment: ${getRazorpayErrorMessage(error)}`);
+  }
+}
+
 /**
  * Create a Razorpay subscription.
  * - immediateStart: true → omit start_at; first charge = plan amount, charged now (checkout shows ₹99 etc.).
