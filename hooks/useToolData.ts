@@ -36,7 +36,12 @@ export function useToolData(toolName: string): UseToolDataResult {
     setError(null);
 
     try {
-      const response = await fetch(`/api/tools/data?userId=${user.uid}&toolName=${toolName}`);
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/tools/data?userId=${user.uid}&toolName=${toolName}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const result = await response.json();
 
       if (result.success) {
@@ -94,10 +99,12 @@ export function useAvailableTools(): UseAvailableToolsResult {
     setError(null);
 
     try {
+      const token = await user.getIdToken();
       const response = await fetch('/api/tools/data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ userId: user.uid }),
       });
