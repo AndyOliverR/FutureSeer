@@ -87,7 +87,11 @@ service cloud.firestore {
         'isSpecialUser',
         'profileEditCount',
         'profileEditPeriodStart',
-        'freeMonthsRemaining'
+        'freeMonthsRemaining',
+        // Server sets these when natal charts commit. Clients must not clear them
+        // to re-enter the free onboarding generation grant.
+        'mysticalProfileGenerated',
+        'profileDataHash'
       ];
     }
 
