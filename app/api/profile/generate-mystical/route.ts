@@ -32,6 +32,7 @@ import {
   generateAndPersistToolReports,
   NATAL_CHART_SLUGS,
 } from '@/lib/onDemandToolReports';
+import { isFirstOnboardingFreeGrant } from '@/lib/onboardingGenerationGrant';
 
 export const dynamic = 'force-dynamic';
 /** Natal charts only (vedic + western). Catalog fill continues on generate-catalog-batch. */
@@ -236,7 +237,13 @@ export async function POST(request: NextRequest) {
 
     const modeRaw = typeof requestBody.mode === 'string' ? requestBody.mode.trim().toLowerCase() : 'preview';
     const generationMode: 'preview' | 'full' = modeRaw === 'full' ? 'full' : 'preview';
-    const isFirstOnboardingGeneration = userProfile.mysticalProfileGenerated !== true;
+    const generationLock = (await getDocument('generationLocks', uid)) as
+      | { status?: unknown; phase?: unknown; freeOnboardingConsumed?: unknown }
+      | null;
+    const isFirstOnboardingGeneration = isFirstOnboardingFreeGrant(
+      userProfile.mysticalProfileGenerated,
+      generationLock,
+    );
     const missingFullFields = getMissingFullProfileFields(profileWithUid as Partial<UserProfile>);
     if (generationMode === 'full') {
       if (missingFullFields.length > 0) {
@@ -521,6 +528,7 @@ export async function POST(request: NextRequest) {
       completedTools: readiness.readyToolsCount,
       allReportsReady: readiness.allReportsReady,
       pendingToolSlugs: readiness.pendingToolSlugs,
+      freeOnboardingConsumed: true,
       updatedAt: Date.now(),
       ...(readiness.allReportsReady ? { lockedAt: null, completedAt: Date.now() } : {}),
     });

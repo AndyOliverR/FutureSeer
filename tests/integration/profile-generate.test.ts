@@ -312,6 +312,13 @@ describe('Profile generate-mystical API', () => {
           pipelineMode: 'catalog',
         }),
       );
+      expect(mockSetDocument).toHaveBeenCalledWith(
+        'generationLocks',
+        uid,
+        expect.objectContaining({
+          freeOnboardingConsumed: true,
+        }),
+      );
     });
 
     it('does not mark the profile generated when natal charts fail', async () => {
@@ -461,6 +468,77 @@ describe('Profile generate-mystical API', () => {
       expect(data.code).toBe('insufficient_credits');
       expect(data.creditsRequired).toBe(8);
       expect(data.creditBalance).toBe(0);
+    });
+
+    it('bills full regen when the client clears mysticalProfileGenerated after natal commit', async () => {
+      const profile = {
+        ...baseProfile,
+        mysticalProfileGenerated: false,
+        fullName: 'Test User',
+        gender: 'male',
+        currentLocation: 'New York, NY',
+        facePhotoUrl: 'https://example.com/face.jpg',
+        palmPhotoUrl: 'https://example.com/palm.jpg',
+        selectedPlan: 'premium',
+        subscriptionStatus: 'past_due',
+        paymentMethodId: '',
+        creditBalance: 0,
+        freeUseConsumed: { profileRegen: true },
+      };
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve(profile);
+        if (collection === 'generationLocks') {
+          return Promise.resolve({
+            status: 'completed',
+            phase: 'completed',
+            freeOnboardingConsumed: true,
+          });
+        }
+        return Promise.resolve(null);
+      });
+      mockBillingTransactionUserData = {
+        creditBalance: 0,
+        freeUseConsumed: { profileRegen: true },
+        subscriptionStatus: 'past_due',
+        selectedPlan: 'premium',
+        paymentMethodId: '',
+      };
+      // Distinct uid so this request does not share the suite's profile-generation rate bucket.
+      mockVerifyIdToken.mockResolvedValue({ uid: 'onboarding-grant-billed' });
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      const data = await res.json();
+      expect(res.status).toBe(402);
+      expect(data.blockReason).toBe('credits_required');
+      expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
+    });
+
+    it('still allows a free full retry when natal failed before commit', async () => {
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') {
+          return Promise.resolve({
+            ...baseProfile,
+            mysticalProfileGenerated: false,
+            fullName: 'Test User',
+            gender: 'male',
+            currentLocation: 'New York, NY',
+            facePhotoUrl: 'https://example.com/face.jpg',
+            palmPhotoUrl: 'https://example.com/palm.jpg',
+          });
+        }
+        if (collection === 'generationLocks') {
+          return Promise.resolve({ status: 'failed', phase: 'failed' });
+        }
+        return Promise.resolve(null);
+      });
+      mockVerifyIdToken.mockResolvedValue({ uid: 'onboarding-grant-retry' });
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.blockReason).toBeUndefined();
+      expect(mockGenerateAndPersistToolReports).toHaveBeenCalled();
     });
 
     it('allows first onboarding full generation without payment setup', async () => {
