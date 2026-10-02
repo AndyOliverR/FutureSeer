@@ -1,5 +1,6 @@
 import type { ComprehensiveMysticalProfile } from '@/contexts/MysticalProfileContext';
 import { buildDailyInsightCardData } from '@/lib/dailyInsightForHome';
+import { mysticalProfileLooksGenerated } from '@/lib/mysticalProfileFreshness';
 import type { ActionBand } from '@/lib/dailyDecisionBands';
 import { actionBandLabel } from '@/lib/dailyDecisionBands';
 
@@ -188,7 +189,7 @@ function resolveActionBand(
   profile: ComprehensiveMysticalProfile | null,
   patternKey: string,
 ): ActionBand {
-  if (!profile?.metadata?.generatedAt) return 'neutral';
+  if (!mysticalProfileLooksGenerated(profile)) return 'neutral';
   const dashaPlanet = profile.vedic?.currentDasha?.planet;
   const dashaHeavy = typeof dashaPlanet === 'string' && MALEFIC_DASHA.has(dashaPlanet);
   const challengeCount = profile.interpretations?.personality?.challenges?.length ?? 0;
@@ -224,7 +225,7 @@ export function buildStrategicReadData(
   displayName?: string | null,
   now: Date = new Date(),
 ): StrategicReadData {
-  const hasProfile = Boolean(profile?.metadata?.generatedAt);
+  const hasProfile = mysticalProfileLooksGenerated(profile);
   const signals = collectSignals(profile, now);
   const pattern = resolvePattern(signals, hasProfile);
   const patternKey =

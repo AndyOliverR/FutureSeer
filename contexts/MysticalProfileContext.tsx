@@ -18,6 +18,7 @@ import {
   isUsableStoredReport,
   resolveToolReportFromProfile,
 } from '@/lib/mysticalProfilePositiveSnippet'
+import { shouldApplyProfileSnapshot } from '@/lib/mysticalProfileFreshness'
 import { shouldSubscribeMysticalProfile } from '@/lib/mysticalProfileRouteGate'
 
 export interface ComprehensiveMysticalProfile {
@@ -269,7 +270,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         const data = profileSnap.data() as ComprehensiveMysticalProfile
         const incomingAt = data.metadata?.generatedAt
         const lastAt = lastAppliedGeneratedAtRef.current
-        if (incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime()) {
+        if (!shouldApplyProfileSnapshot(incomingAt, lastAt)) {
           if (!background) setLoading(false)
           return
         }
@@ -369,7 +370,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
             const data = cacheSnap.data() as ComprehensiveMysticalProfile
             const incomingAt = data.metadata?.generatedAt
             const lastAt = lastAppliedGeneratedAtRef.current
-            if (!(incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime())) {
+            if (shouldApplyProfileSnapshot(incomingAt, lastAt)) {
               applyFirestoreProfile(userId, data)
             }
             setError(null)
@@ -465,7 +466,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
             const data = snapshot.data() as ComprehensiveMysticalProfile
             const incomingAt = data.metadata?.generatedAt
             const lastAt = lastAppliedGeneratedAtRef.current
-            if (incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime()) {
+            if (!shouldApplyProfileSnapshot(incomingAt, lastAt)) {
               return
             }
             applyFirestoreProfile(uid, data)

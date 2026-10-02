@@ -27,6 +27,14 @@ describe('buildStrategicReadData', () => {
     expect(data.scenarioPrompts).toHaveLength(2);
   });
 
+  it('uses chart signals when catalog persist omitted metadata.generatedAt', () => {
+    const { metadata, ...withoutMetadata } = minimalProfile();
+    expect(metadata).toBeDefined();
+    const data = buildStrategicReadData(withoutMetadata as ReturnType<typeof minimalProfile>, 'Priya');
+    expect(data.patternTitle).not.toBe('Scan your environment');
+    expect(data.ctaHref).toBe('/seer');
+  });
+
   it('clusters career signals and sets action band for favorable timing', () => {
     const data = buildStrategicReadData(minimalProfile(), 'Priya');
     expect(data.patternTitle).toMatch(/Career|Timing|Cross-currents/);

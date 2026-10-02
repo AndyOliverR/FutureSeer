@@ -11,6 +11,7 @@ import {
   type ToolReportEntry,
 } from '@/lib/profileGenerationOrchestrator';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
+import { stampMysticalProfileMetadata } from '@/lib/mysticalProfileFreshness';
 import { collapseDuplicateReportFields } from '@/lib/reportDedup';
 import type { ToolReportExtraInputs } from '@/lib/toolReportExtraInputs';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
@@ -88,6 +89,8 @@ export async function persistOnDemandToolReports(params: {
   }
 
   profilePatch.toolStatus = toolStatus;
+  profilePatch.metadata = stampMysticalProfileMetadata(existingProfile.metadata, now);
+  profilePatch.lastUpdated = now;
   const mergedProfile = { ...existingProfile, ...profilePatch };
   const readiness = summarizeToolReadiness(mergedProfile, ALL_TOOL_SLUGS);
   await setDocument('comprehensiveMysticalProfiles', uid, profilePatch);
