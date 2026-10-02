@@ -1,4 +1,5 @@
 import type { ComprehensiveMysticalProfile } from '@/contexts/MysticalProfileContext'
+import { mysticalProfileLooksGenerated } from '@/lib/mysticalProfileFreshness'
 
 export type DailyInsightCardData = {
   headline: string
@@ -97,7 +98,7 @@ export function buildDailyInsightCardData(
     personal ??
     `${rulingPlanet} rules this day—${rulerFocus}.${moonBit} Open FutureSeer when you want chart-grounded detail.`
 
-  const hasProfile = Boolean(profile && profile.metadata?.generatedAt)
+  const hasProfile = mysticalProfileLooksGenerated(profile)
   return {
     headline,
     summary: summary.length > 220 ? `${summary.slice(0, 217)}…` : summary,

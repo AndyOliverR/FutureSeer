@@ -46,6 +46,15 @@ describe('buildDailyInsightCardData', () => {
     expect(data.ctaHref).toBe('/profile')
   })
 
+  it('keeps the tools CTA when a catalog chart has no metadata.generatedAt', () => {
+    const profile = makeProfile()
+    delete profile.metadata
+    const data = buildDailyInsightCardData(profile, 'Ananya Devi', fixedDate)
+    expect(data.ctaHref).toBe('/tools')
+    expect(data.ctaLabel).toBe('Open Occult / Divination tools')
+    expect(data.moonSign).toBeNull()
+  })
+
   it('personalizes with display name and profile strengths', () => {
     const profile = makeProfile({
       userId: 'u1',
