@@ -463,6 +463,55 @@ describe('Profile generate-mystical API', () => {
       expect(data.creditBalance).toBe(0);
     });
 
+    it('stamps a free trial plan during first generate when signup did not set one', async () => {
+      mockVerifyIdToken.mockResolvedValue({ uid: 'trial-stamp-uid' });
+      const profileWithoutPlan: Record<string, unknown> = {
+        ...baseProfile,
+        mysticalProfileGenerated: false,
+        fullName: 'Test User',
+        gender: 'male',
+        currentLocation: 'New York, NY',
+        facePhotoUrl: 'https://example.com/face.jpg',
+        palmPhotoUrl: 'https://example.com/palm.jpg',
+        subscriptionStatus: 'trial',
+      };
+      delete profileWithoutPlan.selectedPlan;
+      mockGetDocument.mockResolvedValue(profileWithoutPlan);
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.success).toBe(true);
+
+      const userWrites = mockSetDocument.mock.calls.filter((call) => call[0] === 'users');
+      expect(userWrites.length).toBeGreaterThan(0);
+      expect(userWrites[0][2]).toEqual(
+        expect.objectContaining({ selectedPlan: 'power-user-trial' }),
+      );
+      expect(userWrites[0][2]).not.toHaveProperty('subscriptionStatus');
+    });
+
+    it('does not replace an existing paid plan while generating', async () => {
+      mockVerifyIdToken.mockResolvedValue({ uid: 'paid-plan-uid' });
+      mockGetDocument.mockResolvedValue({
+        ...baseProfile,
+        mysticalProfileGenerated: false,
+        fullName: 'Test User',
+        gender: 'male',
+        currentLocation: 'New York, NY',
+        facePhotoUrl: 'https://example.com/face.jpg',
+        palmPhotoUrl: 'https://example.com/palm.jpg',
+        selectedPlan: 'buy-coffee',
+        subscriptionStatus: 'active',
+      });
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      expect(res.status).toBe(200);
+      const userWrites = mockSetDocument.mock.calls.filter((call) => call[0] === 'users');
+      expect(userWrites[0][2]).not.toHaveProperty('selectedPlan');
+      expect(userWrites[0][2]).not.toHaveProperty('subscriptionStatus');
+    });
+
     it('allows first onboarding full generation without payment setup', async () => {
       mockGetDocument.mockResolvedValue({
         ...baseProfile,

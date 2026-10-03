@@ -20,6 +20,7 @@ import { devLog } from '@/lib/devLogger';
 import {
   getMissingFullProfileFields,
   isNoChargeSubscriptionEmail,
+  trialAccessFieldsIfMissing,
 } from '@/lib/subscriptionConfig';
 import { consumeBillingAction } from '@/lib/billingCreditsServer';
 import { hasUnlimitedBillingAccess } from '@/lib/billingAccess';
@@ -406,6 +407,7 @@ export async function POST(request: NextRequest) {
       allReportsReady: false,
       pendingToolSlugs: [],
       updatedAt: now,
+      ...trialAccessFieldsIfMissing(userProfile),
     };
     for (const key of profileDefiningFields) {
       if (profileWithUid[key] !== undefined) userUpdate[key] = profileWithUid[key];

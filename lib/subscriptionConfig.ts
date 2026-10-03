@@ -108,6 +108,25 @@ export function getMissingFirstGenerationFields(
   return missing;
 }
 
+/**
+ * Fields the server may stamp for a new account. Client profile saves must not
+ * write these: Firestore `protectedUserKeys` rejects the entire update when
+ * `selectedPlan` or `subscriptionStatus` changes, which blocks Save and Generate
+ * for Google, Apple, and AuthModal signups that never set a plan at create time.
+ * Existing paid plans and statuses are left untouched.
+ */
+export function trialAccessFieldsIfMissing(profile: {
+  selectedPlan?: unknown;
+  subscriptionStatus?: unknown;
+} | null | undefined): { selectedPlan?: 'power-user-trial'; subscriptionStatus?: 'trial' } {
+  const fields: { selectedPlan?: 'power-user-trial'; subscriptionStatus?: 'trial' } = {};
+  const plan = typeof profile?.selectedPlan === 'string' ? profile.selectedPlan.trim() : '';
+  if (!plan) fields.selectedPlan = 'power-user-trial';
+  const status = typeof profile?.subscriptionStatus === 'string' ? profile.subscriptionStatus.trim() : '';
+  if (!status) fields.subscriptionStatus = 'trial';
+  return fields;
+}
+
 export function canRunFullPipeline(profile: Partial<UserProfile> | null | undefined): boolean {
   if (!profile) return false;
   if (getMissingFullProfileFields(profile).length > 0) return false;
