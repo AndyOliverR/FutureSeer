@@ -838,8 +838,6 @@ export default function ProfilePage() {
       if (!t) throw new Error("Please sign in again to continue.")
       if (user?.uid && userProfile?.mysticalProfileGenerated !== true) {
         await updateUserProfile(user.uid, {
-          selectedPlan: "power-user-trial",
-          subscriptionStatus: "trial",
           freeTrialTermsAccepted: true,
           freeTrialTermsAcceptedAt: Date.now(),
         })
@@ -1106,11 +1104,6 @@ export default function ProfilePage() {
         freeTrialTermsAccepted: acceptedFreeTrialTerms,
         freeTrialTermsAcceptedAt: acceptedFreeTrialTerms ? Date.now() : userProfile?.freeTrialTermsAcceptedAt
       }
-      if (userProfile?.mysticalProfileGenerated !== true) {
-        updatePayload.selectedPlan = "power-user-trial"
-        updatePayload.subscriptionStatus = "trial"
-      }
-
       await updateUserProfile(user.uid, updatePayload)
       setIsEditing(false)
       setSuccess("Profile updated successfully!")
