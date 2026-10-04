@@ -304,7 +304,7 @@ export function useSubscribe(options: UseSubscribeOptions = {}) {
         },
         handler: async (res) => {
           try {
-            const verifyRes = await fetch('/api/payments/verify-payment', {
+            const verifyRes = await fetchWithFirebaseAuthRequired('/api/payments/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -317,12 +317,6 @@ export function useSubscribe(options: UseSubscribeOptions = {}) {
             if (!verifyRes.ok) {
               throw new Error(verifyData.error || 'Verification failed');
             }
-            await updateUserProfile(user.uid, {
-              subscriptionId,
-              selectedPlan: planId as 'buy-coffee' | 'treat-me' | 'festive-hamper',
-              isSubscribed: true,
-              subscriptionStatus: 'active',
-            });
             analytics.trackSubscriptionStart(planId, amount, {
               currency: pricingConfig.currency,
               surface: 'subscribe_checkout',
