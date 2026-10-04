@@ -3,13 +3,28 @@ import { devLog } from '@/lib/devLogger';
 import crypto from 'crypto';
 import { getSubscription, refundPayment } from '@/lib/razorpay';
 import { logApiPain } from '@/lib/painLogging';
+import { verifyUserRequest } from '@/lib/userApiAuth';
+import { isAdminAvailable, setDocument } from '@/lib/firebase-admin';
+import { verifySubscriptionGrant } from '@/lib/subscriptionGrant';
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'verify-payment');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature } = body;
 
-    if (!razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature) {
+    if (
+      typeof razorpay_payment_id !== 'string' ||
+      typeof razorpay_subscription_id !== 'string' ||
+      typeof razorpay_signature !== 'string' ||
+      !razorpay_payment_id ||
+      !razorpay_subscription_id ||
+      !razorpay_signature
+    ) {
       return NextResponse.json(
         { error: 'Missing payment verification data' },
         { status: 400 }
@@ -38,20 +53,96 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For trial: refund the mandate/auth charge immediately so it is "refundable immediately"
+    let subscription: { notes?: Record<string, string>; status?: string };
     try {
-      const subscription = await getSubscription(razorpay_subscription_id);
-      const notes = (subscription as { notes?: Record<string, string> })?.notes;
-      const plan = notes?.plan;
-      if (plan === 'power-user-trial') {
-        await refundPayment(razorpay_payment_id);
-      }
-    } catch (refundError: unknown) {
-      devLog.error('Trial mandate refund failed (user still gets access)', refundError, 'verify-payment');
-      // Still return success so user is marked as having a payment method; refund can be retried via webhook/ops
+      subscription = (await getSubscription(razorpay_subscription_id)) as {
+        notes?: Record<string, string>;
+        status?: string;
+      };
+    } catch (lookupError: unknown) {
+      devLog.error('Subscription lookup failed during verify-payment', lookupError, 'verify-payment');
+      return NextResponse.json(
+        { error: 'Could not confirm the subscription with Razorpay' },
+        { status: 502 }
+      );
     }
 
-    // Payment verified successfully
+    const grant = verifySubscriptionGrant({
+      authUid: auth.uid,
+      notesUserId: subscription.notes?.user_id,
+      notesPlan: subscription.notes?.plan,
+      razorpayStatus: subscription.status,
+      subscriptionId: razorpay_subscription_id,
+      paymentId: razorpay_payment_id,
+    });
+
+    if (!grant.ok) {
+      switch (grant.reason) {
+        case 'trial_plan':
+          try {
+            await refundPayment(razorpay_payment_id);
+          } catch (refundError: unknown) {
+            devLog.error(
+              'Trial mandate refund failed (trial access is unchanged)',
+              refundError,
+              'verify-payment'
+            );
+          }
+          return NextResponse.json({
+            success: true,
+            paymentMethodId: razorpay_payment_id,
+            subscriptionId: razorpay_subscription_id,
+          });
+        case 'user_mismatch':
+          return NextResponse.json(
+            { error: 'Subscription does not belong to this account' },
+            { status: 403 }
+          );
+        case 'unbound_subscription':
+          return NextResponse.json(
+            { error: 'Subscription is not linked to an account' },
+            { status: 422 }
+          );
+        case 'unknown_plan':
+          return NextResponse.json(
+            { error: 'Subscription plan is not recognized' },
+            { status: 422 }
+          );
+        case 'inactive_subscription':
+          return NextResponse.json(
+            { error: 'Subscription is not active' },
+            { status: 409 }
+          );
+        case 'missing_payment':
+          return NextResponse.json(
+            { error: 'Missing payment verification data' },
+            { status: 400 }
+          );
+        default: {
+          const _exhaustive: never = grant.reason;
+          throw new Error(`Unhandled subscription grant: ${String(_exhaustive)}`);
+        }
+      }
+    }
+
+    if (!isAdminAvailable()) {
+      return NextResponse.json(
+        { error: 'Billing storage is unavailable' },
+        { status: 503 }
+      );
+    }
+
+    const wrote = await setDocument('users', grant.userId, {
+      ...grant.patch,
+      updatedAt: Date.now(),
+    });
+    if (!wrote) {
+      return NextResponse.json(
+        { error: 'Could not save membership' },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       paymentMethodId: razorpay_payment_id,

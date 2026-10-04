@@ -3,10 +3,44 @@ import { devLog } from '@/lib/devLogger';
 import { verifyWebhookSignature } from '@/lib/razorpay';
 import { getFirebaseDB } from '@/lib/firebase';
 import { userRootDocUpdate } from '@/lib/userSubcollectionFirestore';
+import { paidMembershipPatch } from '@/lib/subscriptionGrant';
+
+type WebhookSubscription = {
+  id?: string;
+  notes?: Record<string, string>;
+  customer_id?: string;
+  current_end?: number;
+};
+
+async function markSubscriptionActive(
+  subscription: WebhookSubscription,
+  paymentId: string | undefined,
+  extra: Record<string, unknown>,
+): Promise<void> {
+  const notesUid =
+    typeof subscription.notes?.user_id === 'string' ? subscription.notes.user_id.trim() : '';
+  const userId = notesUid || subscription.notes?.customer_id || subscription.customer_id;
+  if (!userId || !subscription.id) return;
+
+  const membership = notesUid
+    ? paidMembershipPatch({
+        plan: subscription.notes?.plan,
+        subscriptionId: subscription.id,
+        paymentId,
+      })
+    : null;
+
+  await userRootDocUpdate(userId, {
+    subscriptionStatus: 'active',
+    subscriptionId: subscription.id,
+    updatedAt: Date.now(),
+    ...extra,
+    ...(membership ?? {}),
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
     const signature = request.headers.get('x-razorpay-signature');
 
     if (!signature) {
@@ -17,7 +51,19 @@ export async function POST(request: NextRequest) {
     }
 
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
-    const bodyString = JSON.stringify(body);
+    const bodyString = await request.text();
+    let body: {
+      event?: string;
+      payload?: {
+        subscription?: { entity?: WebhookSubscription };
+        payment?: { entity?: { id?: string; notes?: Record<string, string>; error_description?: string } };
+      };
+    };
+    try {
+      body = JSON.parse(bodyString) as typeof body;
+    } catch {
+      return NextResponse.json({ error: 'Invalid webhook body' }, { status: 400 });
+    }
 
     const isValid = verifyWebhookSignature(bodyString, signature, webhookSecret);
 
@@ -29,14 +75,11 @@ export async function POST(request: NextRequest) {
     }
 
     const event = body.event;
-    const payload = body.payload;
+    const payload = body.payload ?? {};
 
     if (!getFirebaseDB()) {
       throw new Error('Firestore not initialized');
     }
-
-    const getUserIdFromSubscription = (sub: { notes?: Record<string, string>; customer_id?: string }) =>
-      sub.notes?.user_id || sub.notes?.customer_id || sub.customer_id;
 
     const now = Date.now();
 
@@ -44,44 +87,31 @@ export async function POST(request: NextRequest) {
       case 'subscription.activated':
         if (payload.subscription?.entity) {
           const subscription = payload.subscription.entity;
-          const userId = getUserIdFromSubscription(subscription);
-
-          if (userId) {
-            await userRootDocUpdate(userId, {
-              subscriptionStatus: 'active',
-              subscriptionId: subscription.id,
-              subscriptionActivatedAt: now,
-              nextBillingDate: subscription.current_end,
-              updatedAt: now,
-            });
-          }
+          await markSubscriptionActive(subscription, payload.payment?.entity?.id, {
+            subscriptionActivatedAt: now,
+            nextBillingDate: subscription.current_end,
+          });
         }
         break;
 
       case 'subscription.charged':
         if (payload.subscription?.entity) {
           const subscription = payload.subscription.entity;
-          const userId = getUserIdFromSubscription(subscription);
           const paymentId = payload.payment?.entity?.id;
-
-          if (userId) {
-            const updates: Record<string, unknown> = {
-              subscriptionStatus: 'active',
-              subscriptionId: subscription.id,
-              lastBillingDate: now,
-              nextBillingDate: subscription.current_end,
-              updatedAt: now,
-            };
-            if (paymentId) updates.lastPaymentId = paymentId;
-            await userRootDocUpdate(userId, updates);
-          }
+          await markSubscriptionActive(subscription, paymentId, {
+            lastBillingDate: now,
+            nextBillingDate: subscription.current_end,
+            ...(paymentId ? { lastPaymentId: paymentId } : {}),
+          });
         }
         break;
 
       case 'subscription.cancelled':
         if (payload.subscription?.entity) {
           const subscription = payload.subscription.entity;
-          const userId = getUserIdFromSubscription(subscription);
+          const notesUid =
+            typeof subscription.notes?.user_id === 'string' ? subscription.notes.user_id.trim() : '';
+          const userId = notesUid || subscription.notes?.customer_id || subscription.customer_id;
 
           if (userId) {
             await userRootDocUpdate(userId, {
