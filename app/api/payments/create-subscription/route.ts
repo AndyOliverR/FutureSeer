@@ -4,7 +4,6 @@ import { createPlan, createSubscription } from '@/lib/razorpay';
 import { isRazorpayPlanCurrency } from '@/lib/razorpayPlanCurrencies';
 import { convertToUsdCents, convertSmallestUnitToInrPaise } from '@/lib/currencyConversion';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
-import { getFirebaseDB } from '@/lib/firebase';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { getAuth, setDocument, isAdminAvailable, getDocument } from '@/lib/firebase-admin';
 import { CHECKOUT_DISPLAY_NAME } from '@/lib/checkoutBranding';
@@ -100,46 +99,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check if user has free months remaining (skip charge if they do)
-    if (ownedUserId) {
-      const db = getFirebaseDB();
-      if (db && typeof window === 'undefined') {
-        try {
-          const userRef = db.collection('users').doc(ownedUserId);
-          const userDoc = await userRef.get();
-          
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            const freeMonthsRemaining = userData?.freeMonthsRemaining || 0;
-            
-            if (freeMonthsRemaining > 0) {
-              // Skip charge and decrement counter. Do not set subscriptionStatus to 'active' here:
-              // teaser-trial product keeps full report access for Razorpay-activated subscriptions only.
-              const nextBillingDate = Date.now() + (30 * 24 * 60 * 60 * 1000); // +30 days
-              
-              await userRef.update({
-                freeMonthsRemaining: freeMonthsRemaining - 1,
-                nextBillingDate: nextBillingDate,
-                updatedAt: Date.now()
-              });
-              
-              devLog.debug(`✅ Free month applied for user ${ownedUserId}. ${freeMonthsRemaining - 1} free months remaining.`);
-              
-              return NextResponse.json({
-                success: true,
-                freeMonthApplied: true,
-                freeMonthsRemaining: freeMonthsRemaining - 1,
-                nextBillingDate: nextBillingDate,
-                message: 'Free month applied successfully'
-              });
-            }
-          }
-        } catch (error) {
-          devLog.error('Error checking free months:', error, 'route');
-          // Continue with normal billing if check fails
-        }
-      }
-    }
+    // Do not skip Razorpay when users.freeMonthsRemaining > 0. Signup stores 1 and
+    // referrals increment it, but this route does not grant membership. Returning
+    // success without subscriptionId makes checkout throw and burns the counter.
 
     // Resolve Firebase uid for webhook (recurring updates must target users/{uid})
     let uid: string | null = ownedUserId;
