@@ -17,9 +17,30 @@ import { getWesternReportChunksForUser, getSectionsForIntent, formatChunksForPro
 import { buildWesternRetrievalSystemPrompt } from '@/lib/westernSeerPrompts';
 import { searchKnowledge, formatKnowledgeForPrompt, extractKeyTopics } from '@/lib/knowledgeLoader';
 import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
+import { coordinatesForBirthPlaceGeocode } from '@/lib/occultBirthCoordinates';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-western-seer';
+
+function westernBirthDataFromProfile(userProfile: {
+  birthDate?: unknown;
+  birthTime?: unknown;
+  birthPlace?: unknown;
+  birthLatitude?: unknown;
+  birthLongitude?: unknown;
+}): BirthData {
+  const coords = coordinatesForBirthPlaceGeocode(
+    userProfile.birthLatitude,
+    userProfile.birthLongitude,
+  );
+  return {
+    birthDate: String(userProfile.birthDate ?? ''),
+    birthTime: String(userProfile.birthTime ?? ''),
+    birthPlace: String(userProfile.birthPlace ?? ''),
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+  };
+}
 
 function stampText(text: string): string {
   return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
@@ -195,13 +216,7 @@ export async function POST(request: NextRequest) {
       devLog.debug('📅 Dates detected in question:', parsedDates.rawText, 'ask-western-seer');
       devLog.debug('📅 Start date:', formatDateForContext(parsedDates.startDate), 'ask-western-seer');
 
-      const birthData: BirthData = {
-        birthDate: String(userProfile.birthDate ?? ''),
-        birthTime: String(userProfile.birthTime ?? ''),
-        birthPlace: String(userProfile.birthPlace ?? ''),
-        latitude: Number(userProfile.birthLatitude) || 12.3051828,
-        longitude: Number(userProfile.birthLongitude) || 76.6553609
-      };
+      const birthData = westernBirthDataFromProfile(userProfile);
 
       if (isFullYearRange) {
         // Quarterly transits for the full year: Jan 1, Apr 1, Jul 1, Oct 1
@@ -248,13 +263,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (!parsedDates && (questionType === 'timing' || questionType === 'career')) {
       // Default future transits for next 4 months when user asks about favorable period but does not specify a date
-      const birthData: BirthData = {
-        birthDate: String(userProfile.birthDate ?? ''),
-        birthTime: String(userProfile.birthTime ?? ''),
-        birthPlace: String(userProfile.birthPlace ?? ''),
-        latitude: Number(userProfile.birthLatitude) || 12.3051828,
-        longitude: Number(userProfile.birthLongitude) || 76.6553609
-      };
+      const birthData = westernBirthDataFromProfile(userProfile);
       const now = new Date();
       const defaultDates = [
         new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),

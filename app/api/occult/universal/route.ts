@@ -9,6 +9,7 @@ import {
 import { devLog } from '@/lib/devLogger';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC';
+import { resolveOccultBirthCoordinates } from '@/lib/occultBirthCoordinates';
 import { computeSwissNatalPlanets } from '@/lib/western/swissNatalChart';
 
 export const dynamic = 'force-static'
@@ -45,41 +46,12 @@ export interface OccultResponse {
   };
 }
 
-function isMissingCoordinate(value: unknown): boolean {
-  return typeof value !== 'number' || !Number.isFinite(value);
-}
-
-function isZeroCoordinatePair(latitude: unknown, longitude: unknown): boolean {
-  return latitude === 0 && longitude === 0;
-}
-
 // Swiss Ephemeris Integration Functions
 async function calculateVedicChart(birthData: BirthData, options: any = {}) {
   devLog.info('🔮 Calculating REAL Vedic chart for:', birthData, 'occult');
   
   try {
-    // Ensure we have coordinates - geocode if needed
-    let latitude = birthData.latitude;
-    let longitude = birthData.longitude;
-
-    // If coordinates are missing but birthPlace is provided, geocode it
-    if ((isMissingCoordinate(latitude) || isMissingCoordinate(longitude) || isZeroCoordinatePair(latitude, longitude)) && birthData.birthPlace) {
-      devLog.info(`📍 Coordinates missing, geocoding: ${birthData.birthPlace}`, undefined, 'occult');
-      const { geocodePlaceCachedOccult } = await import('@/lib/occultBirthPlaceGeocodeCache');
-      const coords = await geocodePlaceCachedOccult(birthData.birthPlace);
-      if (coords) {
-        latitude = coords.latitude;
-        longitude = coords.longitude;
-        devLog.info(`📍 Geocoded successfully:`, coords, 'occult');
-      } else {
-        throw new Error(`Unable to find coordinates for "${birthData.birthPlace}". Please verify the location spelling.`);
-      }
-    }
-
-    // Final validation: Ensure we have coordinates
-    if (isMissingCoordinate(latitude) || isMissingCoordinate(longitude)) {
-      throw new Error('Birth location is required for accurate chart calculation.');
-    }
+    const { latitude, longitude } = await resolveOccultBirthCoordinates(birthData);
 
     // Import the chart generation function directly
     const vedicChartModule = await import('../../../api/vedic/chart/route');
@@ -118,9 +90,10 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     devLog.debug('🔮 Birth Time String:', birthData.birthTime, 'occult');
 
     const normalizedTime = normalizeBirthTime(birthData.birthTime);
+    const { latitude, longitude } = await resolveOccultBirthCoordinates(birthData);
     const birthDateTime = birthLocalToUTC(birthData.birthDate, normalizedTime, {
-      latitude: birthData.latitude,
-      longitude: birthData.longitude
+      latitude,
+      longitude,
     });
     const [hour, minute] = normalizedTime.split(':').map((x) => parseInt(x, 10) || 0);
 
@@ -143,8 +116,8 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
       natalPlanets = calculateTropicalPlanets(birthDateTime);
       natalHouses = calculateTropicalHouses(
         birthDateTime, 
-        birthData.latitude, 
-        birthData.longitude
+        latitude, 
+        longitude
       );
       
       // Determine target date based on calculation type
@@ -204,8 +177,8 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     }
     const houses = calculateTropicalHouses(
       targetDateTime, 
-      birthData.latitude, 
-      birthData.longitude
+      latitude, 
+      longitude
     );
     
     devLog.debug('🔮 Sun TROPICAL longitude:', planets.sun.longitude, 'occult');
