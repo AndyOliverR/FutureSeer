@@ -10,12 +10,50 @@
 // - Philosophical influences: Stoicism, Neoplatonism, Neopythagoreanism
 
 import { devLog } from '@/lib/devLogger';
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC';
+import { geocodePlaceCachedOccult } from '@/lib/occultBirthPlaceGeocodeCache';
 import { getFirebaseDB } from './firebase';
 import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import { calculateTropicalPlanets, calculateTropicalHouses, getTropicalSign, getDegreeInSign, calculateTropicalAspects } from './western/tropicalCalculator';
 
 // Algorithm version - increment when interpretation logic changes
-const HELLENISTIC_ALGORITHM_VERSION = '2.1.0'; // Updated: Personalized remedies & complete interpretation system
+const HELLENISTIC_ALGORITHM_VERSION = '2.2.0'; // Birth-place geocode and local-to-UTC instant
+
+function isMissingCoordinate(value: number): boolean {
+  return typeof value !== 'number' || !Number.isFinite(value);
+}
+
+function isZeroCoordinatePair(latitude: number, longitude: number): boolean {
+  return latitude === 0 && longitude === 0;
+}
+
+/** Profile Generate stores no coordinates, so 0,0 must not be used as the birth place. */
+async function resolveHellenisticBirth(
+  birthDate: string,
+  birthTime: string,
+  birthPlace: string,
+  latitude: number,
+  longitude: number,
+): Promise<{ birthDateTime: Date; latitude: number; longitude: number }> {
+  let lat = latitude;
+  let lon = longitude;
+  if ((isMissingCoordinate(lat) || isMissingCoordinate(lon) || isZeroCoordinatePair(lat, lon)) && birthPlace.trim()) {
+    const coords = await geocodePlaceCachedOccult(birthPlace);
+    if (!coords) {
+      throw new Error(`Unable to find coordinates for "${birthPlace}". Please verify the location spelling.`);
+    }
+    lat = coords.latitude;
+    lon = coords.longitude;
+  }
+  if (isMissingCoordinate(lat) || isMissingCoordinate(lon) || isZeroCoordinatePair(lat, lon)) {
+    throw new Error('Birth location is required for an accurate Hellenistic chart.');
+  }
+  return {
+    birthDateTime: birthLocalToUTC(birthDate, birthTime, { latitude: lat, longitude: lon }),
+    latitude: lat,
+    longitude: lon,
+  };
+}
 
 export interface HellenisticAstrologyReading {
   id: string;
@@ -1166,13 +1204,15 @@ export async function getIntelligentHellenisticAstrologyData(
 
   // Calculate new Hellenistic Astrology analysis
   devLog.debug('Calculating new Hellenistic Astrology analysis for user:', userId);
-  
-  // Parse birth date and time
-  const birthDateTime = new Date(`${birthDate}T${birthTime}`);
-  
+
+  const resolvedBirth = await resolveHellenisticBirth(birthDate, birthTime, birthPlace, latitude, longitude);
+  const birthDateTime = resolvedBirth.birthDateTime;
+  latitude = resolvedBirth.latitude;
+  longitude = resolvedBirth.longitude;
+
   // Calculate tropical planetary positions
   const tropicalPlanets = calculateTropicalPlanets(birthDateTime);
-  
+
   // Calculate houses (we'll use Whole Sign, but need Ascendant first)
   const tropicalHouses = calculateTropicalHouses(birthDateTime, latitude, longitude);
   const ascendantLongitude = tropicalHouses[0]?.longitude || 0;
