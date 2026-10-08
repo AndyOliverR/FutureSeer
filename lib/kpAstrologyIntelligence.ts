@@ -3,6 +3,7 @@ import { devLog } from '@/lib/devLogger';
 import { nakshatraFromLongitude, getNakshatraLord, vimshottariTimeline, calculateCurrentDasha } from './vedic-core'
 import { getCoordinatesWithFallback } from './geocoding'
 import { getPlanetRemedies } from './yogaRemedyGenerator'
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC'
 
 export interface KPChartData {
   birthDate: string
@@ -123,13 +124,13 @@ class KPAstrologyIntelligence {
 
   private async calculateKPChart(data: KPChartData): Promise<KPAnalysis> {
     devLog.debug('🎯 Calculating KP chart with real data...', data)
-    
-    // Parse date and time
-    const [year, month, day] = data.birthDate.split('-').map(Number)
-    const [hour, minute] = data.birthTime.split(':').map(Number)
-    
-    // Create birth datetime
-    const birthDateTime = new Date(Date.UTC(year, month - 1, day, hour, minute))
+
+    // Birth time is local to the birth place. Date.UTC would cast the chart for the
+    // wrong instant (for example 14:30 IST stored as 14:30 UTC).
+    const birthDateTime = birthLocalToUTC(data.birthDate, data.birthTime, {
+      latitude: data.latitude,
+      longitude: data.longitude,
+    })
     
     // Get Vedic chart using sidereal calculations (KP uses sidereal zodiac)
     const chart = getChart({
