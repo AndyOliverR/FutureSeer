@@ -202,7 +202,11 @@ export interface BaziAnswer {
   confidence: number
 }
 
-const CACHE_VERSION = '1.0'
+const CACHE_VERSION = '2.0' // Solar-term year/month pillars and corrected day-pillar anchor
+
+function positiveMod(value: number, modulus: number): number {
+  return ((value % modulus) + modulus) % modulus
+}
 
 // Heavenly Stems (天干)
 const HEAVENLY_STEMS = ['Jia', 'Yi', 'Bing', 'Ding', 'Wu', 'Ji', 'Geng', 'Xin', 'Ren', 'Gui']
@@ -274,11 +278,11 @@ class BaziIntelligence {
    * Calculate Julian Day Number from date
    */
   private dateToJulianDay(date: Date): number {
-    const year = date.getFullYear()
-    const month = date.getMonth() + 1
-    const day = date.getDate()
-    const hour = date.getHours()
-    const minute = date.getMinutes()
+    const year = date.getUTCFullYear()
+    const month = date.getUTCMonth() + 1
+    const day = date.getUTCDate()
+    const hour = date.getUTCHours()
+    const minute = date.getUTCMinutes()
     
     const dayFraction = day + hour / 24 + minute / 1440
     
@@ -292,49 +296,69 @@ class BaziIntelligence {
   }
 
   /**
-   * Calculate day pillar using Julian Day
-   * Formula: (JD + 12) mod 60, then get stem and branch
+   * Calculate day pillar using Julian Day.
+   * 15 June 1990 is Xin Hai. The previous +12 offset produced Gui Si for that date.
    */
-  private calculateDayPillar(julianDay: number): { stemIndex: number; branchIndex: number } {
-    // Base reference: Jan 1, 1900 (JD 2415021) was Jia-Zi (0, 0)
+  private calculateDayPillar(year: number, month: number, day: number): { stemIndex: number; branchIndex: number } {
+    const julianDay = this.dateToJulianDay(new Date(Date.UTC(year, month - 1, day)))
     const baseJD = 2415021
-    const baseStem = 0
-    const baseBranch = 0
-    
     const daysSinceBase = Math.floor(julianDay - baseJD)
-    const ganZhiIndex = (daysSinceBase + 12) % 60
-    
-    // Convert to stem and branch indices
-    const stemIndex = ganZhiIndex % 10
-    const branchIndex = ganZhiIndex % 12
-    
-    return { stemIndex, branchIndex }
+    const ganZhiIndex = positiveMod(daysSinceBase + 30, 60)
+    return { stemIndex: ganZhiIndex % 10, branchIndex: ganZhiIndex % 12 }
   }
 
   /**
-   * Determine month pillar based on solar terms (Hsia Calendar)
+   * BaZi year changes at Lichun (~4 February), not on 1 January.
    */
-  private getMonthPillarFromSolarTerms(year: number, month: number, day: number): { stemIndex: number; branchIndex: number } {
-    // Month branch: month - 1 (0-indexed, where 0 = Yin/Tiger for month 2)
-    // For BaZi, month 1 (after Lichun) = Yin, month 2 = Mao, etc.
-    let monthBranchIndex: number
-    
-    // Adjust for solar terms - if before Lichun (approx Feb 4), use previous year's month
-    if (month === 1 && day < 4) {
-      monthBranchIndex = 11 // Hai (previous year's last month)
-    } else if (month === 2 && day < 4) {
-      monthBranchIndex = 0 // Yin
-    } else {
-      // Standard mapping: month 2 = Yin (0), month 3 = Mao (1), etc.
-      monthBranchIndex = (month - 2 + 12) % 12
+  private baziYear(year: number, month: number, day: number): number {
+    if (month < 2 || (month === 2 && day < 4)) return year - 1
+    return year
+  }
+
+  /**
+   * Month branch from the jie already reached. Index 0 is Zi, matching EARTHLY_BRANCHES.
+   * Before Xiaohan the chart is still in the Zi month opened by Daxue.
+   */
+  private getBaziMonthBranchIndex(month: number, day: number): number {
+    const starts: { month: number; day: number; branchIndex: number }[] = [
+      { month: 1, day: 6, branchIndex: 1 }, // Xiaohan → Chou
+      { month: 2, day: 4, branchIndex: 2 }, // Lichun → Yin
+      { month: 3, day: 6, branchIndex: 3 }, // Jingzhe → Mao
+      { month: 4, day: 5, branchIndex: 4 }, // Qingming → Chen
+      { month: 5, day: 6, branchIndex: 5 }, // Lixia → Si
+      { month: 6, day: 6, branchIndex: 6 }, // Mangzhong → Wu
+      { month: 7, day: 7, branchIndex: 7 }, // Xiaoshu → Wei
+      { month: 8, day: 8, branchIndex: 8 }, // Liqiu → Shen
+      { month: 9, day: 8, branchIndex: 9 }, // Bailu → You
+      { month: 10, day: 8, branchIndex: 10 }, // Hanlu → Xu
+      { month: 11, day: 7, branchIndex: 11 }, // Lidong → Hai
+      { month: 12, day: 7, branchIndex: 0 }, // Daxue → Zi
+    ]
+    let branchIndex = 0
+    for (const start of starts) {
+      if (month > start.month || (month === start.month && day >= start.day)) {
+        branchIndex = start.branchIndex
+      }
     }
-    
-    // Calculate month stem based on year stem
-    // Formula: Month Stem = (Year Stem Index * 2 + Month Number) mod 10
-    const yearStemIndex = (year - 4) % 10
-    const monthStemIndex = (yearStemIndex * 2 + monthBranchIndex) % 10
-    
-    return { stemIndex: monthStemIndex, branchIndex: monthBranchIndex }
+    return branchIndex
+  }
+
+  /**
+   * Yin is the first month. A Jia or Ji year opens that month on Bing.
+   */
+  private monthStemIndexFor(yearStemIndex: number, monthBranchIndex: number): number {
+    const monthOrder = positiveMod(monthBranchIndex - 2, 12)
+    return positiveMod((yearStemIndex % 5) * 2 + 2 + monthOrder, 10)
+  }
+
+  /**
+   * Determine month pillar based on solar terms (Hsia Calendar).
+   * `baziYear` is the solar year (previous calendar year before Lichun).
+   */
+  private getMonthPillarFromSolarTerms(baziYear: number, month: number, day: number): { stemIndex: number; branchIndex: number } {
+    const yearStemIndex = positiveMod(baziYear - 4, 10)
+    const branchIndex = this.getBaziMonthBranchIndex(month, day)
+    return { stemIndex: this.monthStemIndexFor(yearStemIndex, branchIndex), branchIndex }
   }
 
   /**
@@ -357,6 +381,7 @@ class BaziIntelligence {
    */
   private calculateLuckPillars(
     monthBranchIndex: number,
+    monthStemIndex: number,
     yearStemIndex: number,
     gender: 'male' | 'female' | 'non-binary',
     birthYear: number
@@ -369,9 +394,9 @@ class BaziIntelligence {
     const isForward = (yearYinYang === 'yang' && gender === 'male') || 
                       (yearYinYang === 'yin' && gender === 'female')
     
-    // Start from month branch
+    // Start from the month pillar, then step to the first luck cycle.
     let currentBranchIndex = monthBranchIndex
-    let currentStemIndex = (yearStemIndex * 2 + monthBranchIndex) % 10
+    let currentStemIndex = monthStemIndex
     
     // Each luck pillar is 10 years
     for (let i = 0; i < 8; i++) {
@@ -450,24 +475,34 @@ class BaziIntelligence {
    * Calculate Four Pillars Chart
    */
   private calculateChart(data: BaziData): BaziChart {
-    const birthDate = new Date(data.birthDate)
-    const birthYear = birthDate.getFullYear()
-    const birthMonth = birthDate.getMonth() + 1
-    const birthDay = birthDate.getDate()
+    const isoDate = /^(\d{4})-(\d{2})-(\d{2})/.exec(data.birthDate)
+    let birthYear: number
+    let birthMonth: number
+    let birthDay: number
+    if (isoDate) {
+      birthYear = Number(isoDate[1])
+      birthMonth = Number(isoDate[2])
+      birthDay = Number(isoDate[3])
+    } else {
+      const birthDate = new Date(data.birthDate)
+      birthYear = birthDate.getFullYear()
+      birthMonth = birthDate.getMonth() + 1
+      birthDay = birthDate.getDate()
+    }
     const parts = (data.birthTime || '12:00').split(':').map((p) => parseInt(p, 10))
     const hour = Number.isFinite(parts[0]) ? Math.min(23, Math.max(0, parts[0])) : 12
     const minute = Number.isFinite(parts[1]) ? Math.min(59, Math.max(0, parts[1])) : 0
-    const julianDay = this.dateToJulianDay(birthDate)
-    
-    // Year Pillar
-    const yearStemIndex = (birthYear - 4) % 10
-    const yearBranchIndex = (birthYear - 4) % 12
-    
+
+    // Year pillar follows Lichun (~4 February), not 1 January.
+    const solarYear = this.baziYear(birthYear, birthMonth, birthDay)
+    const yearStemIndex = positiveMod(solarYear - 4, 10)
+    const yearBranchIndex = positiveMod(solarYear - 4, 12)
+
     // Month Pillar (based on solar terms)
-    const monthPillar = this.getMonthPillarFromSolarTerms(birthYear, birthMonth, birthDay)
-    
-    // Day Pillar (using Julian Day)
-    const dayPillar = this.calculateDayPillar(julianDay)
+    const monthPillar = this.getMonthPillarFromSolarTerms(solarYear, birthMonth, birthDay)
+
+    // Day Pillar (calendar date; the day changes at local midnight)
+    const dayPillar = this.calculateDayPillar(birthYear, birthMonth, birthDay)
     
     // Hour Pillar
     const hourPillar = this.calculateHourPillar(dayPillar.stemIndex, hour, minute)
@@ -545,6 +580,7 @@ class BaziIntelligence {
     const gender = data.gender || 'male' // Default to male if not specified
     const luckPillars = this.calculateLuckPillars(
       monthPillar.branchIndex,
+      monthPillar.stemIndex,
       yearStemIndex,
       gender,
       birthYear
@@ -1170,7 +1206,7 @@ class BaziIntelligence {
    * Main analysis function
    */
   async analyzeBazi(data: BaziData): Promise<BaziReading> {
-    const cacheKey = `${data.birthDate}-${data.birthTime}-${data.birthPlace}`
+    const cacheKey = `${CACHE_VERSION}-${data.birthDate}-${data.birthTime}-${data.birthPlace}-${data.gender ?? ''}`
     
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!
@@ -1260,21 +1296,18 @@ class BaziIntelligence {
     try {
       const db = getFirebaseDB()
       if (db) {
-        const birthDataKey = `${userProfile.birthDate}_${userProfile.birthTime}_${userProfile.birthPlace}`
+        const birthDataKey = `${userProfile.birthDate}_${userProfile.birthTime}_${userProfile.birthPlace}_${userProfile.gender ?? ''}`
         const cachedRaw = await userSubdocGet(userId, 'baziReports', 'current')
         if (cachedRaw) {
-          const cachedData = cachedRaw as unknown as BaziReading
-          const cachedBirthKey = cachedData.metadata?.lastUpdated ? 
-            `${userProfile.birthDate}_${userProfile.birthTime}_${userProfile.birthPlace}` : null
-          
-          if (cachedBirthKey === birthDataKey) {
-            const lastUpdated = cachedData.metadata?.lastUpdated
-            if (lastUpdated) {
-              const cacheAge = new Date().getTime() - new Date(lastUpdated).getTime()
-              if (cacheAge < CACHE_TTL.REPORTS) {
-                devLog.info('Returning cached BaZi reading for user:', userId, 'bazi')
-                return cachedData
-              }
+          const cachedData = cachedRaw as unknown as BaziReading & { birthDataKey?: string }
+          const storedBirthKey = cachedData.birthDataKey
+          const versionMatches = cachedData.metadata?.cacheVersion === CACHE_VERSION
+          const lastUpdated = cachedData.metadata?.lastUpdated
+          if (versionMatches && storedBirthKey === birthDataKey && lastUpdated) {
+            const cacheAge = new Date().getTime() - new Date(lastUpdated).getTime()
+            if (cacheAge < CACHE_TTL.REPORTS) {
+              devLog.info('Returning cached BaZi reading for user:', userId, 'bazi')
+              return cachedData
             }
           }
         }
