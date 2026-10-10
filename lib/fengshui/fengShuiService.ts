@@ -3,7 +3,7 @@
  * Core calculations and mappings for Feng Shui analysis
  */
 
-import { calcKuaNumber, getKuaResult } from '@/lib/numerology/kua'
+import { getKuaResult, gregorianYearFromBirthDate, KUA_FORMULA_VERSION } from '@/lib/numerology/kua'
 import { devLog } from '@/lib/devLogger';
 import { UserProfile } from '@/lib/firebase'
 
@@ -49,6 +49,8 @@ export interface FengShuiAnalysis {
   elementAnalysis: ElementAnalysis
   favorableDirections: string[]
   unfavorableDirections: string[]
+  /** Present on analyses cast with the current Kua map. Older stored reports omit it. */
+  formulaVersion?: number
 }
 
 // Bagua Map - 9 areas (8 directions + center)
@@ -204,8 +206,8 @@ export function calculateKuaAnalysis(userProfile: UserProfile | null): KuaAnalys
   }
 
   try {
-    const birthDate = new Date(userProfile.birthDate)
-    const birthYear = birthDate.getFullYear()
+    const birthYear = gregorianYearFromBirthDate(userProfile.birthDate)
+    if (birthYear == null) return null
     const isMale = userProfile.gender === 'male'
     
     const kuaResult = getKuaResult(birthYear, isMale)
@@ -316,8 +318,13 @@ export function generateFengShuiAnalysis(userProfile: UserProfile | null): FengS
     bagua: BAGUA_AREAS,
     elementAnalysis,
     favorableDirections,
-    unfavorableDirections: kua.unfavorableDirections
+    unfavorableDirections: kua.unfavorableDirections,
+    formulaVersion: KUA_FORMULA_VERSION,
   }
+}
+
+export function fengShuiAnalysisIsCurrent(analysis: { formulaVersion?: number } | null | undefined): boolean {
+  return analysis?.formulaVersion === KUA_FORMULA_VERSION
 }
 
 /**
