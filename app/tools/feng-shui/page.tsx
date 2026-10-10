@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import FengShuiSeerChatInterface from "@/components/FengShuiSeerChatInterface"
-import { generateFengShuiAnalysis, FengShuiAnalysis } from "@/lib/fengshui/fengShuiService"
+import { generateFengShuiAnalysis, fengShuiAnalysisIsCurrent, FengShuiAnalysis } from "@/lib/fengshui/fengShuiService"
 import { generateFengShuiReading, FengShuiReading } from "@/lib/fengshui/fengShuiIntelligence"
 import BaguaMap from "@/components/fengshui/BaguaMap"
 import RoomGuidance from "@/components/fengshui/RoomGuidance"
@@ -80,7 +80,7 @@ export default function FengShuiPage() {
     const data = (envelope.data ?? envelope) as Record<string, unknown>
     const analysis = (data.analysis ?? data.fengShuiAnalysis ?? data) as FengShuiAnalysis | undefined
     const reading = (data.reading ?? data.fengShuiReading) as FengShuiReading | undefined
-    if (!analysis || !reading) return null
+    if (!analysis || !reading || !fengShuiAnalysisIsCurrent(analysis)) return null
     return { analysis, reading }
   }, [pipelineReport])
 

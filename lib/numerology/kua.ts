@@ -34,12 +34,13 @@ const KUA_ATTRIBUTES: Record<number, string> = {
   9: 'Energetic, passionate, and dynamic. Transformation through action.',
 }
 
+/** Sheng Qi, Tian Yi, Yan Nian, Fu Wei. Fu Wei is the person's own sitting direction. */
 const KUA_DIRECTIONS: Record<number, KuaResult['directions']> = {
   1: {
-    success: 'North',
+    success: 'Southeast',
     health: 'East',
-    relationships: 'Southeast',
-    wisdom: 'Northeast',
+    relationships: 'South',
+    wisdom: 'North',
   },
   2: {
     success: 'Northeast',
@@ -50,8 +51,8 @@ const KUA_DIRECTIONS: Record<number, KuaResult['directions']> = {
   3: {
     success: 'South',
     health: 'North',
-    relationships: 'East',
-    wisdom: 'Southeast',
+    relationships: 'Southeast',
+    wisdom: 'East',
   },
   4: {
     success: 'North',
@@ -62,14 +63,14 @@ const KUA_DIRECTIONS: Record<number, KuaResult['directions']> = {
   6: {
     success: 'West',
     health: 'Northeast',
-    relationships: 'Northwest',
-    wisdom: 'Southwest',
+    relationships: 'Southwest',
+    wisdom: 'Northwest',
   },
   7: {
     success: 'Northwest',
-    health: 'West',
-    relationships: 'Southwest',
-    wisdom: 'Northeast',
+    health: 'Southwest',
+    relationships: 'Northeast',
+    wisdom: 'West',
   },
   8: {
     success: 'Southwest',
@@ -80,39 +81,52 @@ const KUA_DIRECTIONS: Record<number, KuaResult['directions']> = {
   9: {
     success: 'East',
     health: 'Southeast',
-    relationships: 'South',
-    wisdom: 'North',
+    relationships: 'North',
+    wisdom: 'South',
   },
 }
 
+/** Bump when the Kua number or direction map changes so stored Feng Shui reports are recomputed. */
+export const KUA_FORMULA_VERSION = 2
+
+function digitalRoot(value: number): number {
+  let n = Math.abs(Math.trunc(value))
+  while (n > 9) {
+    let sum = 0
+    while (n > 0) {
+      sum += n % 10
+      n = Math.floor(n / 10)
+    }
+    n = sum
+  }
+  return n
+}
+
+/**
+ * Eight Mansions Kua.
+ * Reduce the birth year to one digit first, then male = 11 − year and female = 4 + year.
+ * That matches the last-two-digits rule (10/9 for men, +5/+6 for women) for both centuries.
+ * Kua 5 is stored as 2 for men and 8 for women.
+ */
 export function calcKuaNumber(birthYear: number, isMale: boolean): number {
-  const yearDigits = birthYear
-    .toString()
-    .split('')
-    .reduce((sum, d) => sum + parseInt(d, 10), 0)
-  
-  let kua = isMale ? 11 - yearDigits : 4 + yearDigits
-  
-  // Reduce to single digit or handle 5
-  while (kua > 9 || kua < 1) {
-    if (kua === 5) {
-      return isMale ? 2 : 8
-    }
-    if (kua > 9) {
-      kua = kua
-        .toString()
-        .split('')
-        .reduce((sum, d) => sum + parseInt(d, 10), 0)
-    } else {
-      kua = Math.abs(kua)
-    }
-  }
-  
-  if (kua === 5) {
-    return isMale ? 2 : 8
-  }
-  
+  const reducedYear = digitalRoot(birthYear)
+  let kua = isMale ? 11 - reducedYear : 4 + reducedYear
+  if (kua > 9) kua = digitalRoot(kua)
+  if (kua === 5) return isMale ? 2 : 8
   return kua
+}
+
+/** Calendar year from a profile birth date. ISO dates stay on that year in every timezone. */
+export function gregorianYearFromBirthDate(birthDate: string): number | null {
+  const iso = /^(\d{4})-\d{2}-\d{2}/.exec(birthDate.trim())
+  if (iso) {
+    const year = Number(iso[1])
+    return year >= 1 && year <= 9999 ? year : null
+  }
+  const parsed = new Date(birthDate)
+  if (Number.isNaN(parsed.getTime())) return null
+  const year = parsed.getFullYear()
+  return year >= 1 && year <= 9999 ? year : null
 }
 
 export function getKuaResult(birthYear: number, isMale: boolean): KuaResult {
