@@ -3,6 +3,7 @@ import { devLog } from '@/lib/devLogger';
 import { nakshatraFromLongitude, getNakshatraLord, vimshottariTimeline, calculateCurrentDasha } from './vedic-core'
 import { getCoordinatesWithFallback } from './geocoding'
 import { getPlanetRemedies } from './yogaRemedyGenerator'
+import { calculateKpSubLord, KP_SUBLORD_FORMULA_VERSION } from './kp/kpSubLord'
 
 export interface KPChartData {
   birthDate: string
@@ -74,6 +75,8 @@ export interface KPAnalysis {
     longTerm: string
     remedies: KPRemedy[]
   }
+  /** Present when sub-lords use Vimshottari proportions. Older reports omit it. */
+  subLordFormulaVersion?: number
 }
 
 export interface KPQuestion {
@@ -175,7 +178,8 @@ class KPAstrologyIntelligence {
       subLords,
       timingAnalysis,
       significations,
-      predictions
+      predictions,
+      subLordFormulaVersion: KP_SUBLORD_FORMULA_VERSION,
     }
   }
 
@@ -183,7 +187,7 @@ class KPAstrologyIntelligence {
     const ascLon = chart.ascendant.lonSidereal
     const nakInfo = nakshatraFromLongitude(ascLon)
     const nakshatraLord = getNakshatraLord(nakInfo.index)
-    const subLord = this.calculateSubLord(ascLon, nakshatraLord)
+    const subLord = this.calculateSubLord(ascLon)
     
     return {
       sign: chart.ascendant.signName,
@@ -230,7 +234,7 @@ class KPAstrologyIntelligence {
       const lonSid = planetData.lonSidereal
       const nakInfo = nakshatraFromLongitude(lonSid)
       const nakshatraLord = getNakshatraLord(nakInfo.index)
-      const subLord = this.calculateSubLord(lonSid, nakshatraLord)
+      const subLord = this.calculateSubLord(lonSid)
       
       // Calculate house using chart houses
       let house = 1
@@ -269,7 +273,7 @@ class KPAstrologyIntelligence {
       const cuspLon = houseData.cuspLonSid || (index * 30)
       const nakInfo = nakshatraFromLongitude(cuspLon)
       const nakshatraLord = getNakshatraLord(nakInfo.index)
-      const subLord = this.calculateSubLord(cuspLon, nakshatraLord)
+      const subLord = this.calculateSubLord(cuspLon)
       
       return {
         house: index + 1,
@@ -283,22 +287,9 @@ class KPAstrologyIntelligence {
     })
   }
   
-  // Calculate sub-lord based on Vimshottari dasha divisions
-  private calculateSubLord(longitude: number, starLord: string): string {
-    // KP sub-lord calculation: divide nakshatra (13.333°) by 9 parts based on Vimshottari dasha sequence
-    const NK_SPAN = 360 / 27 // 13.333... degrees per nakshatra
-    const nakIndex = Math.floor(longitude / NK_SPAN)
-    const withinNak = (longitude % NK_SPAN) / NK_SPAN // 0 to 1 within nakshatra
-    
-    // Vimshottari sequence (used for sub-lords)
-    const dashaSequence = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury']
-    const startIndex = nakIndex % 9
-    
-    // Each sub is 1/9 of nakshatra
-    const subIndex = Math.floor(withinNak * 9)
-    const subLordIndex = (startIndex + subIndex) % 9
-    
-    return dashaSequence[subLordIndex]
+  // Sub-lord spans follow Vimshottari years (Ketu 7 … Mercury 17), not equal ninths.
+  private calculateSubLord(longitude: number): string {
+    return calculateKpSubLord(longitude)
   }
   
   // Calculate house number from longitude

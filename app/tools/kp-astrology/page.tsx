@@ -34,6 +34,7 @@ import {
   lazyVedicSouthChart,
 } from "@/lib/lazyToolImports"
 import { KPAnalysis as KPIntelligenceAnalysis } from "@/lib/kpAstrologyIntelligence"
+import { KP_SUBLORD_FORMULA_VERSION } from "@/lib/kp/kpSubLord"
 import { useAuth } from "@/hooks/use-auth"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { ToolReportGuard } from '@/components/ToolReportGuard'
@@ -361,6 +362,8 @@ interface KPAnalysis {
   subLords?: Array<{ planet: string; subLords: string[]; significations: string[] }>;
   significations?: { career: string[]; relationships: string[]; health: string[]; wealth: string[]; education: string[]; travel: string[] };
   predictions?: { shortTerm: string; mediumTerm: string; longTerm: string; remedies: Array<{ type: string; planet: string; name: string; description: string; instructions: string[]; benefits: string[]; frequency?: string; explanation: string; priority: string }> };
+  /** 2 = Vimshottari-proportional sub-lords. Older stored charts omit it. */
+  subLordFormulaVersion?: number;
 }
 
 /** Map native KP analysis (from pipeline) to rawAstroAppData shape expected by chart tabs and transform. */
@@ -449,6 +452,10 @@ export default function KPAstrologyPage() {
     if (r.placeholder === true) return null
     const data = (r.data ?? r) as KPAnalysis | undefined
     if (!data || typeof data !== 'object') return null
+    const hasSubLordChart =
+      (Array.isArray(data.cusps) && data.cusps.length > 0) ||
+      (Array.isArray(data.planets) && data.planets.length > 0)
+    if (hasSubLordChart && data.subLordFormulaVersion !== KP_SUBLORD_FORMULA_VERSION) return null
     if (data.basicInfo ?? data.rawAstroAppData ?? data.interpretations) return data
     if (Array.isArray(data.cusps) && data.cusps.length > 0 && data.timingAnalysis) return data
     return null
