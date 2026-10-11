@@ -45,6 +45,27 @@ describe('Report readiness contract', () => {
     expect(classifyToolReportState({ sunSign: 'Aries' }, 'western')).toBe('ready');
   });
 
+  it('treats KP charts cast with equal sub-lord ninths as not ready', () => {
+    expect(
+      classifyToolReportState({ cusps: [{ house: 1 }], planets: [{ name: 'Sun' }] }, 'kp'),
+    ).toBe('pending');
+    expect(
+      classifyToolReportState(
+        { cusps: [{ house: 1 }], planets: [{ name: 'Sun' }], subLordFormulaVersion: 1 },
+        'kp',
+      ),
+    ).toBe('pending');
+    expect(
+      classifyToolReportState(
+        { cusps: [{ house: 1 }], subLordFormulaVersion: 2 },
+        'kp',
+      ),
+    ).toBe('ready');
+    expect(
+      isReadyToolReport({ data: { cusps: [{ house: 1 }], subLordFormulaVersion: 2 } }, 'kp'),
+    ).toBe(true);
+  });
+
   it('summarizes pending slugs and ready count', () => {
     const profile = {
       vedic: { reading: 'ready' },

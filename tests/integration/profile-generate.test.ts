@@ -6,6 +6,7 @@
 
 import { NextRequest } from 'next/server';
 import { calculateProfileDataHash } from '@/lib/firebase';
+import { KP_SUBLORD_FORMULA_VERSION } from '@/lib/kp/kpSubLord';
 import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
 
 /** Fixture report that passes displayable readiness for each slug. */
@@ -14,8 +15,13 @@ function displayableReportForSlug(slug: string): Record<string, unknown> {
     case 'vedic':
     case 'western':
     case 'hellenistic':
-    case 'kp':
       return { planets: [{ name: 'Sun' }], placeholder: false };
+    case 'kp':
+      return {
+        planets: [{ name: 'Sun', subLord: 'Moon' }],
+        subLordFormulaVersion: KP_SUBLORD_FORMULA_VERSION,
+        placeholder: false,
+      };
     case 'tarot':
       return { profile: { birthCard: { name: 'The Fool' } }, placeholder: false };
     case 'numerology':
