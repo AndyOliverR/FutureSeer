@@ -34,6 +34,7 @@ import {
   lazyVedicSouthChart,
 } from "@/lib/lazyToolImports"
 import { KPAnalysis as KPIntelligenceAnalysis } from "@/lib/kpAstrologyIntelligence"
+import { KP_CUSP_HOUSE_SYSTEM } from "@/lib/kp/kpCuspHouseSystem"
 import { useAuth } from "@/hooks/use-auth"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { ToolReportGuard } from '@/components/ToolReportGuard'
@@ -356,6 +357,8 @@ interface KPAnalysis {
   sunSign?: string;
   // Native KP pipeline shape (from kpAstrologyIntelligence.analyzeChart)
   cusps?: Array<{ house: number; sign: string; degree: number; subLord: string; starLord: string; nakshatra: string; nakshatraLord: string }>;
+  /** placidus = Placidus cusps. Older stored charts omit it and used whole-sign. */
+  cuspHouseSystem?: string;
   planets?: Array<{ name: string; sign: string; degree: number; subLord: string; starLord: string; house: number; nakshatra: string; nakshatraLord: string }>;
   timingAnalysis?: { dasha: string; antardasha: string; pratyantardasha: string; currentPeriod: string; nextPeriod: string };
   subLords?: Array<{ planet: string; subLords: string[]; significations: string[] }>;
@@ -449,6 +452,10 @@ export default function KPAstrologyPage() {
     if (r.placeholder === true) return null
     const data = (r.data ?? r) as KPAnalysis | undefined
     if (!data || typeof data !== 'object') return null
+    const hasChart =
+      (Array.isArray(data.cusps) && data.cusps.length > 0) ||
+      (Array.isArray(data.planets) && data.planets.length > 0)
+    if (hasChart && data.cuspHouseSystem !== KP_CUSP_HOUSE_SYSTEM) return null
     if (data.basicInfo ?? data.rawAstroAppData ?? data.interpretations) return data
     if (Array.isArray(data.cusps) && data.cusps.length > 0 && data.timingAnalysis) return data
     return null

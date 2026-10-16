@@ -1,4 +1,5 @@
 import { getChart } from './astronomia-vedic'
+import { KP_CUSP_HOUSE_SYSTEM } from '@/lib/kp/kpCuspHouseSystem'
 import { devLog } from '@/lib/devLogger';
 import { nakshatraFromLongitude, getNakshatraLord, vimshottariTimeline, calculateCurrentDasha } from './vedic-core'
 import { getCoordinatesWithFallback } from './geocoding'
@@ -74,6 +75,8 @@ export interface KPAnalysis {
     longTerm: string
     remedies: KPRemedy[]
   }
+  /** Present when cusps were cast with Placidus. Older reports omit it. */
+  cuspHouseSystem?: string
 }
 
 export interface KPQuestion {
@@ -175,7 +178,8 @@ class KPAstrologyIntelligence {
       subLords,
       timingAnalysis,
       significations,
-      predictions
+      predictions,
+      cuspHouseSystem: KP_CUSP_HOUSE_SYSTEM,
     }
   }
 

@@ -14,8 +14,9 @@ function displayableReportForSlug(slug: string): Record<string, unknown> {
     case 'vedic':
     case 'western':
     case 'hellenistic':
-    case 'kp':
       return { planets: [{ name: 'Sun' }], placeholder: false };
+    case 'kp':
+      return { planets: [{ name: 'Sun' }], cuspHouseSystem: 'placidus', placeholder: false };
     case 'tarot':
       return { profile: { birthCard: { name: 'The Fool' } }, placeholder: false };
     case 'numerology':
