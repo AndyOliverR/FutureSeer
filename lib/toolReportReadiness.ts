@@ -5,6 +5,8 @@
  * the profile generation orchestrator graph into the browser bundle.
  */
 
+import { kpChartNeedsPlacidusRecast } from '@/lib/kp/kpCuspHouseSystem';
+
 export type ReportReadinessState = 'ready' | 'pending' | 'failed' | 'placeholder';
 
 /** Keys that do not count as report content for unlock / readiness. */
@@ -96,6 +98,7 @@ export function classifyToolReportState(report: unknown, toolSlug?: string): Rep
   if (rec.placeholder === true) return 'placeholder';
   if (Object.keys(rec).length === 0) return 'pending';
   if (!hasDisplayableReportSubstance(rec, toolSlug)) return 'pending';
+  if (toolSlug === 'kp' && kpChartNeedsPlacidusRecast(rec)) return 'pending';
   return 'ready';
 }
 

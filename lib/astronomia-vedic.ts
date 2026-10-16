@@ -700,7 +700,12 @@ export const getChart = (
 ) => {
   try {
     const dateForCalc = birthData.date instanceof Date ? birthData.date : new Date(birthData.date);
-    const houses = getHouseCusps(dateForCalc, birthData.latitude, birthData.longitude, opts);
+    // Callers pass `houseSystem`. getHouseCusps reads `system` and otherwise
+    // falls back to whole-sign, which puts every KP cusp on a sign boundary.
+    const houses = getHouseCusps(dateForCalc, birthData.latitude, birthData.longitude, {
+      system: opts.houseSystem ?? "whole-sign",
+      ayanamsha: opts.ayanamsha,
+    });
     const planets = getAllPlanetCoords(dateForCalc, { ...opts, houses: houses.houses });
     
     // Calculate divisional charts
