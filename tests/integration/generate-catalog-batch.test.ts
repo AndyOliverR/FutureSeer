@@ -62,10 +62,15 @@ jest.mock('@/lib/onDemandToolReports', () => ({
 }));
 
 jest.mock('@/lib/firebase', () => ({
-  calculateProfileDataHash: () => 'hash-1',
+  calculateProfileDataHash: jest.fn(() => 'hash-1'),
 }));
 
+import { calculateProfileDataHash } from '@/lib/firebase';
 import { POST } from '@/app/api/profile/generate-catalog-batch/route';
+
+const mockCalculateProfileDataHash = calculateProfileDataHash as jest.MockedFunction<
+  typeof calculateProfileDataHash
+>;
 
 describe('generate-catalog-batch API', () => {
   const uid = 'user-1';
@@ -79,6 +84,7 @@ describe('generate-catalog-batch API', () => {
       failedSlugs: [],
       toolReports: {},
     });
+    mockCalculateProfileDataHash.mockReturnValue('hash-1');
   });
 
   async function callBatch(): Promise<Response> {
@@ -168,5 +174,30 @@ describe('generate-catalog-batch API', () => {
       }),
     );
     expect(data.generatedSlugs).toEqual(['esotericAstrology', 'kabbalisticAstrology']);
+  });
+
+  it('returns 409 and does not persist when birth details changed after the last Generate', async () => {
+    mockCalculateProfileDataHash.mockReturnValue('hash-2');
+    mockGetDocument.mockImplementation((collection: string) => {
+      if (collection === 'users') {
+        return Promise.resolve({
+          uid,
+          mysticalProfileGenerated: true,
+          profileDataHash: 'hash-1',
+        });
+      }
+      if (collection === 'comprehensiveMysticalProfiles') {
+        return Promise.resolve({
+          vedic: displayableReportForSlug('vedic'),
+          western: displayableReportForSlug('western'),
+        });
+      }
+      return Promise.resolve({});
+    });
+    const res = await callBatch();
+    const data = await res.json();
+    expect(res.status).toBe(409);
+    expect(data.code).toBe('profile_hash_changed');
+    expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
   });
 });

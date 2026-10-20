@@ -22,6 +22,7 @@ import {
   isOnDemandToolSlug,
   storedReportMatchesHash,
 } from '@/lib/onDemandToolReports';
+import { isCommittedProfileHash } from '@/lib/profileHashCommit';
 import { hasToolReportExtraInputs, sanitizeToolReportExtraInputs } from '@/lib/toolReportExtraInputs';
 
 export const dynamic = 'force-dynamic';
@@ -83,6 +84,15 @@ export async function POST(request: NextRequest) {
     }
 
     const profileHash = calculateProfileDataHash(userProfile);
+    if (!isCommittedProfileHash(userProfile.profileDataHash, profileHash)) {
+      return NextResponse.json(
+        {
+          error: 'Birth details changed. Click Generate to rebuild natal charts before opening this tool.',
+          code: 'profile_hash_changed',
+        },
+        { status: 409 },
+      );
+    }
     const stored = ((await getDocument('comprehensiveMysticalProfiles', uid)) || {}) as Record<string, unknown>;
     const existing = stored[toolSlug];
     const forceRefresh = hasToolReportExtraInputs(extraInputs);

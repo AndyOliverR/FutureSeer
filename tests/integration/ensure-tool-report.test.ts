@@ -36,10 +36,15 @@ jest.mock('@/lib/onDemandToolReports', () => ({
 }));
 
 jest.mock('@/lib/firebase', () => ({
-  calculateProfileDataHash: () => 'hash-1',
+  calculateProfileDataHash: jest.fn(() => 'hash-1'),
 }));
 
+import { calculateProfileDataHash } from '@/lib/firebase';
 import { POST } from '@/app/api/profile/ensure-tool-report/route';
+
+const mockCalculateProfileDataHash = calculateProfileDataHash as jest.MockedFunction<
+  typeof calculateProfileDataHash
+>;
 
 describe('ensure-tool-report API', () => {
   const uid = 'user-1';
@@ -53,6 +58,7 @@ describe('ensure-tool-report API', () => {
       failedSlugs: [],
       toolReports: { tarot: { status: 'success', data: { cards: [{ name: 'The Fool' }] } } },
     });
+    mockCalculateProfileDataHash.mockReturnValue('hash-1');
   });
 
   async function callEnsure(body: Record<string, unknown>): Promise<Response> {
@@ -135,5 +141,25 @@ describe('ensure-tool-report API', () => {
         extraInputs: expect.objectContaining({ question: 'What is my path this year?' }),
       }),
     );
+  });
+
+  it('returns 409 and does not persist when birth details changed after the last Generate', async () => {
+    mockCalculateProfileDataHash.mockReturnValue('hash-2');
+    mockGetDocument.mockImplementation((collection: string) => {
+      if (collection === 'users') {
+        return Promise.resolve({
+          uid,
+          mysticalProfileGenerated: true,
+          profileDataHash: 'hash-1',
+        });
+      }
+      if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
+      return Promise.resolve({});
+    });
+    const res = await callEnsure({ toolSlug: 'tarot' });
+    const data = await res.json();
+    expect(res.status).toBe(409);
+    expect(data.code).toBe('profile_hash_changed');
+    expect(mockGenerateAndPersistToolReports).not.toHaveBeenCalled();
   });
 });

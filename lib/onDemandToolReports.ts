@@ -14,8 +14,12 @@ import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 import { collapseDuplicateReportFields } from '@/lib/reportDedup';
 import type { ToolReportExtraInputs } from '@/lib/toolReportExtraInputs';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
+import {
+  NATAL_CHART_SLUGS,
+  natalReportsMatchProfileHash,
+} from '@/lib/profileHashCommit';
 
-export const NATAL_CHART_SLUGS = ['vedic', 'western'] as const;
+export { NATAL_CHART_SLUGS };
 
 export type OnDemandToolSlug = (typeof ALL_TOOL_SLUGS)[number];
 
@@ -66,10 +70,20 @@ export async function persistOnDemandToolReports(params: {
   const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) ||
     {}) as Record<string, unknown>;
   let toolStatus = (existingProfile.toolStatus as PersistedToolStatusMap | undefined) ?? {};
+  const rewritingSlugs = Object.entries(toolReports)
+    .filter(([, entry]) => entry.status === 'success')
+    .map(([slug]) => slug);
+  const writeCommittedHash = natalReportsMatchProfileHash(
+    existingProfile,
+    profileHash,
+    rewritingSlugs,
+  );
   const profilePatch: Record<string, unknown> = {
     lastProgressAt: now,
-    profileDataHash: profileHash,
   };
+  if (writeCommittedHash) {
+    profilePatch.profileDataHash = profileHash;
+  }
   const readySlugs: string[] = [];
   const failedSlugs: string[] = [];
 
@@ -91,17 +105,20 @@ export async function persistOnDemandToolReports(params: {
   const mergedProfile = { ...existingProfile, ...profilePatch };
   const readiness = summarizeToolReadiness(mergedProfile, ALL_TOOL_SLUGS);
   await setDocument('comprehensiveMysticalProfiles', uid, profilePatch);
-  await setDocument('users', uid, {
+  const userPatch: Record<string, unknown> = {
     mysticalProfileGenerated: true,
     mysticalProfileGeneratedAt: now,
-    profileDataHash: profileHash,
     profileStatus: readiness.allReportsReady ? 'completed' : 'running',
     allReportsReady: readiness.allReportsReady,
     pendingToolSlugs: readiness.pendingToolSlugs,
     toolStatus,
     lastProgressAt: now,
     updatedAt: now,
-  });
+  };
+  if (writeCommittedHash) {
+    userPatch.profileDataHash = profileHash;
+  }
+  await setDocument('users', uid, userPatch);
   const lockPatch: Record<string, unknown> = {
     status: readiness.allReportsReady ? 'completed' : 'running',
     phase: readiness.allReportsReady ? 'completed' : 'catalog',
