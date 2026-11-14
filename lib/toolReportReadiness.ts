@@ -96,7 +96,18 @@ export function classifyToolReportState(report: unknown, toolSlug?: string): Rep
   if (rec.placeholder === true) return 'placeholder';
   if (Object.keys(rec).length === 0) return 'pending';
   if (!hasDisplayableReportSubstance(rec, toolSlug)) return 'pending';
+  if (toolSlug === 'humanDesign' && !humanDesignMandalaCurrent(rec)) return 'pending';
   return 'ready';
+}
+
+/** Charts cast before the Rave Mandala + 88° design fix omit mandalaVersion 2. */
+function humanDesignMandalaCurrent(report: Record<string, unknown>): boolean {
+  if (report.mandalaVersion === 2) return true;
+  const chart = report.chart;
+  if (chart && typeof chart === 'object' && !Array.isArray(chart)) {
+    return (chart as Record<string, unknown>).mandalaVersion === 2;
+  }
+  return false;
 }
 
 export function isReadyToolReport(report: unknown, toolSlug?: string): boolean {
