@@ -45,6 +45,26 @@ describe('Report readiness contract', () => {
     expect(classifyToolReportState({ sunSign: 'Aries' }, 'western')).toBe('ready');
   });
 
+  it('treats Human Design charts from the old sequential wheel as pending', () => {
+    const stale = {
+      chart: {
+        type: { name: 'Manifestor' },
+        profile: { name: '1/3' },
+        authority: { name: 'Emotional' },
+        centers: { defined: ['throat'] },
+        gates: [{ gate: 54 }],
+      },
+      report: { reading: 'stale' },
+    };
+    expect(classifyToolReportState(stale, 'humanDesign')).toBe('pending');
+    expect(
+      classifyToolReportState(
+        { ...stale, chart: { ...stale.chart, mandalaVersion: 2 } },
+        'humanDesign',
+      ),
+    ).toBe('ready');
+  });
+
   it('summarizes pending slugs and ready count', () => {
     const profile = {
       vedic: { reading: 'ready' },

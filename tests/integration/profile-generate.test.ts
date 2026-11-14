@@ -27,7 +27,7 @@ function displayableReportForSlug(slug: string): Record<string, unknown> {
     case 'bazi':
       return { pillars: { year: 'Jia Zi' }, placeholder: false };
     case 'humanDesign':
-      return { type: 'Generator', placeholder: false };
+      return { type: 'Generator', mandalaVersion: 2, placeholder: false };
     default:
       return { reading: 'ok', placeholder: false };
   }

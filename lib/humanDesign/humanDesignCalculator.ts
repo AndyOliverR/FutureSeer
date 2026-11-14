@@ -4,6 +4,8 @@
  */
 
 import { devLog } from '@/lib/devLogger';
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC';
+import { calculateTropicalPlanets, calculateTropicalHouses } from '@/lib/western/tropicalCalculator';
 import { 
   GATES, 
   CENTERS, 
@@ -11,7 +13,8 @@ import {
   TYPES, 
   AUTHORITIES, 
   PROFILES,
-  MOTOR_CENTERS,
+  HUMAN_DESIGN_MANDALA_VERSION,
+  definedCenterIdsForActiveGates,
   getGateFromPlanetPosition,
   getLineFromPlanetPosition
 } from './humanDesignData';
@@ -80,48 +83,47 @@ export interface HumanDesignChart {
     type: 'single' | 'split' | 'triple_split' | 'quadruple_split';
     description: string;
   };
+  /** 2 = Rave Mandala wheel plus the 88° design chart. Older stored charts omit this. */
+  mandalaVersion: typeof HUMAN_DESIGN_MANDALA_VERSION;
 }
 
 /**
  * Main function to calculate Human Design chart
  */
+const DESIGN_SOLAR_ARC_DEGREES = 88;
+
 export async function calculateHumanDesignChart(birthData: BirthData): Promise<HumanDesignChart> {
-  // Get astrological chart data
-  const astroChart = await getAstrologicalChart(birthData);
-  
-  // Map planets to gates
-  const planetGates = mapPlanetsToGates(astroChart.planets);
-  
-  // Calculate which centers are defined
+  const personalityDate = birthLocalToUTC(birthData.birthDate, birthData.birthTime, {
+    latitude: birthData.latitude,
+    longitude: birthData.longitude,
+  });
+  const designDate = findDesignInstant(personalityDate);
+  const personalityChart = await getAstrologicalChart(personalityDate, birthData.latitude, birthData.longitude);
+  const designChart = await getAstrologicalChart(designDate, birthData.latitude, birthData.longitude);
+
+  const planetGates = [
+    ...mapPlanetsToGates(personalityChart.planets),
+    ...mapPlanetsToGates(designChart.planets.map((planet) => ({
+      ...planet,
+      name: `Design ${planet.name}`,
+    }))),
+  ];
+
   const centers = calculateCenters(planetGates);
-  
-  // Determine type
-  const type = determineType(centers.defined, planetGates);
-  
-  // Calculate strategy
-  const strategy = calculateStrategy(type.id);
-  
-  // Determine authority
-  const authority = identifyAuthority(centers.defined, type.id);
-  
-  // Calculate profile
-  const profile = calculateProfile(planetGates);
-  
-  // Identify channels
   const channels = identifyChannels(planetGates);
-  
-  // Calculate incarnation cross
+  const type = determineType(centers.defined, channels);
+  const strategy = calculateStrategy(type.id);
+  const authority = identifyAuthority(centers.defined, type.id, channels);
+  const profile = calculateProfile(planetGates);
   const incarnationCross = calculateIncarnationCross(planetGates);
-  
-  // Calculate definition
   const definition = calculateDefinition(centers.defined, channels);
-  
+
   return {
     type,
     strategy,
     authority,
     profile: {
-      id: profile.name ?? 'profile',
+      id: profile.id,
       name: profile.name,
       description: profile.description,
       role: profile.role
@@ -130,31 +132,53 @@ export async function calculateHumanDesignChart(birthData: BirthData): Promise<H
     gates: planetGates,
     channels,
     incarnationCross,
-    definition
+    definition,
+    mandalaVersion: HUMAN_DESIGN_MANDALA_VERSION,
   };
+}
+
+function forwardArcDegrees(fromLongitude: number, toLongitude: number): number {
+  return (toLongitude - fromLongitude + 360) % 360;
+}
+
+/**
+ * Design activations are the sky when the Sun was exactly 88° of solar arc before birth.
+ * That instant is about 88–93 days earlier; it is not a fixed number of days.
+ */
+function findDesignInstant(personalityDate: Date): Date {
+  const personalitySun = sunLongitudeAt(personalityDate);
+  let lo = personalityDate.getTime() - 105 * 24 * 60 * 60 * 1000;
+  let hi = personalityDate.getTime() - 75 * 24 * 60 * 60 * 1000;
+  for (let i = 0; i < 40; i += 1) {
+    const mid = (lo + hi) / 2;
+    const arc = forwardArcDegrees(sunLongitudeAt(new Date(mid)), personalitySun);
+    if (arc > DESIGN_SOLAR_ARC_DEGREES) lo = mid;
+    else hi = mid;
+  }
+  return new Date((lo + hi) / 2);
+}
+
+function sunLongitudeAt(date: Date): number {
+  return calculateTropicalPlanets(date).sun.longitude;
 }
 
 /**
  * Get astrological chart data using direct calculation
  */
-async function getAstrologicalChart(birthData: BirthData): Promise<{
+async function getAstrologicalChart(
+  birthDateTime: Date,
+  latitude: number,
+  longitude: number,
+): Promise<{
   planets: Array<{ name: string; longitude: number }>;
   ascendant: { longitude: number };
 }> {
   try {
-    // Import calculation functions directly
-    const { calculateTropicalPlanets, calculateTropicalHouses } = await import('@/lib/western/tropicalCalculator');
-    
-    // Parse birth date and time
-    const [year, month, day] = birthData.birthDate.split('-').map(Number);
-    const [hour, minute] = birthData.birthTime.split(':').map(Number);
-    const birthDateTime = new Date(Date.UTC(year, month - 1, day, hour, minute || 0));
-    
     // Calculate tropical planets (Human Design uses tropical zodiac)
     const planetsData = calculateTropicalPlanets(birthDateTime);
     
     // Calculate houses to get ascendant
-    const houses = calculateTropicalHouses(birthDateTime, birthData.latitude, birthData.longitude);
+    const houses = calculateTropicalHouses(birthDateTime, latitude, longitude);
     
     // Extract planets and their longitudes
     const planets = [
@@ -182,22 +206,18 @@ async function getAstrologicalChart(birthData: BirthData): Promise<{
   } catch (error) {
     devLog.error('Error calculating astrological chart:', error, 'humanDesignCalculator');
     // Fallback: calculate basic positions if calculation fails
-    return calculateBasicPlanetaryPositions(birthData);
+    return calculateBasicPlanetaryPositions(birthDateTime, longitude);
   }
 }
 
 /**
  * Fallback: Calculate basic planetary positions
  */
-function calculateBasicPlanetaryPositions(birthData: BirthData): {
+function calculateBasicPlanetaryPositions(date: Date, longitude: number): {
   planets: Array<{ name: string; longitude: number }>;
   ascendant: { longitude: number };
 } {
   // This is a simplified fallback - in production, use proper ephemeris
-  const [year, month, day] = birthData.birthDate.split('-').map(Number);
-  const [hour, minute] = birthData.birthTime.split(':').map(Number);
-  
-  const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
   const daysSinceEpoch = (date.getTime() - new Date('2000-01-01').getTime()) / (1000 * 60 * 60 * 24);
   
   // Simplified planetary positions (approximate)
@@ -216,9 +236,16 @@ function calculateBasicPlanetaryPositions(birthData: BirthData): {
     { name: 'SouthNode', longitude: ((280 + daysSinceEpoch * 0.0529) + 180) % 360 }
   ];
 
-  // Calculate ascendant (simplified)
-  const siderealTime = calculateSiderealTime(year, month, day, hour, minute, birthData.longitude);
-  const ascendantLongitude = (siderealTime * 15 + birthData.latitude) % 360;
+  // Calculate ascendant (simplified). `date` is already UTC.
+  const siderealTime = calculateSiderealTime(
+    date.getUTCFullYear(),
+    date.getUTCMonth() + 1,
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    longitude,
+  );
+  const ascendantLongitude = (siderealTime * 15) % 360;
 
   return {
     planets,
@@ -269,6 +296,14 @@ function mapPlanetsToGates(planets: Array<{ name: string; longitude: number }>):
 /**
  * Calculate which centers are defined
  */
+type ActiveChannel = {
+  id: string;
+  name: string;
+  gates: [number, number];
+  centers: [string, string];
+  description: string;
+};
+
 function calculateCenters(planetGates: PlanetGate[]): {
   defined: string[];
   undefined: string[];
@@ -280,41 +315,33 @@ function calculateCenters(planetGates: PlanetGate[]): {
   }>;
 } {
   const centerGates: Record<string, number[]> = {};
-  
-  // Count gates in each center
   planetGates.forEach(({ gate, center }) => {
     if (!centerGates[center]) {
       centerGates[center] = [];
     }
-    centerGates[center].push(gate);
+    if (!centerGates[center].includes(gate)) {
+      centerGates[center].push(gate);
+    }
   });
-  
-  // Check channels to see if centers are connected
-  const connectedCenters = new Set<string>();
-  planetGates.forEach(({ gate }) => {
-    Object.values(CHANNELS).forEach(channel => {
-      if (channel.gates.includes(gate as any)) {
-        connectedCenters.add(channel.center1);
-        connectedCenters.add(channel.center2);
-      }
-    });
-  });
-  
+
+  const definedSet = new Set(definedCenterIdsForActiveGates(new Set(planetGates.map((planet) => planet.gate))));
+
   const defined: string[] = [];
-  const undefined: string[] = [];
-  const details: Record<string, any> = {};
-  
-  Object.entries(CENTERS).forEach(([key, center]) => {
-    const hasGates = (centerGates[center.id]?.length || 0) > 0;
-    const isConnected = connectedCenters.has(center.id);
-    const isDefined = hasGates || isConnected;
-    
+  const undefinedCenters: string[] = [];
+  const details: Record<string, {
+    name: string;
+    description: string;
+    isDefined: boolean;
+    gates: number[];
+  }> = {};
+
+  Object.values(CENTERS).forEach((center) => {
+    const isDefined = definedSet.has(center.id);
     if (isDefined) {
       defined.push(center.id);
     } else {
-      undefined.push(center.id);
+      undefinedCenters.push(center.id);
     }
-    
     details[center.id] = {
       name: center.name,
       description: center.description,
@@ -322,56 +349,60 @@ function calculateCenters(planetGates: PlanetGate[]): {
       gates: centerGates[center.id] || []
     };
   });
-  
-  return { defined, undefined, details };
+
+  return { defined, undefined: undefinedCenters, details };
 }
 
 /**
- * Determine Human Design Type
+ * Determine Human Design Type.
+ * A defined Sacral is a Generator (including sacral charts whose throat reaches a motor).
+ * A Manifestor has no Sacral, and a motor reaches the Throat through defined channels.
  */
-function determineType(definedCenters: string[], planetGates: PlanetGate[]): typeof TYPES[keyof typeof TYPES] {
-  const hasSacral = definedCenters.includes('sacral');
-  const hasThroat = definedCenters.includes('throat');
-  const hasMotor = MOTOR_CENTERS.some(motor => definedCenters.includes(motor));
-  const hasThroatToMotor = hasThroat && hasMotor && isThroatConnectedToMotor(definedCenters, planetGates);
-  
-  // Reflector: No centers defined
+function determineType(definedCenters: string[], channels: ActiveChannel[]): typeof TYPES[keyof typeof TYPES] {
   if (definedCenters.length === 0) {
     return TYPES.REFLECTOR;
   }
-  
-  // Manifestor: Throat connected to motor center
-  if (hasThroatToMotor) {
-    return TYPES.MANIFESTOR;
-  }
-  
-  // Generator: Sacral defined
-  if (hasSacral) {
+  if (definedCenters.includes('sacral')) {
     return TYPES.GENERATOR;
   }
-  
-  // Projector: Has defined centers but no motor
+  if (isThroatConnectedToMotor(channels)) {
+    return TYPES.MANIFESTOR;
+  }
   return TYPES.PROJECTOR;
 }
 
+const NON_SACRAL_MOTORS = ['root', 'solar_plexus', 'heart'] as const;
+
 /**
- * Check if throat is connected to a motor center
+ * True when an active channel path joins the Throat to the Root, Solar Plexus, or Heart.
  */
-function isThroatConnectedToMotor(definedCenters: string[], planetGates: PlanetGate[]): boolean {
-  const motorCenters = ['root', 'sacral', 'solar_plexus', 'heart'];
-  const hasThroat = definedCenters.includes('throat');
-  
-  if (!hasThroat) return false;
-  
-  // Check if any channel connects throat to a motor center
-  return Object.values(CHANNELS).some(channel => {
-    if (!channel || !channel.center1 || !channel.center2) {
-      return false;
-    }
-    const connectsThroat = channel.center1 === 'throat' || channel.center2 === 'throat';
-    const connectsMotor = motorCenters.some(motor => channel.center1 === motor || channel.center2 === motor);
-    return connectsThroat && connectsMotor;
+function isThroatConnectedToMotor(channels: ActiveChannel[]): boolean {
+  const adjacent = new Map<string, string[]>();
+  const link = (left: string, right: string) => {
+    const leftNext = adjacent.get(left) ?? [];
+    leftNext.push(right);
+    adjacent.set(left, leftNext);
+    const rightNext = adjacent.get(right) ?? [];
+    rightNext.push(left);
+    adjacent.set(right, rightNext);
+  };
+  channels.forEach((channel) => {
+    link(channel.centers[0], channel.centers[1]);
   });
+  if (!adjacent.has('throat')) return false;
+
+  const seen = new Set<string>();
+  const queue = ['throat'];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || seen.has(current)) continue;
+    seen.add(current);
+    if ((NON_SACRAL_MOTORS as readonly string[]).includes(current)) return true;
+    (adjacent.get(current) ?? []).forEach((next) => {
+      if (!seen.has(next)) queue.push(next);
+    });
+  }
+  return false;
 }
 
 /**
@@ -385,82 +416,72 @@ function calculateStrategy(typeId: string): string {
 /**
  * Identify Authority
  */
-function identifyAuthority(definedCenters: string[], typeId: string): typeof AUTHORITIES[keyof typeof AUTHORITIES] {
-  // Reflector: Lunar Authority
+function channelJoins(channel: ActiveChannel, left: string, right: string): boolean {
+  const centers = channel.centers;
+  return (centers[0] === left && centers[1] === right) || (centers[0] === right && centers[1] === left);
+}
+
+function identifyAuthority(
+  definedCenters: string[],
+  typeId: string,
+  channels: ActiveChannel[],
+): typeof AUTHORITIES[keyof typeof AUTHORITIES] {
   if (typeId === 'reflector') {
     return AUTHORITIES.LUNAR;
   }
-  
-  // Emotional Authority: Solar Plexus defined
   if (definedCenters.includes('solar_plexus')) {
     return AUTHORITIES.EMOTIONAL;
   }
-  
-  // Sacral Authority: Sacral defined
   if (definedCenters.includes('sacral')) {
     return AUTHORITIES.SACRAL;
   }
-  
-  // Splenic Authority: Spleen defined
   if (definedCenters.includes('spleen')) {
     return AUTHORITIES.SPLENIC;
   }
-  
-  // Self-Projected Authority: G and Throat defined
-  if (definedCenters.includes('g') && definedCenters.includes('throat')) {
-    return AUTHORITIES.SELF_PROJECTED;
-  }
-  
-  // Ego Authority: Heart defined
-  if (definedCenters.includes('heart')) {
+  if (channels.some((channel) => channelJoins(channel, 'heart', 'throat') || channelJoins(channel, 'heart', 'g'))) {
     return AUTHORITIES.EGO;
   }
-  
-  // Environmental Authority: Default for Projectors
+  if (channels.some((channel) => channelJoins(channel, 'g', 'throat'))) {
+    return AUTHORITIES.SELF_PROJECTED;
+  }
   return AUTHORITIES.ENVIRONMENTAL;
 }
 
 /**
- * Calculate Profile from Sun and Earth gates
+ * Profile is the personality Sun line over the design Sun line (88° earlier), not Sun/Earth.
  */
-function calculateProfile(planetGates: PlanetGate[]): typeof PROFILES[keyof typeof PROFILES] {
-  const sunGate = planetGates.find(p => p.planet === 'Sun');
-  const earthGate = planetGates.find(p => p.planet === 'Earth') || 
-                    planetGates.find(p => p.planet === 'Sun'); // Earth is opposite Sun
-  
-  const sunLine = sunGate?.line || 1;
-  const earthLine = earthGate?.line || 1;
-  
-  // Profile is combination of Sun line and Earth line
-  const profileKey = `${sunLine}/${earthLine}` as keyof typeof PROFILES;
+function calculateProfile(planetGates: PlanetGate[]): {
+  id: string;
+  name: string;
+  description: string;
+  role: string;
+} {
+  const sunLine = planetGates.find((planet) => planet.planet === 'Sun')?.line || 1;
+  const designSunLine = planetGates.find((planet) => planet.planet === 'Design Sun')?.line || 1;
+  const profileKey = `${sunLine}/${designSunLine}` as keyof typeof PROFILES;
   const profile = PROFILES[profileKey];
-  
   if (profile) {
-    return profile;
+    return {
+      id: profileKey,
+      name: `${profileKey} ${profile.name}`,
+      description: profile.description,
+      role: profile.role,
+    };
   }
-  
-  // Fallback to 1/3 if profile not found
-  return PROFILES['1/3'];
+  return {
+    id: profileKey,
+    name: profileKey,
+    description: `Profile ${profileKey}`,
+    role: `Profile ${profileKey}`,
+  };
 }
 
 /**
  * Identify active channels
  */
-function identifyChannels(planetGates: PlanetGate[]): Array<{
-  id: string;
-  name: string;
-  gates: [number, number];
-  centers: [string, string];
-  description: string;
-}> {
+function identifyChannels(planetGates: PlanetGate[]): ActiveChannel[] {
   const activeGates = new Set(planetGates.map(p => p.gate));
-  const channels: Array<{
-    id: string;
-    name: string;
-    gates: [number, number];
-    centers: [string, string];
-    description: string;
-  }> = [];
+  const channels: ActiveChannel[] = [];
   
   Object.entries(CHANNELS).forEach(([channelId, channel]) => {
     const [gate1, gate2] = channel.gates;
@@ -505,7 +526,7 @@ function calculateIncarnationCross(planetGates: PlanetGate[]): {
 /**
  * Calculate Definition (how centers connect)
  */
-function calculateDefinition(definedCenters: string[], channels: any[]): {
+function calculateDefinition(definedCenters: string[], channels: ActiveChannel[]): {
   type: 'single' | 'split' | 'triple_split' | 'quadruple_split';
   description: string;
 } {
@@ -538,7 +559,7 @@ function calculateDefinition(definedCenters: string[], channels: any[]): {
 /**
  * Find connected groups of centers
  */
-function findConnectedGroups(definedCenters: string[], channels: any[]): string[][] {
+function findConnectedGroups(definedCenters: string[], channels: ActiveChannel[]): string[][] {
   const groups: string[][] = [];
   const visited = new Set<string>();
   
