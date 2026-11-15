@@ -2,6 +2,7 @@
 // Specialized prompts for different types of Vedic astrology questions
 
 import type { VedicQuestionType } from '@/lib/vedicSeerState';
+import { currentAntardashaPlanet } from '@/lib/vedic/dashaCalculator';
 
 export interface VedicQuestionContext {
   userProfile: {
@@ -25,7 +26,7 @@ export interface VedicQuestionContext {
       endDate: string;
       progress: number;
       planet?: string;
-      antardashas?: Array<{ planet?: string; progress?: number }>;
+      antardashas?: Array<{ planet?: string; progress?: number; isCurrent?: boolean }>;
     };
     yogas: Array<{
       name: string;
@@ -257,6 +258,17 @@ export function buildSpecializedPrompt(questionType: string, context: VedicQuest
   }
 }
 
+function antardashaLabel(
+  currentDasha: VedicQuestionContext['vedicChart']['currentDasha'] | undefined,
+  fallback: string,
+): string {
+  if (!currentDasha) return fallback;
+  const fromRunning = currentDasha.antardashas?.some((row) => row.isCurrent)
+    ? currentAntardashaPlanet(currentDasha.antardashas)
+    : undefined;
+  return fromRunning || currentDasha.antardasha || currentAntardashaPlanet(currentDasha.antardashas) || fallback;
+}
+
 function buildBasePrompt(context: VedicQuestionContext): string {
   const { userProfile, vedicChart } = context;
   
@@ -274,7 +286,7 @@ KEY CHART DETAILS:
 - Ascendant (Lagna): ${vedicChart.ascendant.signName} at ${vedicChart.ascendant.degree}°
 - Chart Ruler: ${vedicChart.chartRuler.planet} in ${vedicChart.chartRuler.sign} (${vedicChart.chartRuler.house}th house)
 - Current Mahadasha: ${vedicChart.currentDasha.mahadasha || vedicChart.currentDasha.planet || 'Unknown'} (${vedicChart.currentDasha.startDate} to ${vedicChart.currentDasha.endDate})
-- Current Antardasha: ${vedicChart.currentDasha.antardasha || (vedicChart.currentDasha.antardashas?.find((a: any) => a.progress && a.progress > 0)?.planet) || 'Not specified'}
+- Current Antardasha: ${antardashaLabel(vedicChart.currentDasha, 'Not specified')}
 
 PLANETARY POSITIONS:
 ${Object.entries(vedicChart.planets).map(([planet, data]: any) => 
@@ -571,7 +583,7 @@ function buildTimingPrompt(basePrompt: string, context: VedicQuestionContext): s
 SPECIALIZED TIMING ANALYSIS:
 Focus on the following aspects for timing questions:
 - Current Mahadasha: ${vedicChart.currentDasha.mahadasha || vedicChart.currentDasha.planet || 'Unknown'} (${vedicChart.currentDasha.startDate} to ${vedicChart.currentDasha.endDate})
-- Current Antardasha: ${vedicChart.currentDasha.antardasha || (vedicChart.currentDasha.antardashas?.find((a: any) => a.progress && a.progress > 0)?.planet) || 'Unknown'}
+- Current Antardasha: ${antardashaLabel(vedicChart.currentDasha, 'Unknown')}
 - Planetary transits and their effects
 - Dasha progression and timing windows
 - Auspicious and inauspicious periods
@@ -594,7 +606,7 @@ function buildDashaPrompt(basePrompt: string, context: VedicQuestionContext): st
 SPECIALIZED DASHA ANALYSIS:
 Focus on the following aspects for dasha questions:
 - Current Mahadasha: ${vedicChart.currentDasha.mahadasha || vedicChart.currentDasha.planet || 'Unknown'} (${vedicChart.currentDasha.startDate} to ${vedicChart.currentDasha.endDate})
-- Current Antardasha: ${vedicChart.currentDasha.antardasha || (vedicChart.currentDasha.antardashas?.find((a: any) => a.progress && a.progress > 0)?.planet) || 'Unknown'}
+- Current Antardasha: ${antardashaLabel(vedicChart.currentDasha, 'Unknown')}
 - Dasha progression and upcoming periods
 - Planetary effects during different dasha periods
 - Remedies for challenging dasha periods

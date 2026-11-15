@@ -19,6 +19,7 @@ import {
   classifyVedicQuestion,
   getVedicSliceForQuestionType,
 } from '@/lib/vedicSeerState';
+import { repairVedicChartDasha } from '@/lib/vedic/dashaCalculator';
 import {
   buildMarkovUserBehaviorSignals,
   formatPredictiveHintForVedicPrompt,
@@ -127,9 +128,10 @@ export async function POST(request: NextRequest) {
     if (__toolSeerGate) return __toolSeerGate;
     const { userId, question, userProfile, vedicNumerologyData, sessionId, focusLens, planetFocus } =
       body;
-    const vedicChartData =
+    const rawVedicChart =
       body.vedicChartData ??
       (storedToolReportFromSeerBody(body, 'vedic') as typeof body.vedicChartData | undefined);
+    const vedicChartData = rawVedicChart ? repairVedicChartDasha(rawVedicChart) : rawVedicChart;
 
     if (!userId || !question || !userProfile) {
       return jsonWithRobots(
