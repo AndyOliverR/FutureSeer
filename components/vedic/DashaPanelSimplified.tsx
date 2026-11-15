@@ -35,6 +35,7 @@ interface DashaPanelSimplifiedProps {
         startDate: string;
         endDate: string;
         progress?: number;
+        isCurrent?: boolean;
       }>;
     };
     dasha: Array<{
@@ -190,16 +191,21 @@ export function DashaPanelSimplified({ chartData, birthData }: DashaPanelSimplif
             colorScheme="amber"
             variant="callout"
           />
-          {chartData.currentDasha.antardashas?.map((antardasha, idx) => (
+          {chartData.currentDasha.antardashas?.map((antardasha, idx) => {
+            const progress = antardasha.progress ?? 0
+            const active = antardasha.isCurrent === true
+              || (antardasha.isCurrent == null && progress > 0 && progress < 100)
+            const completed = !active && progress >= 100
+            return (
             <div key={idx}>
               <DevotionistStyleCard
                 icon={getPlanetIcon(antardasha.planet, 'sm')}
                 title={`${antardasha.planet} Antardasha`}
                 subtitle={`${formatDate(antardasha.startDate)} - ${formatDate(antardasha.endDate)}`}
-                summary={antardasha.progress && antardasha.progress > 0 ? `Active - ${antardasha.progress}% complete` : 'Upcoming'}
-                colorScheme={antardasha.progress && antardasha.progress > 0 ? 'amber' : 'blue'}
+                summary={active ? `Active - ${progress}% complete` : completed ? 'Completed' : 'Upcoming'}
+                colorScheme={active ? 'amber' : 'blue'}
               />
-              {antardasha.progress && antardasha.progress > 0 && (
+              {active && (
                 <div className="mt-2 bg-white/80 rounded-lg p-3 border-2 border-amber-300">
                   <div className="w-full bg-slate-200 rounded-full h-2">
                     <div 
@@ -210,7 +216,8 @@ export function DashaPanelSimplified({ chartData, birthData }: DashaPanelSimplif
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </TabsContent>
 
         {/* Timeline Tab */}

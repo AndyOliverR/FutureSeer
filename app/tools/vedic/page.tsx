@@ -49,6 +49,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getDivisionalCharts } from "@/lib/astronomia-vedic";
+import { repairVedicChartDasha } from "@/lib/vedic/dashaCalculator";
 
 const ComprehensiveVedicReport = dynamic(lazyComprehensiveVedicReport, { ssr: false, loading: () => null })
 const DashaPanelSimplified = dynamic(lazyDashaPanelSimplified, { ssr: false, loading: () => null })
@@ -149,13 +150,14 @@ function VedicAstrologyPageContent() {
 
   const vedicProfileData = useMemo(() => {
     const fromProfile = (compProfile as Record<string, unknown> | null)?.vedic
-    if (fromProfile && typeof fromProfile === 'object') return fromProfile as Record<string, unknown>
-    if (vedicToolReport && typeof vedicToolReport === 'object') {
+    let raw: Record<string, unknown> | null = null
+    if (fromProfile && typeof fromProfile === 'object') raw = fromProfile as Record<string, unknown>
+    else if (vedicToolReport && typeof vedicToolReport === 'object') {
       const t = vedicToolReport as Record<string, unknown>
-      const inner = (t.data && typeof t.data === 'object') ? (t.data as Record<string, unknown>) : t
-      return inner
+      raw = (t.data && typeof t.data === 'object') ? (t.data as Record<string, unknown>) : t
     }
-    return null
+    if (!raw) return null
+    return repairVedicChartDasha(raw)
   }, [compProfile, vedicToolReport]);
 
   const hasVedicData = !!vedicProfileData;

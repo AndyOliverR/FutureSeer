@@ -9,10 +9,27 @@ import {
 } from '@/lib/userSubcollectionFirestore';
 import { VERIFIED_VEDIC_FALLBACKS } from './verifiedFallbacks';
 import { GROQ_DEFAULT_TEXT_MODEL } from '@/lib/groqModels';
+import { antardashasForStoredMahadasha, currentAntardashaPlanet } from '@/lib/vedic/dashaCalculator';
 
 // Remove top-level Groq initialization - will be done inside methods
 
 const VEDIC_CACHE_VERSION = 5; // Increment to invalidate all caches (v5: Adds personalized userName to divisional charts)
+
+function withRunningAntardasha(dashaData: any): any {
+  if (!dashaData || typeof dashaData !== 'object') return dashaData;
+  const lord = dashaData.planet || dashaData.mahadasha;
+  const repaired = antardashasForStoredMahadasha({
+    planet: typeof lord === 'string' ? lord : undefined,
+    startDate: typeof dashaData.startDate === 'string' ? dashaData.startDate : undefined,
+    endDate: typeof dashaData.endDate === 'string' ? dashaData.endDate : undefined,
+  });
+  if (!repaired) return dashaData;
+  return {
+    ...dashaData,
+    antardashas: repaired,
+    antardasha: currentAntardashaPlanet(repaired) ?? dashaData.antardasha,
+  };
+}
 
 export class VedicInterpretationEnhancer {
   /** Firestore document IDs cannot contain `/`; call sites use paths like `planets/Moon`. */
@@ -114,11 +131,10 @@ export class VedicInterpretationEnhancer {
     chartData: any,
     userId: string
   ): Promise<string> {
+    dashaData = withRunningAntardasha(dashaData);
     // Generate proper cache key using correct property names
     const mahadasha = dashaData.mahadasha || dashaData.planet || 'Unknown';
-    const antardasha = dashaData.antardasha || 
-      (dashaData.antardashas?.find((a: any) => a.progress && a.progress > 0)?.planet) || 
-      'Unknown';
+    const antardasha = currentAntardashaPlanet(dashaData.antardashas) || dashaData.antardasha || 'Unknown';
     const dashaId = `${mahadasha}_${antardasha}`;
     
     // Check cache and validate content
@@ -659,17 +675,10 @@ CRITICAL RULES:
   
   // Build dasha prompt
   private buildDashaPrompt(dashaData: any, chartData: any): string {
+    dashaData = withRunningAntardasha(dashaData);
     // Handle both old format (mahadasha/antardasha) and new format (planet)
     const mahadasha = dashaData.mahadasha || dashaData.planet || 'Unknown';
-    
-    // Find current antardasha from antardashas array
-    let antardasha = dashaData.antardasha || 'Unknown';
-    if (dashaData.antardashas && Array.isArray(dashaData.antardashas)) {
-      const currentAntardasha = dashaData.antardashas.find((a: any) => a.progress && a.progress > 0);
-      if (currentAntardasha) {
-        antardasha = currentAntardasha.planet;
-      }
-    }
+    const antardasha = currentAntardashaPlanet(dashaData.antardashas) || dashaData.antardasha || 'Unknown';
     
     const ascendant = chartData.ascendant?.signName || 'Unknown';
     

@@ -783,6 +783,8 @@ import {
   calculateFullVimshottariDasha,
   calculateYoginiDasha,
   calculateAshtottariDasha,
+  currentAntardashaPlanet,
+  vimshottariAntardashaViews,
 } from '@/lib/vedic/dashaCalculator';
 import { calculateFullAshtakavarga } from '@/lib/vedic/ashtakavargaEngine';
 
@@ -838,7 +840,7 @@ const DASHA_SEQUENCE = [
  * @param birthDate - Birth date/time
  * @returns Array of Mahadasha periods with start/end dates
  */
-export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
+export function calculateVimshottariDasha(moonLon: number, birthDate: Date, now: Date = new Date()) {
   if (verboseAstroLogs) {
     devLog.debug('🔮 DASHA CALCULATION DEBUG:');
     devLog.debug('  Moon longitude:', moonLon);
@@ -888,7 +890,9 @@ export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
     dashaType: 'mahadasha',
     isCurrent: false,
     progress: 0,
-    effects: []
+    effects: [] as string[],
+    antardasha: undefined as string | undefined,
+    antardashas: undefined as ReturnType<typeof calculateAntardashas> | undefined,
   });
   cursor = firstEnd;
   
@@ -912,26 +916,31 @@ export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
       dashaType: 'mahadasha',
       isCurrent: false,
       progress: 0,
-      effects: []
+      effects: [] as string[],
+      antardasha: undefined as string | undefined,
+      antardashas: undefined as ReturnType<typeof calculateAntardashas> | undefined,
     });
     
     cursor = end;
   }
   
-  // Mark current dasha and calculate antardashas
-  const now = new Date();
+  // Mark current dasha and calculate antardashas from the full mahadasha, not the balance alone.
   for (const dasha of dashaList) {
     const start = new Date(dasha.startDate);
     const end = new Date(dasha.endDate);
     
-    if (now >= start && now <= end) {
+    if (now.getTime() >= start.getTime() && now.getTime() < end.getTime()) {
       dasha.isCurrent = true;
       const totalDuration = end.getTime() - start.getTime();
       const elapsed = now.getTime() - start.getTime();
-      dasha.progress = (elapsed / totalDuration) * 100;
+      dasha.progress = totalDuration > 0 ? (elapsed / totalDuration) * 100 : 0;
       
-      // Calculate antardashas for current mahadasha
-      (dasha as { antardashas?: Array<{ planet: string; startDate: string; endDate: string; duration: number; progress: number; dashaType: string }> }).antardashas = calculateAntardashas(dasha, start, end);
+      const antardashas = calculateAntardashas(dasha, start, end, now);
+      dasha.antardashas = antardashas;
+      const antarLord = currentAntardashaPlanet(antardashas);
+      if (antarLord) {
+        dasha.antardasha = antarLord;
+      }
       break;
     }
   }
@@ -947,40 +956,18 @@ export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
  * @param endDate - End date of the mahadasha
  * @returns Array of antardasha periods
  */
-function calculateAntardashas(mahadasha: any, startDate: Date, endDate: Date): Array<{ planet: string; startDate: string; endDate: string; duration: number; progress: number; dashaType: string }> {
-  const antardashas: Array<{ planet: string; startDate: string; endDate: string; duration: number; progress: number; dashaType: string }> = [];
-  const mahadashaYears = mahadasha.duration;
-  const totalDuration = endDate.getTime() - startDate.getTime();
-  
-  // Calculate each antardasha within the mahadasha
-  DASHA_SEQUENCE.forEach((dashaLord) => {
-    const antardashaYears = (dashaLord.years / 120) * mahadashaYears;
-    const antardashaDuration = (antardashaYears / mahadashaYears) * totalDuration;
-    const antardashaEnd = new Date(startDate.getTime() + antardashaDuration);
-    
-    // Calculate progress for current antardasha
-    const now = new Date();
-    let progress = 0;
-    if (now >= startDate && now <= antardashaEnd) {
-      const elapsed = now.getTime() - startDate.getTime();
-      progress = (elapsed / antardashaDuration) * 100;
-    } else if (now > antardashaEnd) {
-      progress = 100;
-    }
-    
-    antardashas.push({
-      planet: dashaLord.lord,
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: antardashaEnd.toISOString().split('T')[0],
-      duration: antardashaYears,
-      progress: Math.round(progress),
-      dashaType: 'antardasha'
-    });
-    
-    startDate.setTime(antardashaEnd.getTime());
+function calculateAntardashas(
+  mahadasha: { planet: string },
+  windowStart: Date,
+  windowEnd: Date,
+  now: Date,
+) {
+  return vimshottariAntardashaViews({
+    lord: mahadasha.planet,
+    windowStart,
+    windowEnd,
+    now,
   });
-  
-  return antardashas;
 }
 
 // Validation function for Feb 24, 1983 test case
