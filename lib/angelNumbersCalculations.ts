@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Comprehensive Angel Numbers Calculation Engine
 import { devLog } from '@/lib/devLogger';
+import { birthCalendarParts } from '@/lib/birthTimeUtils';
 // This provides all interpretations and insights needed for a self-reliant angel numbers system
 
 interface AngelNumberInterpretation {
@@ -522,10 +523,10 @@ function generateAngelicGuidance(interpretations: AngelNumberInterpretation[]): 
 
 // Analyze synchronicities
 function analyzeSynchronicities(birthDate: string, fullName: string): AngelNumbersProfile['synchronicities'] {
-  const date = new Date(birthDate)
-  const day = date.getDate()
-  const month = date.getMonth() + 1
-  const year = date.getFullYear()
+  const parts = birthCalendarParts(birthDate)
+  const day = parts?.day ?? 0
+  const month = parts?.month ?? 0
+  const year = parts?.year ?? 0
   
   const numberSequences = [
     `${day}/${month}/${year}`,

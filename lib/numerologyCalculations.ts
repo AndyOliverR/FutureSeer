@@ -1,5 +1,6 @@
 // Comprehensive Numerology Calculation Engine
 import { devLog } from '@/lib/devLogger';
+import { birthCalendarParts } from '@/lib/birthTimeUtils';
 // This provides all calculations needed for a self-reliant numerology system
 
 interface NumerologyProfile {
@@ -88,14 +89,12 @@ function reduceToSingleDigit(num: number): number {
 
 // Calculate Life Path Number from birth date
 export function calculateLifePathNumber(birthDate: string): number {
-  const date = new Date(birthDate)
-  const day = date.getDate()
-  const month = date.getMonth() + 1
-  const year = date.getFullYear()
-  
-  const daySum = reduceToSingleDigit(day)
-  const monthSum = reduceToSingleDigit(month)
-  const yearSum = reduceToSingleDigit(year)
+  const parts = birthCalendarParts(birthDate)
+  if (!parts) return 0
+
+  const daySum = reduceToSingleDigit(parts.day)
+  const monthSum = reduceToSingleDigit(parts.month)
+  const yearSum = reduceToSingleDigit(parts.year)
   
   const total = daySum + monthSum + yearSum
   return reduceToSingleDigit(total)
@@ -139,8 +138,9 @@ export function calculatePersonalityNumber(fullName: string): number {
 
 // Calculate Birth Day Number
 function calculateBirthDayNumber(birthDate: string): number {
-  const date = new Date(birthDate)
-  return reduceToSingleDigit(date.getDate())
+  const parts = birthCalendarParts(birthDate)
+  if (!parts) return 0
+  return reduceToSingleDigit(parts.day)
 }
 
 // Calculate Maturity Number
@@ -150,9 +150,10 @@ function calculateMaturityNumber(lifePathNumber: number, destinyNumber: number):
 
 // Calculate Personal Year Number
 export function calculatePersonalYearNumber(birthDate: string, targetYear?: number): number {
-  const date = new Date(birthDate)
-  const birthDay = date.getDate()
-  const birthMonth = date.getMonth() + 1
+  const parts = birthCalendarParts(birthDate)
+  if (!parts) return 0
+  const birthDay = parts.day
+  const birthMonth = parts.month
   const currentYear = targetYear || new Date().getFullYear()
   
   const daySum = reduceToSingleDigit(birthDay)
@@ -200,10 +201,10 @@ function findMasterNumbers(...numbers: number[]): number[] {
 
 // Calculate Pinnacles
 function calculatePinnacles(birthDate: string): number[] {
-  const date = new Date(birthDate)
-  const day = date.getDate()
-  const month = date.getMonth() + 1
-  const year = date.getFullYear()
+  const parts = birthCalendarParts(birthDate)
+  const day = parts?.day ?? 0
+  const month = parts?.month ?? 0
+  const year = parts?.year ?? 0
   
   const firstPinnacle = reduceToSingleDigit(day + month)
   const secondPinnacle = reduceToSingleDigit(day + year)
@@ -215,10 +216,10 @@ function calculatePinnacles(birthDate: string): number[] {
 
 // Calculate Challenges
 function calculateChallenges(birthDate: string): number[] {
-  const date = new Date(birthDate)
-  const day = date.getDate()
-  const month = date.getMonth() + 1
-  const year = date.getFullYear()
+  const parts = birthCalendarParts(birthDate)
+  const day = parts?.day ?? 0
+  const month = parts?.month ?? 0
+  const year = parts?.year ?? 0
   
   const firstChallenge = Math.abs(reduceToSingleDigit(day) - reduceToSingleDigit(month))
   const secondChallenge = Math.abs(reduceToSingleDigit(day) - reduceToSingleDigit(year))

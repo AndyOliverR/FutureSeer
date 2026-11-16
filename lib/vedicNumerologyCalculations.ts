@@ -1,6 +1,8 @@
 // Vedic Numerology Calculations with Planetary Connections
 // Based on Navagraha (9 planets) system
 
+import { birthCalendarParts } from '@/lib/birthTimeUtils';
+
 export interface VedicNumerologyProfile {
   lifePathNumber: number;
   destinyNumber: number;
@@ -136,10 +138,11 @@ function getLetterValue(letter: string): number {
 
 // Calculate Life Path Number from birth date
 export function calculateVedicLifePathNumber(birthDate: string): number {
-  const date = new Date(birthDate);
-  const day = date.getDate();
-  const month = date.getMonth() + 1;
-  const year = date.getFullYear();
+  const parts = birthCalendarParts(birthDate);
+  if (!parts) return 0;
+  const day = parts.day;
+  const month = parts.month;
+  const year = parts.year;
   
   const daySum = reduceToSingleDigit(day);
   const monthSum = reduceToSingleDigit(month);
@@ -205,7 +208,7 @@ export function calculateVedicNumerologyProfile(
   const destinyNumber = calculateDestinyNumber(fullName);
   const soulNumber = calculateSoulNumber(fullName);
   const personalityNumber = calculatePersonalityNumber(fullName);
-  const birthDayNumber = reduceToSingleDigit(new Date(birthDate).getDate());
+  const birthDayNumber = reduceToSingleDigit(birthCalendarParts(birthDate)?.day ?? 0);
   
   const rulingPlanet = getRulingPlanet(lifePathNumber);
   
