@@ -3,6 +3,7 @@
 
 import { NameAnalysis } from './nameAnalysisIntelligence';
 import { getAllNameMeanings, getNameData } from './nameMeanings';
+import { birthCalendarParts } from '@/lib/birthTimeUtils';
 
 // Numerology letter values (Chaldean system) - matching nameAnalysisIntelligence
 const LETTER_VALUES: { [key: string]: number } = {
@@ -59,10 +60,11 @@ export interface IdealNameAnalysis {
 
 // Calculate Life Path Number from birth date
 function calculateLifePathNumber(birthDate: string): number {
-  const date = new Date(birthDate);
-  const day = date.getDate();
-  const month = date.getMonth() + 1;
-  const year = date.getFullYear();
+  const parts = birthCalendarParts(birthDate);
+  if (!parts) return 0;
+  const day = parts.day;
+  const month = parts.month;
+  const year = parts.year;
   
   const daySum = reduceToSingleDigit(day);
   const monthSum = reduceToSingleDigit(month);
