@@ -39,3 +39,35 @@ export function normalizeBirthTime(bt: string | null | undefined): string {
 
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
+
+export interface BirthCalendarParts {
+  year: number
+  month: number
+  day: number
+}
+
+/**
+ * Calendar year, month, and day from a profile birth date.
+ * `YYYY-MM-DD` (and timestamps that start with that date) are the written civil day.
+ * `new Date('YYYY-MM-DD')` is UTC midnight, so local getters in the Americas return the previous day.
+ */
+export function parseBirthDateCalendar(birthDate: string | null | undefined): BirthCalendarParts | null {
+  if (!birthDate || typeof birthDate !== 'string') return null
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(birthDate.trim())
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null
+  return { year, month, day }
+}
+
+/** ISO calendar parts when present; otherwise the local calendar of a parseable date string. */
+export function birthCalendarParts(birthDate: string | null | undefined): BirthCalendarParts | null {
+  const iso = parseBirthDateCalendar(birthDate)
+  if (iso) return iso
+  if (!birthDate || typeof birthDate !== 'string') return null
+  const date = new Date(birthDate)
+  if (Number.isNaN(date.getTime())) return null
+  return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }
+}

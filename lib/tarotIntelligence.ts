@@ -1,4 +1,5 @@
 import { devLog } from '@/lib/devLogger';
+import { birthCalendarParts } from '@/lib/birthTimeUtils';
 import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import { LOCAL_TAROT_CARDS } from './tarotApiService'
 
@@ -675,11 +676,19 @@ class TarotIntelligence {
         return majorCards.find(card => card.number === cardNumber) || null
       }
 
-      // 1. Birth Card: Sum all digits of birth date (MM/DD/YYYY), reduce to 1-22
-      const date = new Date(birthDate)
-      const day = date.getDate()
-      const month = date.getMonth() + 1
-      const year = date.getFullYear()
+      // 1. Birth Card: Sum all digits of the written birth date, reduce to 1-22
+      const calendar = birthCalendarParts(birthDate)
+      if (!calendar) {
+        return {
+          birthCard: null,
+          lifePathCard: null,
+          soulCard: null,
+          personalityCard: null,
+        }
+      }
+      const day = calendar.day
+      const month = calendar.month
+      const year = calendar.year
       
       const birthDateSum = day.toString().split('').concat(
         month.toString().split(''),

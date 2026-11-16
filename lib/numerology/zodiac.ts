@@ -1,5 +1,7 @@
 // Zodiac sign determination and traits
 
+import { birthCalendarParts } from '@/lib/birthTimeUtils'
+
 export interface ZodiacInfo {
   sign: string
   symbol: string
@@ -96,11 +98,11 @@ const ZODIAC_DATA: Record<string, ZodiacInfo> = {
 }
 
 export function getZodiacFromDate(birthDateISO: string | undefined): ZodiacInfo | null {
-  if (!birthDateISO) return null
-  
-  const date = new Date(birthDateISO)
-  const month = date.getMonth() + 1
-  const day = date.getDate()
+  const parts = birthCalendarParts(birthDateISO)
+  if (!parts) return null
+
+  const month = parts.month
+  const day = parts.day
   
   if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return ZODIAC_DATA.Aries
   if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return ZODIAC_DATA.Taurus

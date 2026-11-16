@@ -1,6 +1,8 @@
 // Chaldean Numerology engine (MVP)
 // Uses current full legal name (with middle names) and birth date
 
+import { birthCalendarParts } from '@/lib/birthTimeUtils'
+
 export type ChaldeanNumbers = {
   lifePath: number
   destiny: number // also known as Name/Expression in some systems
@@ -69,15 +71,15 @@ function reduceNumber(value: number): number {
 }
 
 function calcLifePath(birthDate: string): number {
-  const d = new Date(birthDate)
-  if (isNaN(d.getTime())) return 0
-  const parts = [d.getFullYear(), d.getMonth() + 1, d.getDate()]
-  const partReduced = parts.map(n => reduceNumber(n)).reduce((a, b) => a + b, 0)
+  const parts = birthCalendarParts(birthDate)
+  if (!parts) return 0
+  const partReduced = [parts.year, parts.month, parts.day].map(n => reduceNumber(n)).reduce((a, b) => a + b, 0)
   return reduceNumber(partReduced)
 }
 
 export function computeChaldeanProfile(fullName: string, birthDate: string): ChaldeanResult {
   const name = normalizeName(fullName)
+  const calendar = birthCalendarParts(birthDate)
   const lifePath = calcLifePath(birthDate)
 
   const letters = name.replace(/\s/g, '')
@@ -91,15 +93,15 @@ export function computeChaldeanProfile(fullName: string, birthDate: string): Cha
   const destiny = reduceNumber(destinySum)
   const soulUrge = reduceNumber(soulSum)
   const personality = reduceNumber(personalitySum)
-  const birthday = reduceNumber(new Date(birthDate).getDate())
+  const birthday = calendar ? reduceNumber(calendar.day) : 0
   const maturity = reduceNumber(lifePath + destiny)
 
   const steps: Record<string, string> = {
-    lifePath: `Reduce (year ${new Date(birthDate).getFullYear()}) + (month ${new Date(birthDate).getMonth() + 1}) + (day ${new Date(birthDate).getDate()}) → ${lifePath}`,
+    lifePath: `Reduce (year ${calendar?.year ?? 0}) + (month ${calendar?.month ?? 0}) + (day ${calendar?.day ?? 0}) → ${lifePath}`,
     destiny: `${letters} → sum ${destinySum} → ${destiny}`,
     soulUrge: `${vowels || '—'} → sum ${soulSum} → ${soulUrge}`,
     personality: `${consonants || '—'} → sum ${personalitySum} → ${personality}`,
-    birthday: `Day ${new Date(birthDate).getDate()} → ${birthday}`,
+    birthday: `Day ${calendar?.day ?? 0} → ${birthday}`,
     maturity: `Life Path ${lifePath} + Destiny ${destiny} → ${maturity}`
   }
 

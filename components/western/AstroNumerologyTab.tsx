@@ -15,6 +15,7 @@ import {
   textToBulletPoints,
   extractKeyInsights
 } from '@/lib/utils/devotionistFormatter'
+import { calculateLifePathNumber } from '@/lib/numerologyCalculations'
 import { 
   Sun, 
   Hash, 
@@ -68,21 +69,6 @@ function reduceToSingleDigit(num: number): number {
   if (MASTER_NUMBERS.includes(num)) return num
   if (num < 10) return num
   return reduceToSingleDigit(num.toString().split('').reduce((sum, digit) => sum + parseInt(digit), 0))
-}
-
-// Calculate Life Path Number from birth date
-function calculateLifePathNumber(birthDate: string): number {
-  const date = new Date(birthDate)
-  const day = date.getDate()
-  const month = date.getMonth() + 1
-  const year = date.getFullYear()
-  
-  const daySum = reduceToSingleDigit(day)
-  const monthSum = reduceToSingleDigit(month)
-  const yearSum = reduceToSingleDigit(year)
-  
-  const total = daySum + monthSum + yearSum
-  return reduceToSingleDigit(total)
 }
 
 // Calculate Name Number (Destiny Number) from full name
