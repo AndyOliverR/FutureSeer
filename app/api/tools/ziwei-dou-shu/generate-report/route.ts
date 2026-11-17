@@ -7,16 +7,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { astro } from 'iztro';
+import { ZIWEI_CHART_VERSION, findZiweiPalace, ziweiTimeIndex } from '@/lib/ziweiChart';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-function getTimeIndex(birthTime: string): number {
-  const parts = String(birthTime || '12:00').trim().split(/[:\s]/);
-  const hour = Math.min(23, Math.max(0, parseInt(parts[0], 10) || 12));
-  if (hour === 23 || hour === 0) return 0;
-  return Math.floor((hour + 1) / 2);
-}
 
 function getSolarDateStr(birthDate: string): string {
   const d = new Date(birthDate);
@@ -69,11 +63,7 @@ function buildReportFromAstrolabe(astrolabe: {
   earthlyBranchOfBodyPalace: string;
 }): Record<string, unknown> {
   const palaces = astrolabe.palaces || [];
-  const lifePalace = palaces[0];
-  const wealthPalace = palaces[4];
-  const careerPalace = palaces[8];
-  const spousePalace = palaces[2];
-  const healthPalace = palaces[5];
+  const lifePalace = findZiweiPalace(palaces, 'soul');
 
   const lifeStars = (lifePalace?.majorStars as unknown[]) || [];
   const lifeStarNames = lifeStars.map(starName).join(', ') || '—';
@@ -140,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     const solarDateStr = getSolarDateStr(birthDate);
-    const timeIndex = getTimeIndex(birthTime);
+    const timeIndex = ziweiTimeIndex(birthTime);
 
     const astrolabe = astro.bySolar(solarDateStr, timeIndex, gender, true, 'en-US') as unknown as {
       palaces: Array<Record<string, unknown>>;
@@ -178,10 +168,12 @@ export async function POST(request: NextRequest) {
     const data = {
       chartData,
       ...reportSections,
+      ziweiChartVersion: ZIWEI_CHART_VERSION,
       metadata: {
         generatedAt: new Date().toISOString(),
         source: 'iztro',
         methodology: '三合派',
+        ziweiChartVersion: ZIWEI_CHART_VERSION,
       },
     };
 

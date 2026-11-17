@@ -5,6 +5,8 @@
  * the profile generation orchestrator graph into the browser bundle.
  */
 
+import { ZIWEI_CHART_VERSION } from '@/lib/ziweiChart'
+
 export type ReportReadinessState = 'ready' | 'pending' | 'failed' | 'placeholder';
 
 /** Keys that do not count as report content for unlock / readiness. */
@@ -96,7 +98,18 @@ export function classifyToolReportState(report: unknown, toolSlug?: string): Rep
   if (rec.placeholder === true) return 'placeholder';
   if (Object.keys(rec).length === 0) return 'pending';
   if (!hasDisplayableReportSubstance(rec, toolSlug)) return 'pending';
+  if (toolSlug === 'ziweiDouShu' && !ziweiChartCurrent(rec)) return 'pending';
   return 'ready';
+}
+
+/** Charts cast before the double-hour and Life Palace star fix omit ziweiChartVersion 2. */
+function ziweiChartCurrent(report: Record<string, unknown>): boolean {
+  if (report.ziweiChartVersion === ZIWEI_CHART_VERSION) return true;
+  const metadata = report.metadata;
+  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+    return (metadata as Record<string, unknown>).ziweiChartVersion === ZIWEI_CHART_VERSION;
+  }
+  return false;
 }
 
 export function isReadyToolReport(report: unknown, toolSlug?: string): boolean {
