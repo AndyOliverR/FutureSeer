@@ -25,6 +25,8 @@ function displayableReportForSlug(slug: string): Record<string, unknown> {
       return { pillars: { year: 'Jia Zi' }, placeholder: false };
     case 'humanDesign':
       return { type: 'Generator', placeholder: false };
+    case 'ziweiDouShu':
+      return { reading: 'ok', ziweiChartVersion: 2, placeholder: false };
     default:
       return { reading: 'ok', placeholder: false };
   }

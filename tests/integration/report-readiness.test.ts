@@ -91,4 +91,28 @@ describe('Report readiness contract', () => {
     expect(summary.pendingToolSlugs).not.toContain('nameAnalysis');
     expect(summary.pendingToolSlugs).not.toContain('vastu');
   });
+
+  it('recasts Zi Wei charts saved before the double-hour fix', () => {
+    expect(
+      classifyToolReportState(
+        {
+          lifePalace: 'Life Palace (命宮) is in zi. Main stars: wolf.',
+          executiveSummary: 'Life Palace hosts wolf.',
+        },
+        'ziweiDouShu',
+      ),
+    ).toBe('pending');
+    expect(
+      classifyToolReportState(
+        {
+          lifePalace: 'Life Palace (命宮) is in zi. Main stars: general, empress.',
+          ziweiChartVersion: 2,
+        },
+        'ziweiDouShu',
+      ),
+    ).toBe('ready');
+    expect(
+      classifyToolReportState({ placeholder: true, lifePalace: 'stale' }, 'ziweiDouShu'),
+    ).toBe('placeholder');
+  });
 });
