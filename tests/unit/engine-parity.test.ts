@@ -16,6 +16,7 @@
 import {
   ALL_VARGAS,
   computeAllVargas,
+  plotPlanetsFromVarga,
 } from '@/lib/vedic/vargaCalculator';
 import {
   calculateFullVimshottariDasha,
@@ -85,6 +86,36 @@ describe('Parashara Varga (D1-D60)', () => {
       expect(result[key].planets.sun).toBeDefined();
       expect(result[key].ascendant.signName).toBeTruthy();
     }
+  });
+
+  it('D30 uses the lord own-sign, not the exaltation sign', () => {
+    const d30 = ALL_VARGAS.find(v => v.key === 'D30')!;
+    // Odd signs: Mars Aries, Saturn Aquarius, Jupiter Sagittarius, Mercury Gemini, Venus Libra.
+    expect(d30.fn(0)).toBe(0);
+    expect(d30.fn(5)).toBe(10);
+    expect(d30.fn(17)).toBe(8);
+    expect(d30.fn(18)).toBe(2);
+    expect(d30.fn(25)).toBe(6);
+    // Even signs: Venus Taurus, Mercury Virgo, Jupiter Pisces, Saturn Capricorn, Mars Scorpio.
+    expect(d30.fn(30)).toBe(1);
+    expect(d30.fn(35)).toBe(5);
+    expect(d30.fn(47)).toBe(11);
+    expect(d30.fn(50)).toBe(9);
+    expect(d30.fn(55)).toBe(7);
+    // 26°07' Pisces is the Mars band of an even sign.
+    expect(d30.fn(330 + 26 + 7 / 60)).toBe(7);
+  });
+
+  it('plots nested varga planets instead of chart metadata', () => {
+    const charts = computeAllVargas({
+      Sun: { lonSidereal: 17, degreeInSign: 17 },
+      Moon: { lonSidereal: 47, degreeInSign: 17 },
+    }, 0);
+    const plotted = plotPlanetsFromVarga(charts.D30);
+    expect(plotted.map(p => p.name).sort()).toEqual(['Moon', 'Sun']);
+    expect(plotted.find(p => p.name === 'Sun')?.sign).toBe(8);
+    expect(plotted.find(p => p.name === 'Moon')?.sign).toBe(11);
+    expect(plotted.some(p => p.name === 'key' || p.name === 'planets')).toBe(false);
   });
 });
 
