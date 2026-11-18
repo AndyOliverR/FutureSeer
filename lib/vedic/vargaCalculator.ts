@@ -189,40 +189,31 @@ function d27Sign(lon: number): number {
 
 /**
  * D30 — Trimsamsa (Misfortune, disease)
- * Parashara's Trimsamsa uses unequal divisions.
- * Odd signs: 0-5° Mars, 5-10° Saturn, 10-18° Jupiter, 18-25° Mercury, 25-30° Venus
- * Even signs: 0-5° Venus, 5-12° Mercury, 12-20° Jupiter, 20-25° Saturn, 25-30° Mars
- * The sign assigned = exaltation sign of the ruling planet.
+ * Parashara divides each sign into five unequal bands (BPHS 6.27).
+ * Odd signs: 0-5° Mars, 5-10° Saturn, 10-18° Jupiter, 18-25° Mercury, 25-30° Venus.
+ * Even signs reverse the lords and the widths.
+ * The band is drawn in that lord's own sign of the same parity
+ * (odd: Aries, Aquarius, Sagittarius, Gemini, Libra;
+ * even: Taurus, Virgo, Pisces, Capricorn, Scorpio).
+ * Cancer and Leo are never used.
  */
 function d30Sign(lon: number): number {
   const signIdx = Math.floor(lon / 30);
   const degInSign = lon % 30;
   const isOdd = signIdx % 2 === 0;
 
-  const exaltationSigns: Record<string, number> = {
-    Mars: 9,      // Capricorn
-    Saturn: 6,    // Libra
-    Jupiter: 3,   // Cancer
-    Mercury: 5,   // Virgo
-    Venus: 11,    // Pisces
-  };
-
-  let ruler: string;
   if (isOdd) {
-    if (degInSign < 5) ruler = 'Mars';
-    else if (degInSign < 10) ruler = 'Saturn';
-    else if (degInSign < 18) ruler = 'Jupiter';
-    else if (degInSign < 25) ruler = 'Mercury';
-    else ruler = 'Venus';
-  } else {
-    if (degInSign < 5) ruler = 'Venus';
-    else if (degInSign < 12) ruler = 'Mercury';
-    else if (degInSign < 20) ruler = 'Jupiter';
-    else if (degInSign < 25) ruler = 'Saturn';
-    else ruler = 'Mars';
+    if (degInSign < 5) return 0;   // Mars → Aries
+    if (degInSign < 10) return 10; // Saturn → Aquarius
+    if (degInSign < 18) return 8;  // Jupiter → Sagittarius
+    if (degInSign < 25) return 2;  // Mercury → Gemini
+    return 6;                      // Venus → Libra
   }
-
-  return exaltationSigns[ruler];
+  if (degInSign < 5) return 1;     // Venus → Taurus
+  if (degInSign < 12) return 5;    // Mercury → Virgo
+  if (degInSign < 20) return 11;   // Jupiter → Pisces
+  if (degInSign < 25) return 9;    // Saturn → Capricorn
+  return 7;                        // Mars → Scorpio
 }
 
 /**
@@ -374,6 +365,26 @@ export function computeAllVargas(
     result[varga.key] = computeVarga(varga, planets, ascendantLonSidereal);
   }
   return result;
+}
+
+export interface VargaPlotPlanet {
+  name: string;
+  sign: number;
+  degreeInSign: number;
+  isRetrograde: boolean;
+}
+
+/**
+ * Planets to draw on a divisional chart. Signs come from `planets`,
+ * which is nested on the varga result. Chart metadata keys are not planets.
+ */
+export function plotPlanetsFromVarga(chart: Pick<VargaChart, 'planets'>): VargaPlotPlanet[] {
+  return Object.entries(chart.planets).map(([key, data]) => ({
+    name: data.name || key,
+    sign: data.divSign,
+    degreeInSign: data.degreeInSign ?? 0,
+    isRetrograde: false,
+  }));
 }
 
 /**

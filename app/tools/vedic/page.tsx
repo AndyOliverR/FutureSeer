@@ -49,6 +49,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getDivisionalCharts } from "@/lib/astronomia-vedic";
+import { plotPlanetsFromVarga } from "@/lib/vedic/vargaCalculator";
 
 const ComprehensiveVedicReport = dynamic(lazyComprehensiveVedicReport, { ssr: false, loading: () => null })
 const DashaPanelSimplified = dynamic(lazyDashaPanelSimplified, { ssr: false, loading: () => null })
@@ -858,12 +859,7 @@ function VedicAstrologyPageContent() {
                             const div = divisionalCharts[key];
                             if (!div) return null;
                             const divAsc = div.ascendant;
-                            const divPlanets = Object.entries(div).filter(([k]) => k !== 'ascendant').map(([planetName, data]: [string, any]) => ({
-                              name: planetName,
-                              sign: data.divSign ?? data.sign ?? 0,
-                              degreeInSign: data.degreeInSign ?? 0,
-                              isRetrograde: false,
-                            }));
+                            const divPlanets = plotPlanetsFromVarga(div);
                             return (
                               <div key={key} className="min-w-0 overflow-x-auto overflow-y-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
                                 <h4 className="text-sm font-heading text-amber-400/90 mb-3 uppercase tracking-widest">D{key.slice(1)} {label}</h4>
