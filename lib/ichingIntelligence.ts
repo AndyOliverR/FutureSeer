@@ -1,6 +1,7 @@
 import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore'
 import { devLog } from '@/lib/devLogger';
 import { getEnrichedHexagram, type EnrichedHexagram } from '@/lib/iching/yijingBridge';
+import { kingWenNumberFromBottomUpLines } from '@/lib/iching/kingWenLines';
 
 export interface IChingHexagram {
   number: number
@@ -303,76 +304,6 @@ class IChingIntelligence {
   private directions = ['North', 'South', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest']
   private timesOfDay = ['Dawn', 'Morning', 'Noon', 'Afternoon', 'Evening', 'Night']
 
-  // Hexagram lookup table: Maps 6-line binary pattern (bottom to top) to hexagram number
-  // Pattern: [bottom, line2, line3, line4, line5, top] where 1=yang, 0=yin
-  private hexagramLookup: Map<string, number> = new Map([
-    // All 64 hexagrams in King Wen sequence
-    ['111111', 1],   // The Creative
-    ['000000', 2],   // The Receptive
-    ['100010', 3],   // Difficulty at the Beginning
-    ['010001', 4],   // Youthful Folly
-    ['111010', 5],   // Waiting
-    ['010111', 6],   // Conflict
-    ['010000', 7],   // The Army
-    ['000010', 8],   // Holding Together
-    ['111011', 9],   // Small Taming
-    ['110111', 10],  // Treading
-    ['111000', 11],  // Peace
-    ['000111', 12],  // Standstill
-    ['111101', 13],  // Fellowship
-    ['101111', 14],  // Great Possession
-    ['000100', 15],  // Modesty
-    ['001000', 16],  // Enthusiasm
-    ['100110', 17],  // Following
-    ['011001', 18],  // Work on What Has Been Spoiled
-    ['110000', 19],  // Approach
-    ['000011', 20],  // Contemplation
-    ['100101', 21],  // Biting Through
-    ['101001', 22],  // Grace
-    ['000001', 23],  // Splitting Apart
-    ['100000', 24],  // Return
-    ['111001', 25],  // Innocence
-    ['100111', 26],  // Great Taming
-    ['100001', 27],  // Nourishment
-    ['011110', 28],  // Great Exceeding
-    ['010010', 29],  // The Abysmal Water
-    ['101101', 30],  // The Clinging Fire
-    ['100100', 31],  // Influence
-    ['001001', 32],  // Duration
-    ['111100', 33],  // Retreat
-    ['001111', 34],  // Great Power
-    ['000101', 35],  // Progress
-    ['101000', 36],  // Darkening of the Light
-    ['101010', 37],  // The Family
-    ['010101', 38],  // Opposition
-    ['001010', 39],  // Obstruction
-    ['010100', 40],  // Deliverance
-    ['110001', 41],  // Decrease
-    ['100011', 42],  // Increase
-    ['111110', 43],  // Breakthrough
-    ['011111', 44],  // Coming to Meet
-    ['000110', 45],  // Gathering Together
-    ['011000', 46],  // Pushing Upward
-    ['010110', 47],  // Oppression
-    ['011010', 48],  // The Well
-    ['101100', 49],  // Revolution
-    ['001101', 50],  // The Cauldron
-    ['001011', 51],  // The Arousing Thunder
-    ['110100', 52],  // Keeping Still Mountain
-    ['001110', 53],  // Development
-    ['011100', 54],  // The Marrying Maiden
-    ['101110', 55],  // Abundance
-    ['011101', 56],  // The Wanderer
-    ['010011', 57],  // The Gentle Wind
-    ['110010', 58],  // The Joyous Lake
-    ['010000', 59],  // Dispersion
-    ['000010', 60],  // Limitation
-    ['110110', 61],  // Inner Truth
-    ['011011', 62],  // Small Exceeding
-    ['110111', 63],  // After Completion
-    ['111110', 64]   // Before Completion
-  ])
-
   // Trigram to binary pattern mapping (bottom to top for 3 lines)
   private trigramPatterns: Map<string, string> = new Map([
     ['Heaven', '111'],
@@ -620,13 +551,12 @@ class IChingIntelligence {
    * Look up hexagram number from binary pattern
    */
   private patternToHexagramNumber(pattern: string): number {
-    const hexagramNum = this.hexagramLookup.get(pattern)
+    const hexagramNum = kingWenNumberFromBottomUpLines(pattern)
     if (hexagramNum) {
       return hexagramNum
     }
-    // Fallback: try to find by trigrams if pattern doesn't match exactly
-    // This shouldn't happen with correct patterns, but provide safety
-    return 1 // Default to The Creative
+    devLog.warn(`No King Wen hexagram for line pattern ${pattern}`, undefined, 'ichingIntelligence')
+    return 1
   }
 
   /**
