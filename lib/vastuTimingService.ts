@@ -63,7 +63,7 @@ const AUSPICIOUS_KARANAS = [
 ];
 
 const INAUSPICIOUS_KARANAS = [
-  'Visti', 'Shakuni', 'Chatushpada', 'Naga', 'Kimstughna'
+  'Vishti', 'Shakuni', 'Chatushpada', 'Naga', 'Kimstughna'
 ];
 
 // Auspicious Vaaras (days)

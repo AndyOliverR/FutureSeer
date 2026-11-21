@@ -2,6 +2,7 @@
 // Calculates Tithi, Nakshatra, Yoga, Karana, Vara at birth time
 
 import { normalizeTimeString, normalizeDateString } from './timeUtils';
+import { karanaFromLongitudes, tithiFromLongitudes, tithiSignificance } from './panchangaLabels';
 
 // import { julian } from 'astronomia';
 
@@ -42,13 +43,6 @@ export interface PanchangaData {
   ayanamsa: number;
 }
 
-// Tithi names
-const TITHI_NAMES = [
-  'Purnima', 'Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami',
-  'Shashthi', 'Saptami', 'Ashtami', 'Navami', 'Dashami', 'Ekadashi',
-  'Dwadashi', 'Trayodashi', 'Chaturdashi', 'Amavasya'
-];
-
 // Nakshatra names (already defined in vedic-core.ts)
 const NAKSHATRA_NAMES = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
@@ -65,12 +59,6 @@ const YOGA_NAMES = [
   'Vyaghata', 'Harshana', 'Vajra', 'Siddhi', 'Vyatipata', 'Variyan',
   'Parigha', 'Shiva', 'Siddha', 'Sadhya', 'Shubha', 'Shukla',
   'Brahma', 'Indra', 'Vaidhriti'
-];
-
-// Karana names
-const KARANA_NAMES = [
-  'Kimstughna', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Gara', 'Vanija',
-  'Vishti', 'Shakuni', 'Chatushpada', 'Naga', 'Kimstughna'
 ];
 
 // Vara (weekday) names
@@ -129,7 +117,7 @@ export function calculatePanchanga(
   const yoga = calculateYoga(sunPos, moonPos);
   
   // Calculate Karana
-  const karana = calculateKarana(tithi);
+  const karana = calculateKarana(sunPos, moonPos, tithi);
   
   // Calculate Vara (weekday)
   const vara = calculateVara(birthDateTime);
@@ -169,21 +157,14 @@ function calculateMoonPosition(jd: number): number {
 }
 
 function calculateTithi(sunPos: number, moonPos: number) {
-  const diff = moonPos - sunPos;
-  const normalizedDiff = ((diff % 360) + 360) % 360;
-  
-  const tithiNumber = Math.floor(normalizedDiff / 12) + 1;
-  const progress = ((normalizedDiff % 12) / 12) * 100;
-  
-  const paksha: 'Shukla' | 'Krishna' = tithiNumber <= 15 ? 'Shukla' : 'Krishna';
-  const tithiIndex = tithiNumber <= 15 ? tithiNumber - 1 : tithiNumber - 16;
-  
+  const tithi = tithiFromLongitudes(sunPos, moonPos);
+
   return {
-    number: tithiNumber,
-    name: TITHI_NAMES[tithiIndex],
-    paksha,
-    progress,
-    endTime: new Date(Date.now() + (100 - progress) * 24 * 60 * 60 * 1000 / 100)
+    number: tithi.number,
+    name: tithi.name,
+    paksha: tithi.paksha,
+    progress: tithi.progress,
+    endTime: new Date(Date.now() + (100 - tithi.progress) * 24 * 60 * 60 * 1000 / 100)
   };
 }
 
@@ -215,13 +196,13 @@ function calculateYoga(sunPos: number, moonPos: number) {
   };
 }
 
-function calculateKarana(tithi: any) {
-  const karanaNumber = Math.floor((tithi.number - 1) * 2) + 1;
+function calculateKarana(sunPos: number, moonPos: number, tithi: { progress: number }) {
+  const karana = karanaFromLongitudes(sunPos, moonPos);
   const progress = (tithi.progress / 100) * 50; // Each karana is half a tithi
-  
+
   return {
-    number: karanaNumber,
-    name: KARANA_NAMES[(karanaNumber - 1) % 11],
+    number: karana.number,
+    name: karana.name,
     progress,
     endTime: new Date(Date.now() + (50 - progress) * 24 * 60 * 60 * 1000 / 100)
   };
@@ -261,25 +242,7 @@ function calculateLahiriAyanamsa(year: number, month: number, day: number): numb
 
 // Export utility functions
 export function getTithiSignificance(tithiNumber: number, paksha: string) {
-  const significances = {
-    1: 'New beginnings, auspicious for starting ventures',
-    2: 'Good for partnerships and relationships',
-    3: 'Favorable for creative activities',
-    4: 'Good for spiritual practices',
-    5: 'Auspicious for learning and education',
-    6: 'Good for health-related activities',
-    7: 'Favorable for travel and movement',
-    8: 'Good for transformation and change',
-    9: 'Auspicious for worship and devotion',
-    10: 'Good for business and commerce',
-    11: 'Favorable for fasting and spiritual practices',
-    12: 'Good for charity and service',
-    13: 'Favorable for meditation and introspection',
-    14: 'Good for preparation and planning',
-    15: paksha === 'Shukla' ? 'Full Moon - Peak energy' : 'New Moon - New beginnings'
-  };
-  
-  return significances[tithiNumber as keyof typeof significances] || 'Neutral day';
+  return tithiSignificance(tithiNumber, paksha);
 }
 
 export function getNakshatraSignificance(nakshatraName: string) {
