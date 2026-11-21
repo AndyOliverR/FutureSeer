@@ -3,6 +3,7 @@
 
 import { getChart } from './astronomia-vedic';
 import { devLog } from '@/lib/devLogger';
+import { karanaFromLongitudes, tithiFromLongitudes, tithiSignificance } from './panchangaLabels';
 
 export interface AccuratePanchangaData {
   tithi: { 
@@ -76,13 +77,6 @@ export function isPanchangaChartCompatible(chartData: PanchangaChartInput | null
   return hasSun && hasMoon && Number.isFinite(lat) && Number.isFinite(lon);
 }
 
-// Tithi names
-const TITHI_NAMES = [
-  'Purnima', 'Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami',
-  'Shashthi', 'Saptami', 'Ashtami', 'Navami', 'Dashami', 'Ekadashi',
-  'Dwadashi', 'Trayodashi', 'Chaturdashi', 'Amavasya'
-];
-
 // Nakshatra names
 const NAKSHATRA_NAMES = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
@@ -99,12 +93,6 @@ const YOGA_NAMES = [
   'Vyaghata', 'Harshana', 'Vajra', 'Siddhi', 'Vyatipata', 'Variyan',
   'Parigha', 'Shiva', 'Siddha', 'Sadhya', 'Shubha', 'Shukla',
   'Brahma', 'Indra', 'Vaidhriti'
-];
-
-// Karana names
-const KARANA_NAMES = [
-  'Kimstughna', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Gara', 'Vanija',
-  'Vishti', 'Shakuni', 'Chatushpada', 'Naga', 'Kimstughna'
 ];
 
 // Vara (weekday) names
@@ -156,7 +144,7 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
   const tithi = calculateTithiFromLongitudes(sunLon, moonLon);
   const nakshatra = calculateNakshatraFromLongitude(moonLon);
   const yoga = calculateYogaFromLongitudes(sunLon, moonLon);
-  const karana = calculateKaranaFromTithi(tithi);
+  const karana = calculateKaranaFromLongitudes(sunLon, moonLon, tithi);
   const vara = calculateVaraFromDate(birthData.birthDate);
   
   // Validate metadata has coordinates (allow numeric strings from cached/JSON data)
@@ -256,23 +244,15 @@ export function calculateCurrentPanchanga(birthPlace: string, latitude: number, 
 
 // Calculate Tithi from accurate Sun/Moon longitudes
 function calculateTithiFromLongitudes(sunLon: number, moonLon: number) {
-  const diff = moonLon - sunLon;
-  const normalizedDiff = ((diff % 360) + 360) % 360;
-  
-  const tithiNumber = Math.floor(normalizedDiff / 12) + 1;
-  const progress = ((normalizedDiff % 12) / 12) * 100;
-  
-  const paksha = tithiNumber <= 15 ? 'Shukla' : 'Krishna';
-  const tithiIndex = tithiNumber <= 15 ? tithiNumber - 1 : tithiNumber - 16;
-  
-  const significance = getTithiSignificance(tithiNumber, paksha);
-  
+  const tithi = tithiFromLongitudes(sunLon, moonLon);
+  const significance = getTithiSignificance(tithi.number, tithi.paksha);
+
   return {
-    number: tithiNumber,
-    name: TITHI_NAMES[tithiIndex],
-    paksha,
-    progress: Math.round(progress * 10) / 10,
-    endTime: new Date(Date.now() + (100 - progress) * 24 * 60 * 60 * 1000 / 100),
+    number: tithi.number,
+    name: tithi.name,
+    paksha: tithi.paksha,
+    progress: Math.round(tithi.progress * 10) / 10,
+    endTime: new Date(Date.now() + (100 - tithi.progress) * 24 * 60 * 60 * 1000 / 100),
     significance
   };
 }
@@ -314,13 +294,17 @@ function calculateYogaFromLongitudes(sunLon: number, moonLon: number) {
 }
 
 // Calculate Karana from Tithi
-function calculateKaranaFromTithi(tithi: any) {
-  const karanaNumber = Math.floor((tithi.number - 1) * 2) + 1;
+function calculateKaranaFromLongitudes(
+  sunLon: number,
+  moonLon: number,
+  tithi: { progress: number },
+) {
+  const karana = karanaFromLongitudes(sunLon, moonLon);
   const progress = (tithi.progress / 100) * 50; // Each karana is half a tithi
-  
+
   return {
-    number: karanaNumber,
-    name: KARANA_NAMES[(karanaNumber - 1) % 11],
+    number: karana.number,
+    name: karana.name,
     progress: Math.round(progress * 10) / 10,
     endTime: new Date(Date.now() + (50 - progress) * 24 * 60 * 60 * 1000 / 100)
   };
@@ -532,25 +516,7 @@ function getTimezoneOffset(latitude: number, longitude: number): number {
 
 // Significance functions
 function getTithiSignificance(tithiNumber: number, paksha: string) {
-  const significances: Record<number, string> = {
-    1: 'New beginnings, auspicious for starting ventures',
-    2: 'Good for partnerships and relationships',
-    3: 'Favorable for creative activities',
-    4: 'Good for spiritual practices',
-    5: 'Auspicious for learning and education',
-    6: 'Good for health-related activities',
-    7: 'Favorable for travel and movement',
-    8: 'Good for transformation and change',
-    9: 'Auspicious for worship and devotion',
-    10: 'Good for business and commerce',
-    11: 'Favorable for fasting and spiritual practices',
-    12: 'Good for charity and service',
-    13: 'Favorable for meditation and introspection',
-    14: 'Good for preparation and planning',
-    15: paksha === 'Shukla' ? 'Full Moon - Peak energy' : 'New Moon - New beginnings'
-  };
-  
-  return significances[tithiNumber] || 'Neutral day';
+  return tithiSignificance(tithiNumber, paksha);
 }
 
 function getNakshatraSignificance(nakshatraName: string) {
